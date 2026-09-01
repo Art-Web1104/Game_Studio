@@ -1,0 +1,205 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "R2-RNG-0001",
+  "project_id": "casino-core",
+  "title": "R2 유닛 1: 룰렛 생산용 CSPRNG 추첨 경계와 독립 통계 검증",
+  "goal": "R1 검증 보고서가 R2로 넘긴 기술 위험 중 첫 번째 항목인 '생산용 CSPRNG 구현과 독립 통계 검증'을 닫는다. 운영체제 CSPRNG를 유일한 생산 엔트로피원으로 고정하고, 모듈로 편향 없는 거부 표본추출로 0~36 포켓을 뽑으며, 시드·엔트로피 값이 기록·감사·예외 메시지에 남지 않고, 라운드당 단일 권위 추첨과 감사 선기록 순서를 강제하는 추첨 경계를 구현한다. 동시에 추첨 결과 수열만 입력으로 받는 독립 통계 모듈로 균등성·직렬 독립성·거부율을 검증하고, 이전 세션이 READY 게이트를 위반해 남긴 미추적 구현 초안을 보존·기록·회수한다. 데이터베이스 격리, 실제 네트워크 재접속, 부하, 보안 침투 시험은 이 작업 범위가 아니다.",
+  "owner_agent_id": "A-20",
+  "status": "READY",
+  "risk_class": "HIGH",
+  "inputs": [
+    {
+      "uri": "repo://games/roulette/rng-contract.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:9d8ea76aef04c25d182fc2f25f3c3e0e988aa3e997b82cc918ad3ee86004114b"
+    },
+    {
+      "uri": "repo://docs/approvals/R1-validation-report.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:3a9e75341d00551fa2071f1e05e4bda4af6d4af1870ac8940e059ee5c4e99a94"
+    },
+    {
+      "uri": "repo://contracts/task.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:32158d90825790b90929b5c1464140651c201b603745bc4bafa27e446d723527"
+    },
+    {
+      "uri": "repo://operations/collaboration.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:03031cf600fe847737d535c364f183b6f0031464fc3a8fdd076b79826506733a"
+    },
+    {
+      "uri": "recovered://studio_core/rng.py@pre-task-draft",
+      "version": "0.1.0-draft",
+      "content_hash": "sha256:aedfacb41a18e03756f21ddd3203df9f9b82abf4c73d1319b838bf44c78d8591"
+    }
+  ],
+  "deliverables": [
+    {
+      "name": "r2-rng-production-csprng",
+      "artifact_type": "CODE",
+      "target_uri": "repo://studio_core/rng.py"
+    },
+    {
+      "name": "r2-rng-independent-statistics",
+      "artifact_type": "CODE",
+      "target_uri": "repo://studio_core/rng_stats.py"
+    },
+    {
+      "name": "r2-rng-draw-record-schema",
+      "artifact_type": "SCHEMA",
+      "target_uri": "repo://games/roulette/rng-draw-record.schema.json"
+    },
+    {
+      "name": "r2-rng-draw-record-fixture",
+      "artifact_type": "DATASET",
+      "target_uri": "repo://games/roulette/fixtures/rng-draw-record.example.json"
+    },
+    {
+      "name": "r2-rng-test-suite",
+      "artifact_type": "CODE",
+      "target_uri": "repo://tests/test_rng.py"
+    },
+    {
+      "name": "r2-rng-baseline-validator-integration",
+      "artifact_type": "CODE",
+      "target_uri": "repo://scripts/validate_baseline.py"
+    },
+    {
+      "name": "r2-rng-design-document",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://docs/games/R2-rng-csprng.md"
+    },
+    {
+      "name": "r2-rng-gate-violation-recovery-record",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://docs/operations/R2-RNG-0001-recovery.md"
+    },
+    {
+      "name": "r2-rng-gate-audit-events",
+      "artifact_type": "DATASET",
+      "target_uri": "repo://audit/events/R2-RNG-0001-events.json"
+    },
+    {
+      "name": "r1-evidence-closure-report",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://docs/approvals/R1-evidence-closure.md"
+    },
+    {
+      "name": "r1-checklist-evidence-update",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://docs/approvals/R1-checklist.md"
+    },
+    {
+      "name": "r2-rng-validation-report",
+      "artifact_type": "TEST_REPORT",
+      "target_uri": "repo://docs/approvals/R2-RNG-0001-validation-report.md"
+    },
+    {
+      "name": "r2-rng-artifact-contract",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://artifacts/R2-RNG-0001-artifact.json"
+    },
+    {
+      "name": "r2-rng-handoff-packet",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://handoffs/R2-RNG-0001-handoff.json"
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "criterion_id": "AC-001",
+      "statement": "이전 세션의 READY 게이트 위반 사실과 회수 절차가 기록되어야 하고, 위반·회수 사건이 audit/audit-event.schema.json에 유효한 해시 연결 감사 이벤트로 남아야 하며, 미추적 초안의 회수 시점 sha256이 보존되어야 한다.",
+      "verification": "scripts/validate_baseline.py의 R2 RNG 검증과 docs/operations/R2-RNG-0001-recovery.md 대조"
+    },
+    {
+      "criterion_id": "AC-002",
+      "statement": "생산 환경 추첨은 운영체제 CSPRNG만 사용해야 하고, 결정론적 테스트 엔트로피 어댑터가 PRODUCTION 환경과 결합되면 엔진 생성이 거부되어야 한다.",
+      "verification": "PRODUCTION + 결정론 어댑터 조합이 RngDenied를 던지는 네거티브 테스트"
+    },
+    {
+      "criterion_id": "AC-003",
+      "statement": "0~255 바이트 도메인 전수 열거에서 채택 바이트 222개가 37개 포켓에 정확히 6개씩 배분되고 거부 바이트가 34개여야 하며, 어떤 경로에서도 편향된 모듈로 대체 매핑이 사용되지 않아야 한다.",
+      "verification": "바이트 도메인 전수 매핑 테스트와 거부 소진 시 라운드 무효 테스트"
+    },
+    {
+      "criterion_id": "AC-004",
+      "statement": "추첨 기록, 감사 이벤트, 예외 메시지, 어댑터 repr 어디에도 시드 값·원시 엔트로피 바이트·거부 횟수가 남지 않아야 한다.",
+      "verification": "금지 필드 목록 기반 기록·감사·예외 문자열 검사 테스트와 기준선 검증기"
+    },
+    {
+      "criterion_id": "AC-005",
+      "statement": "라운드당 권위 추첨은 하나여야 하고, 동일 request_id 재요청은 원본 결과를 그대로 반환하며, 동일 request_id로 다른 파라미터를 보내거나 이미 추첨된 라운드에 새 요청을 보내면 차단·에스컬레이션되어야 한다.",
+      "verification": "멱등 재요청·파라미터 충돌·중복 라운드 네거티브 테스트"
+    },
+    {
+      "criterion_id": "AC-006",
+      "statement": "감사 이벤트가 수락된 뒤에만 추첨 결과가 성립해야 하고, 감사 기록 실패 시 결과는 폐기되고 라운드는 무효화되어야 하며, games/roulette/rng-contract.yaml의 실패 동작 코드와 구현의 실패 동작이 일치해야 한다.",
+      "verification": "감사 싱크 실패 주입 테스트와 rng-contract.yaml 실패 동작 대조 검증"
+    },
+    {
+      "criterion_id": "AC-007",
+      "statement": "독립 통계 모듈은 추첨 결과 수열만 입력으로 받고 RNG 구현 모듈을 임포트하지 않아야 하며, 카이제곱 균등성·인접쌍 직렬 독립성·거부율 검정을 p값과 함께 제공해야 한다.",
+      "verification": "통계 모듈 임포트 독립성 검사와 편향 수열을 탐지하는 양성·음성 검정 테스트"
+    },
+    {
+      "criterion_id": "AC-008",
+      "statement": "추첨 기록 스키마는 additionalProperties=false로 금지 필드를 구조적으로 거부해야 하고, 예제 픽스처가 스키마에 유효해야 하며, 추첨 기록이 games/roulette/round.schema.json의 rng_record 형태로 손실 없이 투영되어야 한다.",
+      "verification": "스키마 구조 검증, 픽스처 인스턴스 검증, 라운드 rng_record 투영 테스트"
+    },
+    {
+      "criterion_id": "AC-009",
+      "statement": "scripts/validate_baseline.py가 R2 RNG 검증 단계를 포함해야 하고, 계약 위반 입력이 주어지면 해당 단계가 실패해야 한다.",
+      "verification": "기준선 검증기 실행 로그와 검증기 함수 네거티브 테스트"
+    },
+    {
+      "criterion_id": "AC-010",
+      "statement": "python scripts/validate_baseline.py와 python -m unittest discover -s tests -v 두 명령이 모두 성공하고, compileall과 평문 비밀값 스캔이 통과해야 한다.",
+      "verification": "두 표준 명령과 compileall·비밀값 스캔의 실제 실행 로그"
+    },
+    {
+      "criterion_id": "AC-011",
+      "statement": "R1 증거 종결 기록은 자동 검증으로 확인된 사실만 기술해야 하고, 수행되지 않은 인간 검토자 승인을 승인된 것으로 표기하지 않아야 하며, 사용자의 R2 작업 승인은 사용자 승인으로 정확히 기록되어야 한다.",
+      "verification": "docs/approvals/R1-evidence-closure.md와 R1-checklist.md의 상태 표기 검토"
+    },
+    {
+      "criterion_id": "AC-012",
+      "statement": "데이터베이스 격리 수준, 실제 네트워크 재접속, 부하, 보안 침투 시험 구현은 이 작업에서 수행하지 않고 후속 R2 유닛으로 명시 이월되어야 한다.",
+      "verification": "산출물 목록과 이월 위험 기록 검토"
+    }
+  ],
+  "dependencies": ["SYS-CLD-0011"],
+  "budget": {
+    "max_cost_usd": 20.0,
+    "max_runtime_seconds": 10800,
+    "stop_on_limit": true
+  },
+  "approvers": ["A-50", "A-02", "A-00", "USER"],
+  "rollback": {
+    "strategy": "롤백 대상 목록. 신규 파일 18개: .gitattributes, tasks/R2-RNG-0001.json, artifacts/R2-RNG-0001-artifact.json, handoffs/R2-RNG-0001-handoff.json, studio_core/rng.py, studio_core/rng_stats.py, studio_core/integrity.py, games/roulette/rng-draw-record.schema.json, games/roulette/fixtures/rng-draw-record.example.json, tests/test_rng.py, tests/test_integrity.py, audit/events/R2-RNG-0001-events.json, docs/games/R2-rng-csprng.md, docs/operations/R2-RNG-0001-recovery.md, docs/operations/R2-followup-units.md, docs/status/R2-STATUS.md, docs/approvals/R1-evidence-closure.md, docs/approvals/R2-RNG-0001-validation-report.md. 수정 파일 4개: scripts/validate_baseline.py, studio_core/__init__.py, docs/approvals/R1-checklist.md, docs/status/R1-MOBILE-STATUS.md. 경로 A(이 작업의 PR 커밋이 이미 존재하는 경우): 해당 커밋 해시를 정확히 지정해 git revert <commit>으로 되돌리는 새 커밋을 만든다. 이력 재작성, 강제 푸시, 브랜치 삭제는 하지 않으며 되돌림 자체가 이력에 남는다. 경로 B(커밋 이전, 작업 트리에만 존재하는 경우): (1) 현재 소스를 먼저 보존한다. 위 22개 경로 전체를 quarantine/R2-RNG-0001/<UTC-timestamp>/ 아래에 원본 그대로 복사해 격리 사본을 만든다. (2) 수정 파일 4개는 git diff 06331a4 -- <경로>로 역패치 후보를 생성해 사람이 내용을 검토한 뒤 git apply --reverse로 적용해 기준 커밋 06331a4 상태로 복원한다. 검토 없이 작업 트리를 덮어쓰는 명령은 사용하지 않는다. (3) 신규 파일 18개는 삭제하지 않고 같은 quarantine 디렉터리로 이동한다. 파괴적 Git·파일시스템 명령은 어느 단계에서도 사용하지 않는다. 두 경로 모두 마지막에 python scripts/validate_baseline.py와 python -m unittest discover -s tests -v를 실행해 R1 기준선 통과를 확인한다. verification의 git status 확인은 이 quarantine 경로를 제외하고 판정하며, quarantine 사본은 회수 기록이 갱신될 때까지 증거로 보존한다. studio_core/rng.py 회수 시점 sha256과 규모는 docs/operations/R2-RNG-0001-recovery.md에 보존되어 있으므로 격리 이후에도 초안 지문은 확인 가능하다. Claude는 커밋과 푸시를 수행하지 않는다. 독립 검증을 마친 뒤 사용자의 상시 승인 아래 커밋과 PR 개설을 수행할 수 있는 주체는 Codex이며, 그 경우 롤백은 경로 A를 따른다.",
+    "source_preserved": true,
+    "verification": "복원 후 git status가 06331a4 기준 미추적 파일 studio_core/rng.py만 남기지 않고 깨끗해야 하며, python scripts/validate_baseline.py와 python -m unittest discover -s tests -v를 재실행해 R1 기준선이 그대로 통과함을 확인한다."
+  },
+  "security": {
+    "data_classification": "INTERNAL",
+    "contains_pii": false,
+    "workspace_access": "DEPARTMENT_WRITE",
+    "network_policy": "ALLOWLISTED_PROVIDER",
+    "secrets_policy": "REFERENCE_ONLY"
+  },
+  "assumptions": [
+    "사용자가 이 세션에서 R2 RNG 작업 수행을 명시적으로 승인했고 그 승인은 작업 착수 권한이지 최종 QA 게이트 판정이 아니다.",
+    "inputs의 recovered://studio_core/rng.py@pre-task-draft 해시는 게이트 위반 세션이 남긴 미추적 초안을 이 Task Contract 작성 시점에 그대로 측정한 값이며, 이후 구현으로 파일 내용은 변경된다.",
+    "network_policy: ALLOWLISTED_PROVIDER는 구현 콘솔이 Claude Provider를 사용한다는 뜻이고, 게임 런타임 네트워크 입출력은 이 작업에서 구현하지 않는다.",
+    "감사 저장소는 이 작업에서 인메모리 해시 체인 참조 구현으로만 제공되며 내구성 있는 저장소는 후속 R2 데이터베이스 유닛의 범위다.",
+    "Claude는 이 작업에서 커밋과 푸시를 수행하지 않고 작업 트리 변경만 남긴다. Codex는 독립 검증을 마친 뒤 사용자의 상시 승인 아래 커밋과 PR 개설을 수행할 수 있으며, 그 커밋이 존재하는 시점부터 롤백은 해당 커밋을 지정한 git revert 경로로 전환된다."
+  ],
+  "open_decisions": [
+    "커밋-공개 방식의 사용자 검증 가능 공정성 증명을 R2에 포함할지 여부는 미결이며 현재 proof_hash는 변조 탐지용 바인딩이지 공정성 증명이 아니다.",
+    "감사 체인의 내구성 저장소, 격리 수준, 장애 복구는 후속 R2 유닛에서 결정한다.",
+    "연결 증거와 통계 인증의 재검증 주기는 아직 정해지지 않았다.",
+    "R5 이전이므로 상용 제작 일정과 출시일은 확정하지 않는다."
+  ],
+  "created_at": "2026-09-01T00:00:00Z",
+  "updated_at": "2026-09-01T00:00:00Z"
+}

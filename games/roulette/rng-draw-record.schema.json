@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ts-studio.local/games/roulette/rng-draw-record.schema.json",
+  "title": "Roulette CSPRNG Draw Record",
+  "description": "Audit-safe result of one authoritative roulette draw. Every field is publishable to an auditor: additionalProperties is false so that seed values, raw entropy bytes and rejection counts are rejected structurally rather than by review.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "request_id",
+    "round_id",
+    "ruleset_id",
+    "algorithm_id",
+    "algorithm_version",
+    "draw_index",
+    "pocket",
+    "seed_reference",
+    "proof_hash",
+    "audit_event_ref",
+    "environment",
+    "entropy_source_id",
+    "entropy_source_deterministic",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "request_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{7,63}$"},
+    "round_id": {"type": "string", "pattern": "^RR-[A-Z0-9-]{1,48}$"},
+    "ruleset_id": {"const": "ROULETTE-EU-SINGLE-ZERO-1"},
+    "algorithm_id": {"const": "CSPRNG-REJECTION-UNIFORM-37"},
+    "algorithm_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "draw_index": {"type": "integer", "minimum": 0, "maximum": 9999},
+    "pocket": {"type": "integer", "minimum": 0, "maximum": 36},
+    "seed_reference": {
+      "type": "string",
+      "description": "Reference to the entropy authority, never a recoverable seed value.",
+      "pattern": "^entropy-ref://[a-z0-9][a-z0-9-]{1,30}/[A-Z0-9-]{3,64}$"
+    },
+    "proof_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "audit_event_ref": {"type": "string", "pattern": "^[a-z][a-z0-9+.-]{1,15}://[A-Za-z0-9._:/~-]{3,128}$"},
+    "environment": {"enum": ["PRODUCTION", "NON_PRODUCTION"]},
+    "entropy_source_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,30}$"},
+    "entropy_source_deterministic": {"type": "boolean"},
+    "created_at": {"type": "string", "format": "date-time"}
+  }
+}

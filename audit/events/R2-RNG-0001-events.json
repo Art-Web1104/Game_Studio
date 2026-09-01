@@ -1,0 +1,92 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "R2-RNG-0001",
+  "chain_namespace": "R2RNG",
+  "summary": "READY gate violation, draft preservation, contract issuance and recovery, recorded as a hash-linked audit chain.",
+  "events": [
+    {
+      "schema_version": "1.0.0",
+      "event_type": "SECURITY",
+      "timestamp": "2026-09-01T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "claude_code:implementer",
+      "task_id": "R2-RNG-0001",
+      "action": "READY_GATE_VIOLATION_DETECTED",
+      "resource_refs": [
+        "repo://CLAUDE.md#required-workflow-2",
+        "repo://studio_core/rng.py",
+        "draft-sha256://aedfacb41a18e03756f21ddd3203df9f9b82abf4c73d1319b838bf44c78d8591"
+      ],
+      "decision": "FAIL",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:06320a4169cab55a6bd776d96be2216d73a4a84ca504b2c91a7082fbd3a52299",
+      "contains_secret": false,
+      "event_id": "AE-R2RNG-0001",
+      "previous_event_hash": null,
+      "event_hash": "sha256:256c67a6208574ad595d4323579dff295937cb89557091815644b430387c2a16"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "SECURITY",
+      "timestamp": "2026-09-01T00:05:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "claude_code:implementer",
+      "task_id": "R2-RNG-0001",
+      "action": "UNTRACKED_DRAFT_PRESERVED",
+      "resource_refs": [
+        "repo://studio_core/rng.py",
+        "repo://docs/operations/R2-RNG-0001-recovery.md",
+        "draft-sha256://aedfacb41a18e03756f21ddd3203df9f9b82abf4c73d1319b838bf44c78d8591"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:88096000095985127c8bbb0279a5406fa6ae49a81c7e6c176e3cfb9eb00d55c0",
+      "contains_secret": false,
+      "event_id": "AE-R2RNG-0002",
+      "previous_event_hash": "sha256:256c67a6208574ad595d4323579dff295937cb89557091815644b430387c2a16",
+      "event_hash": "sha256:9215c8d35c6a8767cf4f36ad1a7ee35a72e83e659e7c08d842f7f2e5c60a3e39"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-01T00:10:00Z",
+      "actor_type": "USER",
+      "actor_id": "USER",
+      "task_id": "R2-RNG-0001",
+      "action": "TASK_CONTRACT_ISSUED_READY",
+      "resource_refs": [
+        "repo://tasks/R2-RNG-0001.json",
+        "repo://contracts/task.schema.json"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:ec5af58e65d4088c8c33a755ffb11278b9cd492ebfd6a1928cbf98e2d9bebb25",
+      "contains_secret": false,
+      "event_id": "AE-R2RNG-0003",
+      "previous_event_hash": "sha256:9215c8d35c6a8767cf4f36ad1a7ee35a72e83e659e7c08d842f7f2e5c60a3e39",
+      "event_hash": "sha256:1aa2c80eb3c319bb1a697ba0a8267fc9430beceb6ef25b318c6442a1cc53b868"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "SECURITY",
+      "timestamp": "2026-09-01T00:15:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "claude_code:implementer",
+      "task_id": "R2-RNG-0001",
+      "action": "GATE_VIOLATION_RECOVERY_COMPLETED",
+      "resource_refs": [
+        "repo://tasks/R2-RNG-0001.json",
+        "repo://artifacts/R2-RNG-0001-artifact.json",
+        "repo://handoffs/R2-RNG-0001-handoff.json",
+        "repo://docs/operations/R2-RNG-0001-recovery.md"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:477fcf7c99d3a63b7bb0187cfffa6ec65b16f34159eafbb3c5d2508c559a6c72",
+      "contains_secret": false,
+      "event_id": "AE-R2RNG-0004",
+      "previous_event_hash": "sha256:1aa2c80eb3c319bb1a697ba0a8267fc9430beceb6ef25b318c6442a1cc53b868",
+      "event_hash": "sha256:393472c1c9d8c4a4119207a60257dd7d872978a1b044d08f763a17166b0dd24b"
+    }
+  ]
+}

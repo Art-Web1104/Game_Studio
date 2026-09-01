@@ -4,12 +4,11 @@
 from __future__ import annotations
 
 import json
-import hashlib
 import re
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 import yaml
 
@@ -17,6 +16,16 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
+from studio_core.integrity import (  # noqa: E402
+    IntegrityError,
+    canonical_bytes,
+    classify,
+    content_hash,
+    hash_file,
+    verify_file,
+)
+
 EXPECTED_AGENT_IDS = {
     "A-00",
     "A-01",
@@ -195,6 +204,7 @@ def validate_required_files() -> None:
     required = [
         "AGENTS.md",
         "CLAUDE.md",
+        ".gitattributes",
         ".claude/settings.json",
         ".claude/agents/client-engineer.md",
         ".claude/agents/game-server-engineer.md",
@@ -257,6 +267,21 @@ def validate_required_files() -> None:
         "docs/approvals/R1-validation-report.md",
         "operations/collaboration.yaml",
         "studio_core/collaboration.py",
+        "studio_core/rng.py",
+        "studio_core/rng_stats.py",
+        "games/roulette/rng-draw-record.schema.json",
+        "games/roulette/fixtures/rng-draw-record.example.json",
+        "audit/events/R2-RNG-0001-events.json",
+        "tasks/R2-RNG-0001.json",
+        "artifacts/R2-RNG-0001-artifact.json",
+        "handoffs/R2-RNG-0001-handoff.json",
+        "docs/games/R2-rng-csprng.md",
+        "docs/operations/R2-RNG-0001-recovery.md",
+        "docs/approvals/R1-evidence-closure.md",
+        "docs/approvals/R2-RNG-0001-validation-report.md",
+        "tests/test_rng.py",
+        "studio_core/integrity.py",
+        "tests/test_integrity.py",
         "providers/connection-proof.schema.json",
         "providers/evidence/SYS-CLD-0011-claude-connection-proof.yaml",
         "tasks/SYS-CLD-0011.json",
@@ -444,9 +469,9 @@ def validate_knowledge(agent_definitions: dict[str, dict[str, Any]]) -> dict[str
         content_path = ROOT / referenced_path
         if not content_path.is_file():
             raise BaselineValidationError(f"knowledge content_ref does not exist: {referenced_path}")
-        actual_hash = "sha256:" + hashlib.sha256(content_path.read_bytes()).hexdigest()
-        if item["provenance"]["content_hash"] != actual_hash:
-            raise BaselineValidationError("knowledge provenance hash does not match content_ref")
+        decision = verify_file(content_path, item["provenance"]["content_hash"], label=referenced_path)
+        if not decision.matches:
+            raise BaselineValidationError(f"knowledge provenance hash does not match content_ref: {decision.message}")
     return item
 
 
@@ -550,6 +575,104 @@ def _iter_text_files(relative_path: str) -> list[Path]:
     if not target.is_dir():
         return []
     return sorted(path for path in target.rglob("*") if path.is_file() and path.suffix in {".json", ".yaml", ".md"})
+
+
+#: Directory names that are not part of the hashed repository surface: caches, build output,
+#: virtual environments, and the scratch worktrees an internal reviewer materialises.
+NON_REPOSITORY_DIRS = frozenset(
+    {".git", ".venv", "venv", "__pycache__", ".pytest_cache", "node_modules", "build", "dist", "worktrees"}
+)
+
+
+def repository_files(base: Path | None = None) -> list[Path]:
+    """Return every committed-surface file under ``base``, skipping caches and scratch copies."""
+
+    root = ROOT if base is None else Path(base)
+    found: list[Path] = []
+    for path in sorted(root.rglob("*")):
+        if not path.is_file():
+            continue
+        if NON_REPOSITORY_DIRS.intersection(path.relative_to(root).parts[:-1]):
+            continue
+        found.append(path)
+    return found
+
+
+def hashed_content_references() -> list[tuple[str, str, str]]:
+    """Collect every ``(declaring file, uri, expected hash)`` binding in the control plane."""
+
+    references: list[tuple[str, str, str]] = []
+    for path in sorted((ROOT / "tasks").glob("*.json")):
+        contract = load_json(f"tasks/{path.name}")
+        for item in contract.get("inputs", []):
+            references.append((f"tasks/{path.name}", item["uri"], item["content_hash"]))
+    for path in sorted((ROOT / "artifacts").glob("*.json")):
+        artifact = load_json(f"artifacts/{path.name}")
+        references.append((f"artifacts/{path.name}", artifact["uri"], artifact["content_hash"]))
+    knowledge_path = "knowledge/examples/roulette-policy.example.json"
+    knowledge = load_json(knowledge_path)
+    references.append((knowledge_path, knowledge["content_ref"], knowledge["provenance"]["content_hash"]))
+    return references
+
+
+def validate_content_integrity() -> dict[str, Any]:
+    """Verify that every declared ``content_hash`` matches its file's canonical representation.
+
+    The canonical form is defined in ``studio_core.integrity``: LF-normalised UTF-8 for text,
+    raw bytes for binaries. Hashing the bytes as they sit on disk instead would make a
+    Windows CRLF checkout report tampering against artifacts that are byte-identical in Git,
+    and would make the check pass or fail on the reviewer's platform rather than on content.
+    """
+
+    attributes_path = ROOT / ".gitattributes"
+    if not attributes_path.is_file():
+        raise BaselineValidationError(
+            ".gitattributes is required so Git stores the LF text form the artifact hashes assume"
+        )
+    directives = [
+        line.split("#", 1)[0].split()
+        for line in attributes_path.read_text(encoding="utf-8").splitlines()
+    ]
+    if not any(fields and fields[0] == "*" and "text=auto" in fields[1:] for fields in directives):
+        raise BaselineValidationError(".gitattributes must pin '* text=auto' for every text blob")
+
+    # Prove the canonical property on real repository content rather than asserting it in
+    # prose: the same text must hash identically from either line ending, a genuine edit must
+    # not, and binary bytes must survive untouched.
+    sample = (ROOT / "operations/collaboration.yaml").read_bytes()
+    as_lf = sample.replace(b"\r\n", b"\n")
+    as_crlf = as_lf.replace(b"\n", b"\r\n")
+    if content_hash(as_lf) != content_hash(as_crlf):
+        raise BaselineValidationError("canonical text hashing is not line-ending independent")
+    if content_hash(as_lf) == content_hash(as_lf + b"# tampered\n"):
+        raise BaselineValidationError("canonical text hashing does not detect appended content")
+    binary_sample = b"\x00head\r\ntail"
+    if canonical_bytes(binary_sample) != binary_sample:
+        raise BaselineValidationError("binary content must be hashed as raw bytes")
+
+    kinds: dict[str, int] = {"text": 0, "binary": 0}
+    for path in repository_files():
+        relative = path.relative_to(ROOT).as_posix()
+        try:
+            kinds[classify(path.read_bytes(), label=relative)] += 1
+        except IntegrityError as exc:
+            raise BaselineValidationError(str(exc)) from exc
+
+    verified: list[str] = []
+    external: list[str] = []
+    for source, uri, expected in hashed_content_references():
+        if not uri.startswith("repo://"):
+            external.append(f"{source} -> {uri}")
+            continue
+        relative = uri.removeprefix("repo://")
+        if not (ROOT / relative).is_file():
+            raise BaselineValidationError(f"{source}: hashed reference does not exist: {relative}")
+        decision = verify_file(ROOT / relative, expected, label=relative)
+        if not decision.matches:
+            raise BaselineValidationError(f"{source}: {decision.message}")
+        verified.append(f"{source} -> {relative}")
+
+    return {"verified": verified, "external": external, "files": kinds}
 
 
 def validate_collaboration(agent_definitions: dict[str, dict[str, Any]]) -> dict[str, Any]:
@@ -701,9 +824,9 @@ def validate_collaboration(agent_definitions: dict[str, dict[str, Any]]) -> dict
         if artifact["uri"].startswith("repo://"):
             if not (ROOT / content_path).is_file():
                 raise BaselineValidationError(f"{task['task_id']}: artifact uri does not exist: {content_path}")
-            actual = "sha256:" + hashlib.sha256((ROOT / content_path).read_bytes()).hexdigest()
-            if artifact["content_hash"] != actual:
-                raise BaselineValidationError(f"{task['task_id']}: artifact content_hash does not match {content_path}")
+            decision = verify_file(ROOT / content_path, artifact["content_hash"], label=content_path)
+            if not decision.matches:
+                raise BaselineValidationError(f"{task['task_id']}: artifact {decision.message}")
 
         tasks[task["task_id"]] = {"task": task, "artifact": artifact, "handoff": handoff}
 
@@ -1015,6 +1138,379 @@ def validate_r1_roulette() -> dict[str, Any]:
     }
 
 
+class _CountingEntropySource:
+    """Deterministic byte source that also reports how much entropy the draw path consumed.
+
+    The validator needs the accept/reject split to check the debiasing rate, and that split
+    is not observable from the draw records on purpose. Counting it here, outside the engine,
+    keeps the count out of every audit-visible surface.
+    """
+
+    source_id = "validator-fixed"
+    is_deterministic = True
+
+    def __init__(self, seed: int) -> None:
+        import random
+
+        self._random = random.Random(seed)
+        self.bytes_read = 0
+
+    def read(self, size: int) -> bytes:
+        self.bytes_read += size
+        return self._random.randbytes(size)
+
+
+#: Files ``validate_r2_rng`` reads. Exposed so a caller can materialise an isolated copy and
+#: exercise the negative cases without mutating the live repository.
+R2_RNG_INPUT_FILES: tuple[str, ...] = (
+    "games/roulette/rng-draw-record.schema.json",
+    "games/roulette/fixtures/rng-draw-record.example.json",
+    "games/roulette/round.schema.json",
+    "games/roulette/rng-contract.yaml",
+    "audit/audit-event.schema.json",
+    "audit/events/R2-RNG-0001-events.json",
+    "tasks/R2-RNG-0001.json",
+    "docs/approvals/R1-checklist.md",
+    "docs/approvals/R1-evidence-closure.md",
+    "docs/approvals/R2-RNG-0001-validation-report.md",
+    "docs/operations/R2-RNG-0001-recovery.md",
+    "docs/games/R2-rng-csprng.md",
+    "artifacts/R2-RNG-0001-artifact.json",
+    "studio_core/rng_stats.py",
+)
+
+
+def validate_r2_rng(root: Path | None = None) -> dict[str, Any]:
+    """Validate the R2 unit 1 production CSPRNG draw boundary and its statistical evidence.
+
+    ``root`` defaults to the repository. Pointing it at a copy lets the negative tests prove
+    that a tampered input is actually rejected without writing to tracked files -- one of
+    which, the R1 checklist, would forge a human QA approval if a mutation ever leaked.
+    """
+
+    base = ROOT if root is None else Path(root)
+
+    def _json(relative_path: str) -> dict[str, Any]:
+        with (base / relative_path).open("r", encoding="utf-8") as handle:
+            value = json.load(handle)
+        if not isinstance(value, dict):
+            raise BaselineValidationError(f"{relative_path}: root must be an object")
+        return value
+
+    def _yaml(relative_path: str) -> dict[str, Any]:
+        with (base / relative_path).open("r", encoding="utf-8") as handle:
+            value = yaml.safe_load(handle)
+        if not isinstance(value, dict):
+            raise BaselineValidationError(f"{relative_path}: root must be a mapping")
+        return value
+
+    def _text(relative_path: str) -> str:
+        return (base / relative_path).read_text(encoding="utf-8")
+
+    from studio_core.rng import (
+        ACCEPTED_BYTE_LIMIT,
+        ALGORITHM_ID,
+        ALGORITHM_VERSION,
+        BYTE_DOMAIN,
+        POCKET_COUNT,
+        PROHIBITED_RECORD_FIELDS,
+        AuditChain,
+        DeterministicTestEntropySource,
+        DrawRequest,
+        FailureAction,
+        OsCsprngEntropySource,
+        RngDenied,
+        RngEnvironment,
+        RouletteDrawEngine,
+        compute_proof_hash,
+        draw_pocket,
+        mapping_distribution,
+        verify_audit_chain,
+        verify_draw_record,
+    )
+    from studio_core.rng_stats import certify_stream
+    from studio_core.collaboration import scan_for_plaintext_secrets
+
+    record_schema_path = "games/roulette/rng-draw-record.schema.json"
+    record_schema = _json(record_schema_path)
+    validate_schema_structure(record_schema, record_schema_path)
+    if record_schema.get("additionalProperties") is not False:
+        raise BaselineValidationError(f"{record_schema_path}: additionalProperties must be false")
+    leaking = [name for name in PROHIBITED_RECORD_FIELDS if name in record_schema["properties"]]
+    if leaking:
+        raise BaselineValidationError(f"{record_schema_path}: prohibited entropy fields are declared: {leaking!r}")
+
+    fixture = _json("games/roulette/fixtures/rng-draw-record.example.json")
+    validate_instance(fixture, record_schema)
+
+    # -- unbiasedness is proved by enumeration, never by sampling ------------------------
+    if ACCEPTED_BYTE_LIMIT != BYTE_DOMAIN - (BYTE_DOMAIN % POCKET_COUNT):
+        raise BaselineValidationError("the accepted byte limit is not the largest multiple of the pocket count")
+    distribution = mapping_distribution()
+    per_pocket = {distribution[pocket] for pocket in range(POCKET_COUNT)}
+    if per_pocket != {ACCEPTED_BYTE_LIMIT // POCKET_COUNT}:
+        raise BaselineValidationError(f"the byte mapping is biased: pockets claim {sorted(per_pocket)!r} values")
+    if distribution[None] != BYTE_DOMAIN - ACCEPTED_BYTE_LIMIT:
+        raise BaselineValidationError("the rejected byte count does not close the byte domain")
+
+    # -- a real draw, its record, and its audit event -------------------------------------
+    chain = AuditChain("RNGVAL")
+    engine = RouletteDrawEngine(
+        entropy_source=DeterministicTestEntropySource(bytes([250, 17])),
+        environment=RngEnvironment.NON_PRODUCTION,
+        audit_sink=chain,
+        clock=lambda: "2026-09-01T00:00:00Z",
+    )
+    request = DrawRequest(request_id="RNG-R2-VALIDATOR-01", round_id="RR-R2-VALIDATOR-01", draw_index=0)
+    record = engine.draw(request)
+    payload = record.to_dict()
+    validate_instance(payload, record_schema)
+    if record.algorithm_id != ALGORITHM_ID or record.algorithm_version != ALGORITHM_VERSION:
+        raise BaselineValidationError("the draw record does not carry the pinned algorithm identity")
+
+    serialized = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+    present = [name for name in PROHIBITED_RECORD_FIELDS if name in payload or f'"{name}"' in serialized]
+    if present:
+        raise BaselineValidationError(f"the draw record leaks entropy material: {present!r}")
+    expected_proof = compute_proof_hash(
+        algorithm_id=record.algorithm_id,
+        algorithm_version=record.algorithm_version,
+        draw_index=record.draw_index,
+        pocket=record.pocket,
+        request_id=record.request_id,
+        round_id=record.round_id,
+        ruleset_id=record.ruleset_id,
+        seed_reference=record.seed_reference,
+    )
+    if record.proof_hash != expected_proof:
+        raise BaselineValidationError("the draw proof hash is not reproducible from the record alone")
+
+    audit_schema = _json("audit/audit-event.schema.json")
+    problems = verify_audit_chain(chain.events)
+    if problems:
+        raise BaselineValidationError(f"the draw audit chain is broken: {problems!r}")
+    for event in chain.events:
+        validate_instance(event, audit_schema)
+        if record.seed_reference not in " ".join(event["resource_refs"]):
+            raise BaselineValidationError("the audit event does not record the seed reference")
+        if scan_for_plaintext_secrets(event):
+            raise BaselineValidationError("the draw audit event matched a secret pattern")
+
+    # the record must survive the trip into a round document unchanged
+    round_schema = _json("games/roulette/round.schema.json")
+    rng_record_schema = round_schema["properties"]["rng_record"]["oneOf"][1]
+    projection = record.to_round_rng_record()
+    validate_instance(projection, rng_record_schema)
+    if projection["proof_hash"] != record.proof_hash or projection["draw_index"] != record.draw_index:
+        raise BaselineValidationError("the round projection does not preserve the draw binding")
+
+    # -- fail-closed gates -----------------------------------------------------------------
+    def _denied(callable_: Any, expected_code: str, expected_action: FailureAction) -> None:
+        try:
+            callable_()
+        except RngDenied as exc:
+            if exc.code != expected_code or exc.action is not expected_action:
+                raise BaselineValidationError(
+                    f"expected {expected_code}/{expected_action.value}, got {exc.code}/{exc.action.value}"
+                ) from None
+            return
+        raise BaselineValidationError(f"{expected_code} was not enforced")
+
+    _denied(
+        lambda: RouletteDrawEngine(
+            entropy_source=DeterministicTestEntropySource(b"\x01"),
+            environment=RngEnvironment.PRODUCTION,
+        ),
+        "DETERMINISTIC_SOURCE_IN_PRODUCTION",
+        FailureAction.BLOCK_AND_ESCALATE,
+    )
+    if OsCsprngEntropySource().is_deterministic:
+        raise BaselineValidationError("the production entropy source must not be deterministic")
+
+    replay = engine.draw(request)
+    if replay.to_dict() != payload:
+        raise BaselineValidationError("a duplicate draw request did not return the original result")
+    _denied(
+        lambda: engine.draw(DrawRequest(request_id=request.request_id, round_id="RR-R2-OTHER-01", draw_index=0)),
+        "DUPLICATE_REQUEST_CONFLICT",
+        FailureAction.BLOCK_AND_ESCALATE,
+    )
+    _denied(
+        lambda: engine.draw(DrawRequest(request_id="RNG-R2-VALIDATOR-02", round_id=request.round_id, draw_index=1)),
+        "ROUND_ALREADY_DRAWN",
+        FailureAction.BLOCK_AND_ESCALATE,
+    )
+    _denied(
+        lambda: engine.draw(DrawRequest(request_id="RNG-R2-VALIDATOR-03", round_id="RR-R2-VALIDATOR-01", draw_index=0, algorithm_version="9.9.9")),
+        "ALGORITHM_VERSION_MISMATCH",
+        FailureAction.BLOCK_AND_ESCALATE,
+    )
+
+    class _FailingSink:
+        def append(self, body: Mapping[str, Any]) -> str:
+            raise RuntimeError("audit store unavailable")
+
+    unauditable = RouletteDrawEngine(
+        entropy_source=DeterministicTestEntropySource(bytes([7])),
+        environment=RngEnvironment.NON_PRODUCTION,
+        audit_sink=_FailingSink(),
+        clock=lambda: "2026-09-01T00:00:00Z",
+    )
+    _denied(
+        lambda: unauditable.draw(DrawRequest(request_id="RNG-R2-VALIDATOR-04", round_id="RR-R2-AUDITFAIL-01")),
+        "AUDIT_WRITE_FAILURE",
+        FailureAction.BLOCK_AND_VOID,
+    )
+    if not unauditable.is_round_voided("RR-R2-AUDITFAIL-01"):
+        raise BaselineValidationError("an unauditable round must be voided")
+
+    # A discarded sample must not leave the round drawable: otherwise an operator able to
+    # induce entropy or clock faults could re-roll a round with no audit trace.
+    starved = RouletteDrawEngine(
+        entropy_source=DeterministicTestEntropySource(bytes([255])),
+        environment=RngEnvironment.NON_PRODUCTION,
+        audit_sink=AuditChain("RNGSTARVE"),
+        clock=lambda: "2026-09-01T00:00:00Z",
+    )
+    _denied(
+        lambda: starved.draw(DrawRequest(request_id="RNG-R2-VALIDATOR-05", round_id="RR-R2-STARVED-01")),
+        "ENTROPY_REJECTION_EXHAUSTED",
+        FailureAction.VOID_ROUND,
+    )
+    if not starved.is_round_voided("RR-R2-STARVED-01"):
+        raise BaselineValidationError("a round whose sample was discarded must be voided")
+    _denied(
+        lambda: starved.draw(DrawRequest(request_id="RNG-R2-VALIDATOR-06", round_id="RR-R2-STARVED-01")),
+        "ROUND_VOIDED",
+        FailureAction.BLOCK_AND_ESCALATE,
+    )
+
+    # ``missing_or_invalid_proof: VOID_ROUND`` needs something that actually re-checks a
+    # stored proof, or the contract row would be satisfied by nothing at all.
+    verify_draw_record(record)
+    _denied(
+        lambda: verify_draw_record(dict(payload, pocket=(record.pocket + 1) % POCKET_COUNT)),
+        "PROOF_INVALID",
+        FailureAction.VOID_ROUND,
+    )
+    _denied(
+        lambda: verify_draw_record({key: value for key, value in payload.items() if key != "proof_hash"}),
+        "PROOF_MISSING",
+        FailureAction.VOID_ROUND,
+    )
+
+    # -- the implementation must answer to the declared RNG contract ----------------------
+    contract = _yaml("games/roulette/rng-contract.yaml")
+    behaviour = contract["failure_behavior"]
+    expected_behaviour = {
+        "duplicate_draw_request": "RETURN_ORIGINAL_RESULT",
+        "algorithm_version_mismatch": FailureAction.BLOCK_AND_ESCALATE.value,
+        "audit_write_failure": FailureAction.BLOCK_AND_VOID.value,
+        "missing_or_invalid_proof": FailureAction.VOID_ROUND.value,
+    }
+    for key, value in expected_behaviour.items():
+        if behaviour.get(key) != value:
+            raise BaselineValidationError(f"rng-contract failure behaviour {key} does not match the implementation")
+    if contract["requirements"]["unbiased_mapping"] != "rejection_sampling_or_equivalent":
+        raise BaselineValidationError("the RNG contract no longer requires an unbiased mapping")
+    # Every declared contract output must be reachable from a draw record, so the interface
+    # cannot drift away from the implementation unnoticed.
+    declared_outputs = {"pocket_0_to_36": "pocket", "proof_hash": "proof_hash", "audit_event_ref": "audit_event_ref"}
+    for declared, field in declared_outputs.items():
+        if declared not in contract["interface"]["output"]:
+            raise BaselineValidationError(f"the RNG contract no longer declares the output {declared}")
+        if field not in payload:
+            raise BaselineValidationError(f"the draw record does not expose the declared output {declared}")
+    # ``protected_seed_reference`` is declared as a draw input but is deliberately derived
+    # server-side instead of accepted from a caller. Recording the deviation here keeps it a
+    # known, reviewable divergence rather than silent drift.
+    if "protected_seed_reference" in contract["interface"]["input"] and not record.seed_reference:
+        raise BaselineValidationError("the engine must derive a seed reference for the declared contract input")
+
+    # -- independent statistical certification over a reproducible stream -----------------
+    # The stream is a fixed-seed Mersenne Twister, not the OS CSPRNG: the baseline must give
+    # the same verdict on every machine and every run. That makes this a regression check on
+    # the draw path, not a certification of the production entropy source -- the live CSPRNG
+    # is certified in tests/test_rng.py::LiveCsprngCertificationTests.
+    #
+    # 60000 draws sizes the uniformity arm against the specific defect it guards: a naive
+    # ``byte % 37`` puts 34 pockets at 7/256 and 3 at 6/256, which at this sample size gives
+    # a non-centrality near 93 against a 0.001 critical value of 67.985, so the defect is
+    # caught with probability ~0.99 rather than the coin flip 20000 draws would give.
+    source = _CountingEntropySource(20260901)
+    sample = [draw_pocket(source) for _ in range(60000)]
+    report = certify_stream(
+        sample,
+        accepted=len(sample),
+        rejected=source.bytes_read - len(sample),
+        expected_acceptance_rate=ACCEPTED_BYTE_LIMIT / BYTE_DOMAIN,
+    )
+    if report["skipped"]:
+        raise BaselineValidationError(f"statistical certification skipped tests: {report['skipped']!r}")
+    if not report["all_passed"]:
+        failed = [item["test_id"] for item in report["results"] if not item["passed"]]
+        raise BaselineValidationError(f"statistical certification failed: {failed!r}")
+
+    # -- the gate violation and its recovery must stay on the record ----------------------
+    events_document = _json("audit/events/R2-RNG-0001-events.json")
+    events = events_document["events"]
+    for event in events:
+        validate_instance(event, audit_schema)
+        if event["task_id"] != "R2-RNG-0001":
+            raise BaselineValidationError("a recovery audit event is attached to the wrong task")
+    chain_problems = verify_audit_chain(events)
+    if chain_problems:
+        raise BaselineValidationError(f"the recovery audit chain is broken: {chain_problems!r}")
+    actions = {event["action"] for event in events}
+    required_actions = {
+        "READY_GATE_VIOLATION_DETECTED",
+        "UNTRACKED_DRAFT_PRESERVED",
+        "TASK_CONTRACT_ISSUED_READY",
+        "GATE_VIOLATION_RECOVERY_COMPLETED",
+    }
+    if not required_actions <= actions:
+        raise BaselineValidationError(f"the recovery record is incomplete: missing {sorted(required_actions - actions)!r}")
+
+    task = _json("tasks/R2-RNG-0001.json")
+    if task["status"] not in {"READY", "IN_PROGRESS", "REVIEW", "QA"} or task["risk_class"] != "HIGH":
+        raise BaselineValidationError("R2-RNG-0001 must remain a HIGH risk task under an open gate")
+    if not {"A-50", "A-02", "A-00"} <= set(task["approvers"]):
+        raise BaselineValidationError("a HIGH risk RNG task requires the mandatory reviewers")
+
+    # -- the artifact's declared component hashes must be canonical and current -------------
+    # ``content_hash`` is checked by ``validate_content_integrity``; these secondary hashes
+    # name the statistics module and record schema the artifact claims to have shipped, and
+    # would otherwise be unverified prose that drifts as the files change.
+    specification = _json("artifacts/R2-RNG-0001-artifact.json")["specification"]
+    for field, relative in (
+        ("statistics_module_hash", specification["statistics_module"]),
+        ("record_schema_hash", specification["record_schema"]),
+    ):
+        actual = hash_file(base / relative, label=relative)
+        if specification[field] != actual:
+            raise BaselineValidationError(
+                f"artifact {field} does not match {relative}: {actual} != {specification[field]}"
+            )
+
+    # -- R1 evidence closure must not claim approvals that no human gave ------------------
+    checklist = _text("docs/approvals/R1-checklist.md")
+    section = checklist.split("## 후속 승인", 1)
+    if len(section) != 2:
+        raise BaselineValidationError("docs/approvals/R1-checklist.md is missing the follow-up approval section")
+    follow_up = section[1].split("\n## ", 1)[0]
+    if "- [x]" in follow_up.lower():
+        raise BaselineValidationError("a human follow-up approval is marked complete without a human sign-off")
+
+    for relative in ("docs/operations/R2-RNG-0001-recovery.md", "docs/approvals/R1-evidence-closure.md",
+                     "docs/approvals/R2-RNG-0001-validation-report.md", "docs/games/R2-rng-csprng.md",
+                     "audit/events/R2-RNG-0001-events.json"):
+        text = _text(relative)
+        if scan_for_plaintext_secrets(text):
+            raise BaselineValidationError(f"{relative}: plaintext credential material detected")
+
+    return {"record_schema": record_schema, "statistics": report, "recovery_events": events}
+
+
 def run_validation() -> list[str]:
     checks: list[tuple[str, Any]] = [
         ("필수 기준선 파일", validate_required_files),
@@ -1048,15 +1544,19 @@ def run_validation() -> list[str]:
     passed.append("SYS-010 R0 사용자 최종 승인")
     validate_r1_roulette()
     passed.append("R1 룰렛 규칙·경제 후보 기준선")
+    validate_content_integrity()
+    passed.append("산출물 content_hash 정규 표현 무결성 (LF 정규화 텍스트·원시 바이트 이진)")
     validate_collaboration(agent_definitions)
     passed.append("SYS-CLD-0011 Codex 발주·Claude 구현·Codex 독립검증 협업 프로토콜")
+    validate_r2_rng()
+    passed.append("R2-RNG-0001 생산용 CSPRNG 추첨 경계·독립 통계·게이트 회수 기록")
     return passed
 
 
 def main() -> int:
     try:
         passed = run_validation()
-    except (BaselineValidationError, OSError, json.JSONDecodeError, yaml.YAMLError) as exc:
+    except (BaselineValidationError, OSError, ArithmeticError, json.JSONDecodeError, yaml.YAMLError) as exc:
         print(f"[FAIL] R0 baseline: {exc}", file=sys.stderr)
         return 1
 

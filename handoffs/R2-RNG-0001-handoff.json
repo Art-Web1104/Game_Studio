@@ -1,0 +1,109 @@
+{
+  "schema_version": "1.0.0",
+  "handoff_id": "HO-R2-RNG-0001-001",
+  "task_id": "R2-RNG-0001",
+  "from_agent_id": "A-20",
+  "to_agent_id": "A-50",
+  "created_at": "2026-09-01T00:00:00Z",
+  "summary": "R2 유닛 1을 완료했다. 이전 세션의 READY 게이트 위반으로 남은 미추적 studio_core/rng.py 초안을 보존·기록한 뒤 R2-RNG-0001 Task Contract를 READY로 발행하고 그 아래에서만 구현을 재개했다. 생산용 CSPRNG 추첨 경계(거부 표본추출, 결정론 어댑터의 생산 차단, 감사 선기록, 라운드당 단일 권위 추첨, 락 직렬화, 증명 재검증)와 RNG 구현을 임포트하지 않는 독립 통계 모듈을 구현하고, 추첨 기록 스키마·픽스처·검증기 통합·문서·해시 연결 감사 기록을 추가했다. 독립 코드 검토에서 제기된 12건을 모두 반영했고, 두 표준 검증 명령과 compileall·비밀값 스캔을 실제로 실행해 통과를 확인했다.",
+  "artifact_refs": ["ART-R2-RNG-0001-0001"],
+  "assumptions": [
+    "사용자가 이 세션에서 R2-RNG-0001 작업의 착수와 수행을 명시적으로 승인했다. 이는 작업 권한이며 최종 QA 게이트 판정이 아니다.",
+    "A-10, A-20, A-02, A-50, A-00의 인간 검토 서명은 수행되지 않았고 이 패킷은 그것을 수행된 것으로 주장하지 않는다.",
+    "감사 저장소는 인메모리 해시 체인 참조 구현이며 내구 저장소는 후속 R2 유닛의 범위다.",
+    "검증기의 통계 스트림은 결정론적 고정 시드 비-CSPRNG이며, 실제 OS CSPRNG 인증은 tests/test_rng.py의 LiveCsprngCertificationTests에 있다.",
+    "커밋과 푸시는 수행하지 않았고 작업 트리 변경만 남겼다."
+  ],
+  "verification_evidence": [
+    {
+      "check": "python scripts/validate_baseline.py",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/approvals/R2-RNG-0001-validation-report.md"
+    },
+    {
+      "check": "python -m unittest discover -s tests -v",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/approvals/R2-RNG-0001-validation-report.md"
+    },
+    {
+      "check": "Task Contract R2-RNG-0001 READY 스키마 직접 검증과 위임 게이트 통과",
+      "result": "PASS",
+      "evidence_uri": "repo://tasks/R2-RNG-0001.json"
+    },
+    {
+      "check": "게이트 위반·초안 보존·계약 발행·회수 4개 감사 이벤트의 스키마 유효성과 해시 연결",
+      "result": "PASS",
+      "evidence_uri": "repo://audit/events/R2-RNG-0001-events.json"
+    },
+    {
+      "check": "무편향 매핑 전수 증명: 256 바이트 도메인에서 37개 포켓 각 6개, 거부 34개",
+      "result": "PASS",
+      "evidence_uri": "repo://studio_core/rng.py"
+    },
+    {
+      "check": "독립 통계 인증: 균등성·직렬 독립성·거부율 3종 검정",
+      "result": "PASS",
+      "evidence_uri": "repo://studio_core/rng_stats.py"
+    },
+    {
+      "check": "python -m compileall -q studio_core scripts tests",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/approvals/R2-RNG-0001-validation-report.md"
+    },
+    {
+      "check": "평문 비밀값 스캔 8개 규칙, 대상 파일 14개, 일치 0건",
+      "result": "PASS",
+      "evidence_uri": "repo://studio_core/collaboration.py"
+    },
+    {
+      "check": "독립 읽기 전용 코드 검토(code-reviewer) 지적 12건 전건 반영",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/approvals/R2-RNG-0001-validation-report.md"
+    },
+    {
+      "check": "Artifact content_hash와 studio_core/rng.py 실제 sha256 일치 확인",
+      "result": "PASS",
+      "evidence_uri": "repo://artifacts/R2-RNG-0001-artifact.json"
+    }
+  ],
+  "known_risks": [
+    {
+      "severity": "HIGH",
+      "description": "이전 세션이 READY Task Contract 없이 studio_core/rng.py를 작성해 CLAUDE.md 필수 워크플로 2항을 위반했다. 초안은 보존·기록 후 계약 아래로 회수했고 위반 사실은 감사 체인에 남아 있다. 절차 위반 자체는 소급 정당화되지 않으며 A-50과 사용자의 판단 대상이다.",
+      "owner_agent_id": "A-20"
+    },
+    {
+      "severity": "HIGH",
+      "description": "RNG 변경은 정책상 High 위험이다. A-50, A-02, A-00의 독립 검토 서명과 최종 QA 게이트가 발행되지 않았으므로 이 작업은 완료로 표기될 수 없다.",
+      "owner_agent_id": "A-50"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "엔진 상태가 비내구적이다. 락은 한 프로세스 안의 경쟁만 막고, 재시작하면 모든 request_id를 잊어 같은 라운드에 두 번째 권위 결과가 생길 수 있다. 내구 저장소 이전에는 이 엔진을 멱등성의 기록 원본으로 사용하면 안 된다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "audit_event_ref가 전역 유일하지 않다. 명시적 싱크 없이 만든 엔진마다 순번이 1부터 다시 시작하므로 두 테이블이 같은 참조를 발행할 수 있다. 감사 체인은 9999 이벤트에서 세그먼트 분할 없이 실패 폐쇄된다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "games/roulette/rng-contract.yaml의 interface.input이 선언한 protected_seed_reference를 DrawRequest가 받지 않고 엔진이 서버측에서 유도한다. 서버 권위 관점에서 더 강한 선택이지만 계약 문구와의 편차이므로 A-02·A-20의 계약 개정 판단이 필요하다. R1 승인 산출물을 일방적으로 수정하지 않았다.",
+      "owner_agent_id": "A-20"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "R1이 R2로 이월한 기술 위험 3건 중 2건(데이터베이스 격리·동시성·장애 복구, 실제 네트워크 재접속·부하·보안 침투 시험)은 이 작업 범위 밖으로 열려 있다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "LOW",
+      "description": "proof_hash는 변조 탐지 바인딩이며 커밋-공개 방식의 사용자 검증 가능 공정성 증명이 아니다. 도입 여부는 미결이다.",
+      "owner_agent_id": "A-20"
+    }
+  ],
+  "next_action": "Codex 콘솔에서 A-50으로 python scripts/validate_baseline.py와 python -m unittest discover -s tests -v를 재실행하고, docs/approvals/R2-RNG-0001-validation-report.md의 증거 및 게이트 위반 회수 기록을 독립 검증한 뒤 최종 QA 게이트 판정을 발행하라.",
+  "readiness": "READY_FOR_REVIEW",
+  "acknowledgement_required": true
+}
