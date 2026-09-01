@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0.0",
+  "handoff_id": "HO-SYS-CLD-0011-001",
+  "task_id": "SYS-CLD-0011",
+  "from_agent_id": "A-02",
+  "to_agent_id": "A-20",
+  "created_at": "2026-09-01T00:00:00Z",
+  "summary": "Codex 발주·Claude 구현·Codex 독립검증 협업 프로토콜을 실행 가능한 정책, 게이트 구현, 연결 증거, 기준선 검증, 네거티브 테스트로 고정하고 claude_agent를 증거 기반으로 활성화했다. 재작업에서 게이트 함수 시그니처를 테스트·검증기 계약에 맞추고 evaluate_final_gate를 추가했으며, 두 표준 명령을 실제로 재실행해 validate_baseline.py 13개 라벨 PASS(종료 코드 0)와 unittest 87개 테스트 OK(종료 코드 0)를 확인한 뒤 이 패킷을 갱신했다.",
+  "artifact_refs": ["ART-SYS-CLD-0011-0001"],
+  "assumptions": [
+    "사용자가 INTERNAL 등급 저장소 내용의 Anthropic 전송을 명시적으로 승인했다.",
+    "OS 자격 증명 저장소는 policies/security.yaml의 external_secret_broker를 로컬에서 구현한 형태다.",
+    "Codex는 코드 생성 경로가 아니라 발주·독립 검증 콘솔로만 동작한다."
+  ],
+  "verification_evidence": [
+    {
+      "check": "python scripts/validate_baseline.py",
+      "result": "PASS",
+      "evidence_uri": "repo://scripts/validate_baseline.py"
+    },
+    {
+      "check": "python -m unittest discover -s tests -v",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_collaboration.py"
+    },
+    {
+      "check": "Task Contract SYS-CLD-0011 READY 스키마 검증",
+      "result": "PASS",
+      "evidence_uri": "repo://tasks/SYS-CLD-0011.json"
+    },
+    {
+      "check": "claude_agent 활성화 연결 증거 게이트 검증",
+      "result": "PASS",
+      "evidence_uri": "repo://providers/evidence/SYS-CLD-0011-claude-connection-proof.yaml"
+    },
+    {
+      "check": "변경·신규 파일 전수 자체 점검(계약 일관성·평문 비밀값 부재)",
+      "result": "PASS",
+      "evidence_uri": "repo://studio_core/collaboration.py"
+    },
+    {
+      "check": "Artifact content_hash와 operations/collaboration.yaml 실제 sha256 일치 확인",
+      "result": "PASS",
+      "evidence_uri": "repo://artifacts/SYS-CLD-0011-artifact.json"
+    }
+  ],
+  "known_risks": [
+    {
+      "severity": "MEDIUM",
+      "description": "ADR-0003 2항은 Codex를 리뷰 대체 경로로 금지한다. Codex 독립 검증 역할은 사용자 지시에 따른 경계 확장이므로 A-00과 USER의 ADR 개정 판단이 필요하다.",
+      "owner_agent_id": "A-00"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "claude_agent가 ENABLED로 승격되어 code·reasoning·evaluation 라우팅이 실제로 열렸다. 연결 증거가 무효화되면 DISABLED_UNTIL_CONFIGURED로 되돌려야 한다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "LOW",
+      "description": "연결 증거의 재검증 주기가 정해지지 않아 증거가 오래되어도 자동으로 만료되지 않는다.",
+      "owner_agent_id": "A-02"
+    }
+  ],
+  "next_action": "Codex 콘솔에서 A-20으로 두 표준 검증 명령을 재실행하고 계약·정책·게이트 구현을 독립 검증한 뒤 A-50에게 최종 QA 게이트를 요청한다.",
+  "readiness": "READY_FOR_REVIEW",
+  "acknowledgement_required": true
+}

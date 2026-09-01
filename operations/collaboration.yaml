@@ -1,0 +1,131 @@
+schema_version: 1.0.0
+protocol_id: COLLAB-CODEX-CLAUDE-001
+status: ACTIVE
+task_ref: tasks/SYS-CLD-0011.json
+summary: >-
+  Codex가 READY Task Contract로 발주하고 Claude Code가 단독 구현과 자체 점검을 수행한 뒤
+  Codex가 독립 검증하고 QA Lead와 사용자가 최종 게이트를 판정하는 재사용 가능한 협업 절차.
+guide: docs/operations/SYS-CLD-0011-codex-claude-collaboration.md
+decision_refs:
+  - docs/decisions/ADR-0003-claude-only-programming.md
+  - docs/constitution/studio-constitution-v1.md
+
+directories:
+  task_contracts: tasks
+  artifact_contracts: artifacts
+  handoff_packets: handoffs
+  provider_evidence: providers/evidence
+
+stages:
+  - {stage: ISSUE, role: issuer, produces: task_contract, required_task_status: READY}
+  - {stage: IMPLEMENT, role: implementer, produces: workspace_changes}
+  - {stage: SELF_VERIFY, role: implementer, produces: verification_evidence}
+  - {stage: SUBMIT, role: implementer, produces: [artifact_contract, handoff_packet]}
+  - {stage: INDEPENDENT_VERIFY, role: independent_verifier, produces: verification_verdict}
+  - {stage: FINAL_GATE, approvers: [A-50, USER], produces: gate_decision}
+
+roles:
+  issuer:
+    description: READY Task Contract와 수용 기준을 확정해 발주한다.
+    console: codex
+    acts_for: [A-00, A-01, A-02]
+    duties: [issue_task_contract, set_budget_and_risk, name_approvers, request_rework]
+    code_generation: denied
+    final_qa_approval: denied
+  implementer:
+    description: ADR-0003의 유일한 코드 생성 공급자로서 구현과 자체 점검을 수행한다.
+    console: claude_code
+    provider_id: claude_agent
+    acts_for: [A-02, A-20]
+    duties: [implement, self_verify, internal_code_review, emit_artifact_contract, emit_handoff_packet]
+    code_generation: allowed
+    independent_verification: denied
+    final_qa_approval: denied
+    commit_or_push_without_user_approval: denied
+  independent_verifier:
+    description: 구현 산출물과 증거를 독립 검증한다. 코드 생성은 하지 않는다.
+    console: codex
+    acts_for: [A-20, A-50]
+    duties: [replay_validation_commands, review_contracts_and_diff, issue_verdict, request_rework]
+    code_generation: denied
+    final_qa_approval: denied
+delegation_gate:
+  allowed_task_status: [READY, IN_PROGRESS]
+  rejected_task_status: [DRAFT, REVIEW, QA, BLOCKED, REWORK, DONE, CANCELLED]
+  required_task_fields:
+    - task_id
+    - status
+    - owner_agent_id
+    - risk_class
+    - deliverables
+    - acceptance_criteria
+    - budget
+    - approvers
+    - security
+  require_single_owner: true
+  require_stop_on_limit: true
+  classification_order: [PUBLIC, INTERNAL, CONFIDENTIAL, RESTRICTED]
+  max_data_classification: INTERNAL
+  contains_pii: denied
+  allowed_secrets_policy: [NONE, REFERENCE_ONLY]
+  required_approver: USER
+  code_provider: claude_agent
+  substitution: denied
+  on_provider_unavailable: BLOCKED
+
+separation_of_duties:
+  generator_is_reviewer: denied
+  generator_is_final_approver: denied
+  self_approval: denied
+  minimum_independent_reviewers: 1
+  final_gate: [A-50, USER]
+
+completion_gate:
+  required_checks:
+    - python scripts/validate_baseline.py
+    - python -m unittest discover -s tests -v
+  required_result: PASS
+  acknowledgement_required: true
+  allowed_readiness: [READY_FOR_REVIEW, READY_FOR_QA]
+  minimum_verification_evidence: 2
+
+credentials:
+  storage: os_credential_manager
+  allowed_storage: [os_credential_manager, external_secret_broker, managed_workspace_auth]
+  reference_prefix: "secret-ref://"
+  broker_equivalence: policies/security.yaml#secrets.storage
+  repository_values: prohibited
+  prompt_values: prohibited
+  log_values: prohibited
+  commit_values: prohibited
+  evidence_values: prohibited
+
+provider_activation:
+  provider_id: claude_agent
+  requires_connection_proof: true
+  proven_status: ENABLED
+  unproven_status: DISABLED_UNTIL_CONFIGURED
+  proof_schema: providers/connection-proof.schema.json
+  proof_record: providers/evidence/SYS-CLD-0011-claude-connection-proof.yaml
+  minimum_probes: 3
+  allowed_credential_sources: [OS_CREDENTIAL_STORE, PROVIDER_NATIVE_AUTH_STORE, EXTERNAL_SECRET_BROKER]
+  require_user_authorization: true
+  require_recorder_verifier_separation: true
+  on_incomplete_evidence: DISABLED_UNTIL_CONFIGURED
+  codex_code_provider: denied
+
+adr_0003_boundary:
+  claude_is_sole_programming_provider: true
+  codex_substitution_on_claude_unavailable: denied
+  codex_scope: orchestration_and_independent_verification_only
+  note: >-
+    Codex는 코드 생성·수정 경로가 아니고 Claude 부재 시 대체 공급자도 아니다. Codex의 검증은
+    ADR-0003 5항의 독립 승인 경로를 자동화한 것이며 최종 게이트 권한은 A-50과 USER에 남는다.
+    이 경계를 넘기려면 A-00과 USER가 ADR을 개정해야 한다.
+
+guards:
+  commit_without_user_approval: denied
+  push_without_user_approval: denied
+  production_direct_access: denied
+  production_schedule_before_r5: denied
+  self_approval: denied

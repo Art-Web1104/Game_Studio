@@ -1,0 +1,137 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "SYS-CLD-0011",
+  "project_id": "casino-core",
+  "title": "Codex 발주·Claude 구현·Codex 독립검증 협업 워크플로 확립",
+  "goal": "Codex가 READY Task Contract로 작업을 발주하고, Claude가 구현과 자체 검증을 수행한 뒤 구조화된 Artifact Contract와 Handoff Packet을 제출하며, Codex가 생성자와 분리된 독립 검증을 수행하는 반복 가능한 협업 워크플로를 저장소에 계약·정책·코드·테스트로 고정한다.",
+  "owner_agent_id": "A-02",
+  "status": "READY",
+  "risk_class": "MEDIUM",
+  "inputs": [
+    {
+      "uri": "repo://docs/constitution/studio-constitution-v1.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:62f8a8cbf6fc70054300de9e90fed8974b9a310d140831d3d6af98292f5b2e9e"
+    },
+    {
+      "uri": "repo://docs/decisions/ADR-0003-claude-only-programming.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:6c1e345ea9555db2ec9f626dbd598845176df129d236fc9d7f64782a5cea0bdb"
+    },
+    {
+      "uri": "repo://contracts/task.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:32158d90825790b90929b5c1464140651c201b603745bc4bafa27e446d723527"
+    }
+  ],
+  "deliverables": [
+    {
+      "name": "codex-claude-collaboration-protocol",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://operations/collaboration.yaml"
+    },
+    {
+      "name": "codex-claude-collaboration-guide",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://docs/operations/SYS-CLD-0011-codex-claude-collaboration.md"
+    },
+    {
+      "name": "collaboration-gate-implementation",
+      "artifact_type": "CODE",
+      "target_uri": "repo://studio_core/collaboration.py"
+    },
+    {
+      "name": "connection-proof-schema",
+      "artifact_type": "SCHEMA",
+      "target_uri": "repo://providers/connection-proof.schema.json"
+    },
+    {
+      "name": "claude-connection-proof",
+      "artifact_type": "TEST_REPORT",
+      "target_uri": "repo://providers/evidence/SYS-CLD-0011-claude-connection-proof.yaml"
+    },
+    {
+      "name": "collaboration-negative-tests",
+      "artifact_type": "CODE",
+      "target_uri": "repo://tests/test_collaboration.py"
+    },
+    {
+      "name": "sys-cld-0011-artifact-contract",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://artifacts/SYS-CLD-0011-artifact.json"
+    },
+    {
+      "name": "sys-cld-0011-handoff-packet",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://handoffs/SYS-CLD-0011-handoff.json"
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "criterion_id": "AC-001",
+      "statement": "Codex는 READY 상태의 Task Contract 파일 하나로 작업을 반복 발주할 수 있어야 하고, READY 또는 IN_PROGRESS가 아니면 Claude 구현 착수가 거부되어야 한다.",
+      "verification": "studio_core.collaboration 위임 게이트 단위 테스트와 baseline validator"
+    },
+    {
+      "criterion_id": "AC-002",
+      "statement": "완료 보고는 스키마에 유효한 Artifact Contract와 Handoff Packet 파일로 제출되어야 하며 Task Contract와 task_id, artifact_id가 교차 참조되어야 한다.",
+      "verification": "validate_collaboration 교차 참조 검사와 계약 스키마 검증"
+    },
+    {
+      "criterion_id": "AC-003",
+      "statement": "생성자와 최종 검증자는 분리되어야 하며 Claude 산출물의 생성자가 자신의 독립 검증자 또는 최종 QA 승인자가 될 수 없어야 한다.",
+      "verification": "생성자·검증자 동일 시 실패하는 네거티브 테스트"
+    },
+    {
+      "criterion_id": "AC-004",
+      "statement": "Provider 자격 증명은 OS 자격 증명 저장소에서만 관리되고 저장소·프롬프트·로그·커밋에는 참조만 남아야 한다.",
+      "verification": "credential_ref 접두사 검사와 비밀값 금지 네거티브 테스트"
+    },
+    {
+      "criterion_id": "AC-005",
+      "statement": "claude_agent Provider는 스키마에 유효한 연결 증빙 기록이 존재할 때만 ENABLED가 될 수 있고 증빙이 없으면 DISABLED_UNTIL_CONFIGURED로 남아야 한다.",
+      "verification": "증빙 없는 ENABLED 승격을 거부하는 네거티브 테스트"
+    },
+    {
+      "criterion_id": "AC-006",
+      "statement": "python scripts/validate_baseline.py와 python -m unittest discover -s tests -v 두 명령이 모두 성공해야 한다.",
+      "verification": "두 표준 검증 명령의 실행 로그"
+    },
+    {
+      "criterion_id": "AC-007",
+      "statement": "Codex는 코드 생성 Provider로 활성화되지 않고 오케스트레이션과 독립 검증 역할로만 사용되어야 한다.",
+      "verification": "ADR-0003 라우팅 검사와 협업 프로토콜 역할 검증"
+    }
+  ],
+  "dependencies": [],
+  "budget": {
+    "max_cost_usd": 15.0,
+    "max_runtime_seconds": 7200,
+    "stop_on_limit": true
+  },
+  "approvers": ["USER", "A-20", "A-50"],
+  "rollback": {
+    "strategy": "신규 파일(tasks, artifacts, handoffs, operations/collaboration.yaml, docs/operations/SYS-CLD-0011-*, providers/connection-proof.schema.json, providers/evidence/, studio_core/collaboration.py, tests/test_collaboration.py)을 삭제하고 providers/registry.yaml의 claude_agent를 DISABLED_UNTIL_CONFIGURED로, scripts/validate_baseline.py와 tests/test_baseline.py를 직전 커밋 상태로 되돌린다. 커밋과 푸시를 하지 않으므로 작업 트리 복원만으로 완전 복구된다.",
+    "source_preserved": true,
+    "verification": "복원 후 python scripts/validate_baseline.py와 python -m unittest discover -s tests -v 재실행"
+  },
+  "security": {
+    "data_classification": "INTERNAL",
+    "contains_pii": false,
+    "workspace_access": "DEPARTMENT_WRITE",
+    "network_policy": "ALLOWLISTED_PROVIDER",
+    "secrets_policy": "REFERENCE_ONLY"
+  },
+  "assumptions": [
+    "사용자가 INTERNAL 등급 저장소 내용을 Anthropic Claude로 전송하는 것을 명시적으로 승인했다.",
+    "OS 자격 증명 저장소는 policies/security.yaml의 external_secret_broker를 로컬 워크스테이션에서 구현한 형태다.",
+    "Codex는 ADR-0003에 따라 코드 생성 Provider가 아니라 발주·독립 검증 콘솔로만 동작한다.",
+    "커밋·푸시 금지는 구현 콘솔에만 적용된다. Claude는 이 작업에서 커밋과 푸시를 수행하지 않고 작업 트리 변경만 남긴다. Codex는 A-20 독립 검증을 마친 뒤 사용자의 명시적 요청이 있을 때 커밋과 PR을 생성할 수 있다."
+  ],
+  "open_decisions": [
+    "Codex 독립 검증 결과를 감사 이벤트로 자동 기록할지는 후속 작업에서 결정한다.",
+    "R5 이전이므로 상용 제작 일정과 출시일은 확정하지 않는다."
+  ],
+  "created_at": "2026-09-01T00:00:00Z",
+  "updated_at": "2026-09-01T03:05:00Z"
+}
