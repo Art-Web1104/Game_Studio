@@ -1,5 +1,13 @@
 """Executable reference policies for the TS STUDIO control plane."""
 
+from .durable_state import (
+    CommittedRound,
+    DurableRoundStore,
+    DurableStateError,
+    SchemaVersionError,
+    contract_declaration,
+    schema_sql,
+)
 from .knowledge import KnowledgeDecision, evaluate_retrieval
 from .ledger import LedgerDecision, post_transaction
 from .provider import ProviderDecision, select_provider

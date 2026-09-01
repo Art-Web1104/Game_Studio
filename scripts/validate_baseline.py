@@ -5,7 +5,10 @@ from __future__ import annotations
 
 import json
 import re
+import sqlite3
 import sys
+import tempfile
+from contextlib import closing
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Mapping
@@ -317,6 +320,20 @@ def validate_required_files() -> None:
         "tasks/SYS-CI-0012.json",
         "artifacts/SYS-CI-0012-artifact.json",
         "handoffs/SYS-CI-0012-handoff.json",
+        # R2-DBC-0002 durable state boundary. The SQLite databases this unit creates live in
+        # temporary directories only and are deliberately absent from the repository surface.
+        "studio_core/durable_state.py",
+        "games/roulette/durable-state-contract.yaml",
+        "games/roulette/durable-state-schema.sql",
+        "tests/test_durable_state.py",
+        "audit/events/R2-DBC-0002-events.json",
+        "tasks/R2-DBC-0002.json",
+        "artifacts/R2-DBC-0002-artifact.json",
+        "handoffs/R2-DBC-0002-handoff.json",
+        "docs/games/R2-durable-state.md",
+        "docs/approvals/R2-DBC-0002-validation-report.md",
+        "docs/status/R2-STATUS.md",
+        "docs/operations/R2-followup-units.md",
     ]
     missing = [path for path in required if not (ROOT / path).is_file()]
     if missing:
@@ -1539,6 +1556,433 @@ def validate_r2_rng(root: Path | None = None) -> dict[str, Any]:
     return {"record_schema": record_schema, "statistics": report, "recovery_events": events}
 
 
+#: Files ``validate_r2_durable_state`` reads. Exposed so a caller can materialise an isolated
+#: copy and exercise the negative cases without mutating the live repository -- two of these,
+#: the validation report and the R2 status page, would forge a human approval if a mutation
+#: ever leaked into the working tree.
+R2_DBC_INPUT_FILES: tuple[str, ...] = (
+    "games/roulette/durable-state-contract.yaml",
+    "games/roulette/durable-state-schema.sql",
+    "games/roulette/ledger-transaction.schema.json",
+    "audit/audit-event.schema.json",
+    "audit/events/R2-DBC-0002-events.json",
+    "tasks/R2-DBC-0002.json",
+    "artifacts/R2-DBC-0002-artifact.json",
+    "studio_core/durable_state.py",
+    "studio_core/rng.py",
+    "tests/test_durable_state.py",
+    "docs/games/R2-durable-state.md",
+    "docs/approvals/R2-DBC-0002-validation-report.md",
+    "docs/status/R2-STATUS.md",
+    "docs/operations/R2-followup-units.md",
+)
+
+#: Audit actions the R2-DBC-0002 record must carry. The provenance of the incomplete draft is
+#: one of them on purpose: the recovery is only auditable if the thing being recovered from is
+#: named, and a later reader must not have to infer it from a commit message.
+R2_DBC_REQUIRED_AUDIT_ACTIONS = frozenset(
+    {
+        "TASK_CONTRACT_ISSUED_READY",
+        "PRE_IMPLEMENTATION_ARTIFACT_REGISTERED",
+        "INCOMPLETE_DRAFT_ATTRIBUTED",
+        "DURABLE_STATE_IMPLEMENTATION_COMPLETED",
+        "VALIDATION_COMMANDS_REPLAYED",
+        "PRE_IMPLEMENTATION_RECORDS_SUPERSEDED",
+    }
+)
+
+#: Work this unit does not do. Each must stay named in the carried-forward records so that
+#: ``AC-013`` is a checked property of the repository rather than a claim in a report.
+R2_DBC_DEFERRED_UNITS = ("R2-NET-0003", "R2-LOAD-0004", "R2-SEC-0005")
+
+
+def _durable_settlement(record: Any, *, index: int = 1) -> dict[str, Any]:
+    """Return a balanced integer settlement for a drawn round, for validator use only."""
+
+    return {
+        "schema_version": "1.0.0",
+        "transaction_id": f"LT-R2DBCVAL-{index:04d}",
+        "idempotency_key": f"idem:{record.round_id}:settlement",
+        "round_id": record.round_id,
+        "transaction_type": "ROUND_SETTLEMENT",
+        "currency": "VIRTUAL_CHIP",
+        "entries": [
+            {"account_id": "player:validator", "account_type": "PLAYER", "amount_units": -100},
+            {"account_id": "house:validator", "account_type": "HOUSE_BANKROLL", "amount_units": 100},
+        ],
+        "created_at": "2026-09-01T00:00:00Z",
+        "request_hash": "sha256:" + "0" * 64,
+    }
+
+
+def validate_r2_durable_state(root: Path | None = None) -> dict[str, Any]:
+    """Validate the R2 unit 2 durable-state boundary against its published contract.
+
+    ``root`` defaults to the repository. Pointing it at a copy lets the negative tests prove
+    that a contract, schema or evidence file which disagrees with the implementation is
+    actually rejected, without writing to tracked files.
+
+    The live exercise runs against a throwaway SQLite database in a temporary directory. The
+    task contract forbids a database file inside the repository, and a validator that left one
+    behind would be the first thing to break that rule.
+    """
+
+    base = ROOT if root is None else Path(root)
+
+    def _json(relative_path: str) -> dict[str, Any]:
+        with (base / relative_path).open("r", encoding="utf-8") as handle:
+            value = json.load(handle)
+        if not isinstance(value, dict):
+            raise BaselineValidationError(f"{relative_path}: root must be an object")
+        return value
+
+    def _yaml(relative_path: str) -> dict[str, Any]:
+        with (base / relative_path).open("r", encoding="utf-8") as handle:
+            value = yaml.safe_load(handle)
+        if not isinstance(value, dict):
+            raise BaselineValidationError(f"{relative_path}: root must be a mapping")
+        return value
+
+    def _text(relative_path: str) -> str:
+        return (base / relative_path).read_text(encoding="utf-8")
+
+    from studio_core.collaboration import scan_for_plaintext_secrets
+    from studio_core.durable_state import (
+        FAILURE_BEHAVIOR,
+        FAULT_STAGES,
+        PATH_HANDLING,
+        PROHIBITED_STORAGE_FIELDS,
+        DurableRoundStore,
+        DurableStateError,
+        SchemaVersionError,
+        contract_declaration,
+        prohibited_fields,
+        resolve_database_path,
+        schema_sql,
+    )
+    from studio_core.rng import DeterministicTestEntropySource, DrawRequest, RngDenied, RngEnvironment
+
+    # -- the contract file must state what the implementation actually does ----------------
+    contract_path = "games/roulette/durable-state-contract.yaml"
+    contract = _yaml(contract_path)
+    declared = contract.get("storage")
+    if not isinstance(declared, Mapping):
+        raise BaselineValidationError(f"{contract_path}: a storage block is required")
+    expected_storage = contract_declaration()
+    if dict(declared) != expected_storage:
+        differing = sorted(
+            key
+            for key in set(declared) | set(expected_storage)
+            if declared.get(key) != expected_storage.get(key)
+        )
+        raise BaselineValidationError(
+            f"{contract_path}: storage declaration does not match the implementation: {differing!r}"
+        )
+    if dict(contract.get("failure_behavior", {})) != FAILURE_BEHAVIOR:
+        raise BaselineValidationError(f"{contract_path}: failure_behavior does not match the implementation")
+    declared_paths = contract.get("path_handling", {})
+    for key, value in PATH_HANDLING.items():
+        if declared_paths.get(key) != value:
+            raise BaselineValidationError(f"{contract_path}: path_handling.{key} does not match the implementation")
+    prohibited = contract.get("prohibited_storage", {})
+    if prohibited.get("prohibited_field_names_source") != "studio_core.durable_state.PROHIBITED_STORAGE_FIELDS":
+        raise BaselineValidationError(f"{contract_path}: the prohibited field source is not named")
+    for key, value in prohibited.items():
+        if key != "prohibited_field_names_source" and value != "prohibited":
+            raise BaselineValidationError(f"{contract_path}: prohibited_storage.{key} must be 'prohibited'")
+    if contract.get("rng_boundary", {}).get("modified_by_this_unit") is not False:
+        raise BaselineValidationError(f"{contract_path}: this unit must not modify the RNG boundary")
+    for unit in R2_DBC_DEFERRED_UNITS:
+        if not any(unit in item for item in contract.get("out_of_scope", [])):
+            raise BaselineValidationError(f"{contract_path}: out_of_scope does not carry {unit} forward")
+
+    # -- the published SQL must be the SQL the implementation runs -------------------------
+    published_sql = _text("games/roulette/durable-state-schema.sql").replace("\r\n", "\n")
+    if published_sql != schema_sql():
+        raise BaselineValidationError(
+            "games/roulette/durable-state-schema.sql has drifted from studio_core.durable_state.SCHEMA_STATEMENTS"
+        )
+
+    # -- the RNG boundary this unit builds on must be untouched ----------------------------
+    # ``AC-013`` and the task contract both say ``rng.py`` is used, not modified. The task
+    # declares its hash as an input, so the two can be compared instead of asserted.
+    task = _json("tasks/R2-DBC-0002.json")
+    rng_inputs = [item for item in task["inputs"] if item["uri"] == "repo://studio_core/rng.py"]
+    if len(rng_inputs) != 1:
+        raise BaselineValidationError("tasks/R2-DBC-0002.json must declare studio_core/rng.py as a single input")
+    rng_decision = verify_file(base / "studio_core/rng.py", rng_inputs[0]["content_hash"], label="studio_core/rng.py")
+    if not rng_decision.matches:
+        raise BaselineValidationError(f"the RNG boundary was modified by this unit: {rng_decision.message}")
+    if task["status"] not in {"READY", "IN_PROGRESS", "REVIEW", "QA"} or task["risk_class"] != "HIGH":
+        raise BaselineValidationError("R2-DBC-0002 must remain a HIGH risk task under an open gate")
+    if not {"A-50", "A-02", "A-00"} <= set(task["approvers"]):
+        raise BaselineValidationError("a HIGH risk durable-state task requires the mandatory reviewers")
+
+    audit_schema = _json("audit/audit-event.schema.json")
+    ledger_schema = _json("games/roulette/ledger-transaction.schema.json")
+
+    # -- a real store, exercised end to end ------------------------------------------------
+    with tempfile.TemporaryDirectory(prefix="r2dbc-validate-") as workspace:
+        database = Path(workspace) / "durable-state.sqlite3"
+        # A marker whose bytes are all accepted by the debiasing rule, so exactly these values
+        # reach the draw path and their absence from the file is evidence rather than luck.
+        marker = bytes([7, 11, 13, 17, 19, 23])
+        entropy = DeterministicTestEntropySource(marker)
+        store = DurableRoundStore(
+            database,
+            namespace="DBCVAL",
+            entropy_source=entropy,
+            environment=RngEnvironment.NON_PRODUCTION,
+            clock=lambda: "2026-09-01T00:00:00Z",
+        )
+        try:
+            if store.path != resolve_database_path(database):
+                raise BaselineValidationError("the store did not resolve its database path canonically")
+            store.register_account("player:validator", "PLAYER", 1000)
+            store.register_account("house:validator", "HOUSE_BANKROLL", 0)
+            request = DrawRequest(request_id="R2-DBC-VALIDATOR-01", round_id="RR-R2-DBCVAL-01")
+            committed = store.submit_round(request, settlement=lambda record: _durable_settlement(record))
+            if committed.replayed or committed.settlement_transaction_id is None:
+                raise BaselineValidationError("the first submission must commit a new authoritative result")
+            if committed.balances != {"player:validator": 900, "house:validator": 100}:
+                raise BaselineValidationError("the durable settlement did not move integer balances as posted")
+            if any(not isinstance(value, int) or isinstance(value, bool) for value in committed.balances.values()):
+                raise BaselineValidationError("durable balances must be integer minimum units")
+            consumed_after_draw = entropy.consumed
+            if consumed_after_draw == 0:
+                raise BaselineValidationError("the authoritative draw did not read the entropy source")
+        finally:
+            store.close()
+
+        # AC-001: reopening the store must replay the record without touching entropy again.
+        reopened = DurableRoundStore(
+            database,
+            namespace="DBCVAL",
+            entropy_source=entropy,
+            environment=RngEnvironment.NON_PRODUCTION,
+            clock=lambda: "2026-09-01T00:00:00Z",
+        )
+        try:
+            replay = reopened.submit_round(request, settlement=lambda record: _durable_settlement(record))
+            if not replay.replayed or replay.record.to_dict() != committed.record.to_dict():
+                raise BaselineValidationError("a restarted store did not return the original authoritative record")
+            if entropy.consumed != consumed_after_draw:
+                raise BaselineValidationError("a replay after restart consumed entropy")
+            if reopened.count("draw_record") != 1 or reopened.count("ledger_transaction") != 1:
+                raise BaselineValidationError("a replay after restart committed a second result or settlement")
+            if reopened.balances() != {"house:validator": 100, "player:validator": 900}:
+                raise BaselineValidationError("a replay after restart moved balances a second time")
+
+            # AC-002: the reloaded chain verifies, and its references are globally unique.
+            problems = reopened.verify_chain()
+            if problems:
+                raise BaselineValidationError(f"the reloaded durable audit chain is broken: {problems!r}")
+            events = reopened.audit_events()
+            identifiers = [event["event_id"] for event in events]
+            if len(identifiers) != len(set(identifiers)):
+                raise BaselineValidationError("stored audit events do not carry globally unique identifiers")
+            for event in events:
+                validate_instance(event, audit_schema)
+                leaking = prohibited_fields(event)
+                if leaking:
+                    raise BaselineValidationError(f"a stored audit event carries prohibited fields {leaking!r}")
+                if scan_for_plaintext_secrets(event):
+                    raise BaselineValidationError("a stored audit event matched a plaintext credential rule")
+
+            # AC-010: the record and the settlement must both be storable and contract-shaped.
+            stored_transaction = reopened.ledger_transaction(committed.settlement_transaction_id)
+            validate_instance(stored_transaction, ledger_schema)
+            for payload, label in ((stored_transaction, "ledger transaction"), (replay.record.to_dict(), "draw record")):
+                if prohibited_fields(payload):
+                    raise BaselineValidationError(f"the stored {label} carries prohibited fields")
+                if any(isinstance(value, float) for value in payload.values()):
+                    raise BaselineValidationError(f"the stored {label} carries a floating-point value")
+
+            # AC-002: an audit event may not be updated or deleted, even through raw SQL.
+            # ``closing`` is not decoration here: a leaked handle keeps the database file
+            # locked on Windows and the enclosing TemporaryDirectory can then never be removed,
+            # which turns a passing check into a failing teardown.
+            for statement in (
+                "UPDATE audit_event SET action = 'FORGED' WHERE event_seq = 1",
+                "DELETE FROM audit_event WHERE event_seq = 1",
+            ):
+                with closing(sqlite3.connect(str(database), isolation_level=None)) as raw:
+                    raw.execute("PRAGMA foreign_keys = ON")
+                    try:
+                        raw.execute(statement)
+                    except sqlite3.IntegrityError:
+                        continue
+                raise BaselineValidationError(f"the durable audit log accepted {statement.split()[0]}")
+        finally:
+            reopened.close()
+
+        # AC-010: nothing that reached the entropy path may appear in the file on disk.
+        if marker in database.read_bytes():
+            raise BaselineValidationError("entropy material reached the durable database file")
+
+        # AC-007: reusing a request_id with different parameters must fail closed.
+        conflicting = DurableRoundStore(
+            database,
+            namespace="DBCVAL",
+            entropy_source=entropy,
+            environment=RngEnvironment.NON_PRODUCTION,
+            clock=lambda: "2026-09-01T00:00:00Z",
+        )
+        try:
+            try:
+                conflicting.submit_round(DrawRequest(request_id=request.request_id, round_id="RR-R2-DBCVAL-99"))
+            except RngDenied as denied:
+                if denied.code != "DUPLICATE_REQUEST_CONFLICT":
+                    raise BaselineValidationError(f"expected DUPLICATE_REQUEST_CONFLICT, got {denied.code}") from None
+            else:
+                raise BaselineValidationError("a reused request_id with different parameters was accepted")
+        finally:
+            conflicting.close()
+
+        # AC-005: a fault at any stage before the commit must leave no draw or settlement.
+        for stage in FAULT_STAGES:
+            if stage == "after_commit":
+                continue
+            fault_database = Path(workspace) / f"fault-{stage}.sqlite3"
+            faulty = DurableRoundStore(
+                fault_database,
+                namespace="DBCVAL",
+                entropy_source=DeterministicTestEntropySource(marker),
+                environment=RngEnvironment.NON_PRODUCTION,
+                clock=lambda: "2026-09-01T00:00:00Z",
+                fault_hook=lambda reached, target=stage: _raise_injected(reached, target),
+            )
+            try:
+                faulty.register_account("player:validator", "PLAYER", 1000)
+                faulty.register_account("house:validator", "HOUSE_BANKROLL", 0)
+                try:
+                    faulty.submit_round(
+                        DrawRequest(request_id=f"R2-DBC-FAULT-{stage}", round_id="RR-R2-DBCFAULT-01"),
+                        settlement=lambda record: _durable_settlement(record),
+                    )
+                except RuntimeError:
+                    pass
+                else:
+                    raise BaselineValidationError(f"the injected fault at {stage} did not reach the caller")
+            finally:
+                faulty.close()
+            recovered = DurableRoundStore(
+                fault_database,
+                namespace="DBCVAL",
+                entropy_source=DeterministicTestEntropySource(marker),
+                environment=RngEnvironment.NON_PRODUCTION,
+                clock=lambda: "2026-09-01T00:00:00Z",
+            )
+            try:
+                residue = {table: recovered.count(table) for table in ("draw_record", "ledger_transaction", "ledger_entry")}
+                if any(residue.values()):
+                    raise BaselineValidationError(f"a fault at {stage} left committed rows behind: {residue!r}")
+                if recovered.balances() != {"house:validator": 0, "player:validator": 1000}:
+                    raise BaselineValidationError(f"a fault at {stage} moved balances")
+                if any(event["action"] == "ROULETTE_RNG_DRAW" for event in recovered.audit_events()):
+                    raise BaselineValidationError(f"a fault at {stage} left a draw audit event behind")
+                if recovered.verify_chain():
+                    raise BaselineValidationError(f"a fault at {stage} broke the audit chain")
+            finally:
+                recovered.close()
+
+        # AC-009: a database from a future schema version is refused, never migrated down.
+        future = Path(workspace) / "future.sqlite3"
+        with closing(sqlite3.connect(str(future), isolation_level=None)) as seeded:
+            seeded.execute(f"PRAGMA user_version = {contract_declaration()['schema_version'] + 1}")
+        try:
+            # The refusal happens inside the constructor, so there is no object to close
+            # afterwards; ``DurableRoundStore`` releases its own connection when it refuses.
+            DurableRoundStore(future, environment=RngEnvironment.NON_PRODUCTION).close()
+        except SchemaVersionError as refused:
+            if refused.code != "SCHEMA_VERSION_UNSUPPORTED":
+                raise BaselineValidationError(f"unexpected schema refusal code {refused.code}") from None
+        else:
+            raise BaselineValidationError("a future schema version was opened instead of refused")
+
+        # AC-008: an in-memory or URI database can never hold authoritative state.
+        for spelling in (":memory:", "file:durable.sqlite3?mode=memory&cache=shared"):
+            try:
+                resolve_database_path(spelling)
+            except DurableStateError as refused:
+                if refused.code != "PATH_INVALID":
+                    raise BaselineValidationError(f"unexpected path refusal code {refused.code}") from None
+            else:
+                raise BaselineValidationError(f"the store accepted the unsafe database path {spelling!r}")
+
+    # -- the unit's own audit record -------------------------------------------------------
+    from studio_core.rng import verify_audit_chain
+
+    events_document = _json("audit/events/R2-DBC-0002-events.json")
+    unit_events = events_document["events"]
+    for event in unit_events:
+        validate_instance(event, audit_schema)
+        if event["task_id"] != "R2-DBC-0002":
+            raise BaselineValidationError("a durable-state audit event is attached to the wrong task")
+    chain_problems = verify_audit_chain(unit_events)
+    if chain_problems:
+        raise BaselineValidationError(f"the R2-DBC-0002 audit chain is broken: {chain_problems!r}")
+    actions = {event["action"] for event in unit_events}
+    if not R2_DBC_REQUIRED_AUDIT_ACTIONS <= actions:
+        missing = sorted(R2_DBC_REQUIRED_AUDIT_ACTIONS - actions)
+        raise BaselineValidationError(f"the durable-state audit record is incomplete: missing {missing!r}")
+
+    # -- the artifact's declared component hashes must be canonical and current -------------
+    specification = _json("artifacts/R2-DBC-0002-artifact.json")["specification"]
+    for field, relative in (
+        ("contract_hash", contract_path),
+        ("sql_schema_hash", "games/roulette/durable-state-schema.sql"),
+        ("test_suite_hash", "tests/test_durable_state.py"),
+    ):
+        actual = hash_file(base / relative, label=relative)
+        if specification.get(field) != actual:
+            raise BaselineValidationError(
+                f"artifact {field} does not match {relative}: {actual} != {specification.get(field)}"
+            )
+    if specification.get("rng_module_modified") is not False:
+        raise BaselineValidationError("the artifact must record that the RNG boundary was not modified")
+    if specification.get("human_approved") is not False:
+        raise BaselineValidationError("the artifact must not claim a human approval that was not issued")
+
+    # -- the carried-forward scope must stay named ------------------------------------------
+    status = _text("docs/status/R2-STATUS.md")
+    follow_ups = _text("docs/operations/R2-followup-units.md")
+    for unit in R2_DBC_DEFERRED_UNITS:
+        if unit not in status or unit not in follow_ups:
+            raise BaselineValidationError(f"{unit} is no longer carried forward in the R2 status records")
+
+    report = _text("docs/approvals/R2-DBC-0002-validation-report.md")
+    approval_section = report.split("## 9. 인간 게이트", 1)
+    if len(approval_section) != 2:
+        raise BaselineValidationError("the R2-DBC-0002 validation report is missing its human gate section")
+    if "- [x]" in approval_section[1].lower():
+        raise BaselineValidationError("a human gate item is marked complete without a human sign-off")
+
+    for relative in (
+        "docs/games/R2-durable-state.md",
+        "docs/approvals/R2-DBC-0002-validation-report.md",
+        "docs/status/R2-STATUS.md",
+        "docs/operations/R2-followup-units.md",
+        "audit/events/R2-DBC-0002-events.json",
+        contract_path,
+    ):
+        if scan_for_plaintext_secrets(_text(relative)):
+            raise BaselineValidationError(f"{relative}: plaintext credential material detected")
+
+    return {
+        "contract": contract,
+        "events": unit_events,
+        "prohibited_fields": list(PROHIBITED_STORAGE_FIELDS),
+    }
+
+
+def _raise_injected(reached: str, target: str) -> None:
+    """Raise at exactly one durable-state fault stage. Used only by the validator."""
+
+    if reached == target:
+        raise RuntimeError(f"injected durable-state fault at {target}")
+
+
 def run_validation() -> list[str]:
     checks: list[tuple[str, Any]] = [
         ("필수 기준선 파일", validate_required_files),
@@ -1578,6 +2022,8 @@ def run_validation() -> list[str]:
     passed.append("SYS-CLD-0011 Codex 발주·Claude 구현·Codex 독립검증 협업 프로토콜")
     validate_r2_rng()
     passed.append("R2-RNG-0001 생산용 CSPRNG 추첨 경계·독립 통계·게이트 회수 기록")
+    validate_r2_durable_state()
+    passed.append("R2-DBC-0002 내구 상태 경계·격리 수준·원자성·동시성·장애 복구")
     return passed
 
 

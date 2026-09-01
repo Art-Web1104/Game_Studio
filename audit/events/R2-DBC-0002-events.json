@@ -1,0 +1,137 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "R2-DBC-0002",
+  "chain_namespace": "R2DBC",
+  "summary": "Contract issuance, pre-implementation registration, draft attribution, implementation completion, validation replay and supersession of the pre-implementation records, recorded as a hash-linked audit chain.",
+  "events": [
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-01T00:00:00Z",
+      "actor_type": "USER",
+      "actor_id": "USER",
+      "task_id": "R2-DBC-0002",
+      "action": "TASK_CONTRACT_ISSUED_READY",
+      "resource_refs": [
+        "repo://tasks/R2-DBC-0002.json",
+        "repo://contracts/task.schema.json",
+        "repo://docs/operations/R2-followup-units.md"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:41b5e9cd3d33349ed9e2ff814234d1f756fac6317f04d667e963d24d087c5096",
+      "contains_secret": false,
+      "event_id": "AE-R2DBC-0001",
+      "previous_event_hash": null,
+      "event_hash": "sha256:396f3c0a5eab8feb36a6e0812a5adfb6b78493365df8684f1089501a6e22f133"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "ARTIFACT",
+      "timestamp": "2026-09-01T00:05:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "claude_code:implementer",
+      "task_id": "R2-DBC-0002",
+      "action": "PRE_IMPLEMENTATION_ARTIFACT_REGISTERED",
+      "resource_refs": [
+        "repo://artifacts/R2-DBC-0002-artifact.json",
+        "repo://handoffs/R2-DBC-0002-handoff.json",
+        "repo://tasks/R2-DBC-0002.json"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:31feccc8a391f6bf56e27dd67316198f53f9aeefbff24cc40b2bd0acd90ae061",
+      "contains_secret": false,
+      "event_id": "AE-R2DBC-0002",
+      "previous_event_hash": "sha256:396f3c0a5eab8feb36a6e0812a5adfb6b78493365df8684f1089501a6e22f133",
+      "event_hash": "sha256:2d7b37f9b386a754156cae33dc77e80144272273a8644db0f943c3029d74d992"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "SECURITY",
+      "timestamp": "2026-09-01T00:10:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "claude_code:implementer",
+      "task_id": "R2-DBC-0002",
+      "action": "INCOMPLETE_DRAFT_ATTRIBUTED",
+      "resource_refs": [
+        "repo://studio_core/durable_state.py",
+        "repo://tests/test_durable_state.py",
+        "repo://scripts/validate_baseline.py",
+        "repo://docs/approvals/R2-DBC-0002-validation-report.md"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:2443ba8b7437f20a68c1e07687e53093badf01a58e9c9743e1495c8fa7fe44b7",
+      "contains_secret": false,
+      "event_id": "AE-R2DBC-0003",
+      "previous_event_hash": "sha256:2d7b37f9b386a754156cae33dc77e80144272273a8644db0f943c3029d74d992",
+      "event_hash": "sha256:9df2cdcdcc61d41b346f528ab64e9ec583e8c092404b50d7a5f22f03e7ce335d"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "ARTIFACT",
+      "timestamp": "2026-09-01T00:15:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "claude_code:implementer",
+      "task_id": "R2-DBC-0002",
+      "action": "DURABLE_STATE_IMPLEMENTATION_COMPLETED",
+      "resource_refs": [
+        "repo://studio_core/durable_state.py",
+        "repo://games/roulette/durable-state-contract.yaml",
+        "repo://games/roulette/durable-state-schema.sql",
+        "repo://tests/test_durable_state.py",
+        "repo://docs/games/R2-durable-state.md"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:90ba224242d10c39ad6ff519486c76c1649c5aeec50b0ceb6b84bc407ba66267",
+      "contains_secret": false,
+      "event_id": "AE-R2DBC-0004",
+      "previous_event_hash": "sha256:9df2cdcdcc61d41b346f528ab64e9ec583e8c092404b50d7a5f22f03e7ce335d",
+      "event_hash": "sha256:818f7bb294dd1ed5a086e152fee163eec37af3edfe4de3538b5ea5dfdf9e3128"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-01T00:20:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "claude_code:implementer",
+      "task_id": "R2-DBC-0002",
+      "action": "VALIDATION_COMMANDS_REPLAYED",
+      "resource_refs": [
+        "repo://docs/approvals/R2-DBC-0002-validation-report.md",
+        "repo://scripts/validate_baseline.py",
+        "repo://tests/test_durable_state.py"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:d7ee6cd855435d16403e5fd091421a09561253e4ba9a4da2ea7091978d28d456",
+      "contains_secret": false,
+      "event_id": "AE-R2DBC-0005",
+      "previous_event_hash": "sha256:818f7bb294dd1ed5a086e152fee163eec37af3edfe4de3538b5ea5dfdf9e3128",
+      "event_hash": "sha256:b12037c81db094b4633453588697d03d8b3223082efe55ee60e3e5b2878a39b3"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "ARTIFACT",
+      "timestamp": "2026-09-01T00:25:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "claude_code:implementer",
+      "task_id": "R2-DBC-0002",
+      "action": "PRE_IMPLEMENTATION_RECORDS_SUPERSEDED",
+      "resource_refs": [
+        "repo://artifacts/R2-DBC-0002-artifact.json",
+        "repo://handoffs/R2-DBC-0002-handoff.json",
+        "repo://audit/events/R2-DBC-0002-events.json"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:47fa14b1efbbf41255c3f572d6eb633478b7f776c6bedea08e40ae37a3df8aeb",
+      "contains_secret": false,
+      "event_id": "AE-R2DBC-0006",
+      "previous_event_hash": "sha256:b12037c81db094b4633453588697d03d8b3223082efe55ee60e3e5b2878a39b3",
+      "event_hash": "sha256:e12206a43fa4c6b8b1c0e1b8c4844b3df6216b02eaedcf0c964b11cde7311186"
+    }
+  ]
+}

@@ -1,0 +1,149 @@
+schema_version: 1.0.0
+contract_id: DURABLE-STATE-R2
+status: REFERENCE_BOUNDARY
+authority: GAME_SERVER
+task_ref: tasks/R2-DBC-0002.json
+summary: >-
+  추첨 기록·정산 원장·감사 이벤트를 하나의 트랜잭션으로 커밋하는 내구 상태 경계의 계약이다.
+  구현은 파이썬 표준 라이브러리 sqlite3만 쓰는 참조 경계이며, 여기 선언한 값은
+  studio_core.durable_state.contract_declaration()이 반환하는 구현 상수와 정확히 일치해야
+  한다. 불일치는 scripts/validate_baseline.py::validate_r2_durable_state에서 실패한다.
+
+implementation:
+  module: studio_core/durable_state.py
+  schema_file: games/roulette/durable-state-schema.sql
+  tests: tests/test_durable_state.py
+  validator: scripts/validate_baseline.py::validate_r2_durable_state
+  design_document: docs/games/R2-durable-state.md
+  engine: sqlite3_stdlib
+  external_database_server: not_used
+
+# 아래 storage 블록은 구현 상수의 사본이 아니라 계약이다. 검증기가 두 값을 대조한다.
+storage:
+  isolation_level: SERIALIZABLE
+  transaction_mode: IMMEDIATE
+  journal_mode: wal
+  synchronous: full
+  foreign_keys: true
+  busy_timeout_ms: 5000
+  max_busy_retries: 5
+  retry_backoff_seconds: 0.02
+  schema_version: 1
+  supported_schema_versions: [1]
+  audit_segment_size: 9999
+  max_audit_segment: 99
+  policy_version: DURABLE-STATE-R2/1.0.0
+  task_id: R2-DBC-0002
+
+rationale:
+  isolation_level: >-
+    SQLite의 트랜잭션은 직렬화 가능 수준을 제공한다. 이 경계의 위험은 낮은 격리 수준이 아니라
+    읽기로 시작한 DEFERRED 트랜잭션이 쓰기로 승격하지 못하고 SQLITE_BUSY로 실패하는 경우다.
+  transaction_mode: >-
+    모든 권위 경로가 BEGIN IMMEDIATE로 연다. 중복 검사(read)보다 먼저 쓰기 락을 잡으므로
+    검사-후-행동이 다른 연결·프로세스에 대해 원자적이다. 같은 request_id를 동시에 제출한
+    두 호출자는 이 락으로 직렬화되고, 진 쪽은 자기 트랜잭션 안에서 커밋된 기록을 다시 읽어
+    엔트로피를 재소비하지 않고 반환한다.
+  journal_mode: >-
+    WAL은 쓰기 락이 잡힌 동안에도 읽기를 허용한다. 재생(replay) 빠른 경로가 정산을 막지 않게
+    하는 것이 목적이다.
+  synchronous: >-
+    WAL의 통상 짝은 NORMAL이지만 FULL을 선택했다. NORMAL은 전원 손실 시 최근 커밋을 잃을 수
+    있고, 권위 있는 자금 이동에서 "라운드는 정산되었는데 기록이 없다"는 결과는 허용되지 않는다.
+  foreign_keys: >-
+    SQLite에서 외래키 강제는 연결 단위 설정이므로 모든 연결에서 켠다. 원장 행이 존재하지 않는
+    감사 이벤트를 참조할 수 없게 한다.
+  busy_retry: >-
+    busy_timeout은 막힌 기록자를 실패시키지 않고 기다리게 한다. max_busy_retries는 timeout이
+    적용되기 전에 busy가 보고되는 구간만 덮는다. 재시도는 BEGIN만 다시 실행하며, 이미 열린
+    트랜잭션은 절대 재시도하지 않는다. 부분 적용된 권위 작업의 맹목적 재시도가 이중 정산의
+    발생 경로이기 때문이다.
+  schema_version: >-
+    파일 헤더의 PRAGMA user_version과 schema_meta 테이블 행을 함께 기록하고 개방 시 둘을
+    대조한다. 한쪽만 고친 편집이 조용히 통과하지 않는다.
+  audit_segment: >-
+    audit/audit-event.schema.json이 event_id를 네 자리로 고정하므로 한 세그먼트는 9999개
+    이벤트를 담는다. 세그먼트 번호가 그 경계 이후의 전역 유일성을 유지하고, 세그먼트가
+    소진되면 식별자를 재사용하지 않고 실패 폐쇄한다.
+
+path_handling:
+  memory_database: prohibited
+  uri_filename: prohibited
+  connect_uri_parameter: false
+  relative_path_resolution: anchored_to_process_cwd
+  parent_directory_must_exist: true
+  symlink_resolution: not_performed
+  nul_byte_in_path: prohibited
+  directory_as_database: prohibited
+  rationale: >-
+    sqlite3.connect는 파일 이름 외의 것도 받는다. ':memory:'는 닫으면 사라지는 사설
+    데이터베이스를 조용히 만들고, file: URI는 mode=나 cache=shared 같은 매개변수로 이 문서가
+    선언한 내구성·격리를 바꿀 수 있다. 둘 다 코드 검토가 아니라 개방 시점에 거부하고,
+    연결은 항상 uri=False로 연다. 심볼릭 링크는 해석하지 않는다. 호출자가 지정한 파일이
+    곧 대상이다.
+
+migration:
+  automatic_upgrade: denied
+  automatic_downgrade: denied
+  on_unsupported_version: SCHEMA_VERSION_UNSUPPORTED
+  on_version_zero_with_owned_tables: SCHEMA_STATE_AMBIGUOUS
+  on_meta_mismatch: SCHEMA_META_MISMATCH
+
+requirements:
+  single_transaction_commit: true
+  atomic_rollback_on_any_pre_commit_fault: true
+  request_id_idempotent_across_restart: true
+  no_entropy_reconsumption_on_replay: true
+  one_authoritative_result_per_request: true
+  one_settlement_per_round: true
+  globally_unique_audit_reference: true
+  audit_events_append_only_at_database_level: true
+  audit_chain_verifiable_after_reload: true
+  tampered_audit_chain_detected_on_reload: true
+  integer_minimum_units_only: true
+  idempotency_key_unique_constraint: true
+  zero_sum_enforced_by_database: true
+  concurrency_proved_by_real_threads: true
+
+prohibited_storage:
+  entropy_bytes: prohibited
+  seed_values: prohibited
+  rejection_counts: prohibited
+  plaintext_secrets: prohibited
+  floating_point_currency: prohibited
+  client_authoritative_state: prohibited
+  prohibited_field_names_source: studio_core.durable_state.PROHIBITED_STORAGE_FIELDS
+
+failure_behavior:
+  duplicate_request_same_payload: RETURN_ORIGINAL_RESULT
+  duplicate_request_different_payload: DUPLICATE_REQUEST_CONFLICT
+  duplicate_idempotency_key_different_payload: IDEMPOTENCY_KEY_CONFLICT
+  round_already_drawn: ROUND_ALREADY_DRAWN
+  round_voided: ROUND_VOIDED
+  fault_before_commit: ROLLBACK_AND_VOID_ROUND
+  write_lock_unavailable: WRITE_LOCK_UNAVAILABLE
+  unsupported_schema_version: SCHEMA_VERSION_UNSUPPORTED
+  entropy_or_secret_material_offered: ENTROPY_MATERIAL_DENIED
+  float_currency_offered: FLOAT_VALUE_DENIED
+
+rng_boundary:
+  contract_ref: games/roulette/rng-contract.yaml
+  module: studio_core/rng.py
+  modified_by_this_unit: false
+  used_through: [EntropySource, AuditSink, DrawRequest, DrawRecord, RngDenied]
+  note: >-
+    이 유닛은 rng.py의 인터페이스와 계약을 약화하지 않는다. 추첨은 여전히
+    RouletteDrawEngine이 수행하고, 감사 싱크만 인메모리 체인에서 트랜잭션에 묶인 내구
+    싱크로 바뀐다. 엔진은 제출 시도마다 새로 만들고 버린다. 엔진이 시도 사이에 상태를
+    들고 있으면 롤백된 트랜잭션 뒤에 "이 라운드는 추첨되었는가"에 대한 두 개의 답이
+    생기기 때문이다.
+
+out_of_scope:
+  - 외부 데이터베이스 서버·관리형 서비스 도입과 운영 규모 엔진 선정
+  - 네트워크 재접속과 라운드 연속성 (후속 유닛 R2-NET-0003 후보)
+  - 부하·성능 특성 측정 (후속 유닛 R2-LOAD-0004 후보)
+  - 보안 침투 시험 (후속 유닛 R2-SEC-0005 후보)
+  - 운영 배포, 백업·복구 절차, WAL 체크포인트 주기, 보존 기간
+  - 상용 제작 일정과 출시일 (R5 승인 이전 확정 금지)
+
+approval_for_production: [A-02, A-20, A-50, USER]
