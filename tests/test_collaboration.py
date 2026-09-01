@@ -335,6 +335,7 @@ class SecretHygieneTests(unittest.TestCase):
         self.assertTrue(scan_for_plaintext_secrets(sample))
 
     def test_scanner_flags_private_key_blocks(self) -> None:
+        # secret-scan: allow -- PEM header only, no key material; asserted as a positive sample.
         self.assertTrue(scan_for_plaintext_secrets("-----BEGIN RSA PRIVATE KEY-----"))
 
     def test_scanner_ignores_secret_references_and_policy_vocabulary(self) -> None:

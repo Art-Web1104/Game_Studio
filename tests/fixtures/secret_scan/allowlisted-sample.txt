@@ -1,0 +1,17 @@
+# Intentional, non-live sample values for tests/test_secret_scan.py.
+#
+# Contract: every sample line below carries the inline allow marker, so this committed
+# fixture never fails `python scripts/scan_secrets.py` on the repository. The tests strip
+# the marker to prove the same lines are still detected when the exemption is removed.
+# None of these values authenticate to anything.
+
+aws_access_key_id = AKIAIOSFODNN7EXAMPLE  # secret-scan: allow -- AWS documentation example
+password = notarealpassword12345  # secret-scan: allow -- fabricated sample
+authorization = Bearer abcdefghijklmnopqrstuvwxyz0123456789  # secret-scan: allow -- fabricated sample
+
+# False-positive control. The lines below deliberately carry NO marker: they are the policy
+# vocabulary this repository uses to *refer* to credentials and must never be flagged.
+credential_ref: secret-ref://claude/agent-auth
+secrets_policy: REFERENCE_ONLY
+secret_storage: os_credential_manager
+content_hash: sha256:0000000000000000000000000000000000000000000000000000000000000000
