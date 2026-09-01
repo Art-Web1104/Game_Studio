@@ -1,0 +1,1171 @@
+/*
+ * R4-UI-0006 · internal prototype roulette client.
+ *
+ * Mobile portrait is the base layout; the two `min-width` blocks widen it rather than the
+ * other way round, so the smallest screen never pays for desktop rules it has to undo.
+ *
+ * Every colour, shape and shadow here is written by hand in CSS or as inline SVG in the
+ * markup. There is no font file, no sprite sheet, no image request and nothing from a CDN,
+ * because the server's `default-src 'none'` policy would refuse them all -- and because a
+ * prototype that cannot be served from one loopback directory is not a prototype.
+ *
+ * Colour choices are constrained by contrast, not only by taste: body text, chip values,
+ * button labels and disabled controls were each picked to stay above 4.5:1 against the
+ * surface they sit on, and no state is signalled by hue alone -- a selected cell also
+ * changes its border and shows a chip mark, a losing bet is also labelled in text.
+ */
+
+/* ── design tokens ──────────────────────────────────────────────────────────────────── */
+
+:root {
+  color-scheme: dark;
+
+  --felt-900: #04140d;
+  --felt-800: #072318;
+  --felt-700: #0b3222;
+  --felt-600: #10462f;
+  --line: #1d5b3e;
+
+  --gold: #d4af37;
+  --gold-bright: #f2d98b;
+  --gold-dim: #8a7327;
+
+  --pocket-red: #b3202c;
+  --pocket-red-strong: #d6303d;
+  --pocket-black: #14181b;
+  --pocket-green: #0e7a4a;
+
+  --ink: #f4efe2;
+  --ink-soft: #cbd8cf;
+  --ink-muted: #9fb3a7;
+  --ink-inverse: #04140d;
+
+  --danger: #ff8f8f;
+  --danger-bg: #3a0f13;
+  --positive: #7ee2a8;
+
+  --focus: #ffd977;
+
+  --radius-s: 6px;
+  --radius-m: 12px;
+  --radius-l: 20px;
+
+  --gap: 0.6rem;
+  --shadow-panel: 0 10px 28px rgb(0 0 0 / 45%);
+  --shadow-chip: 0 2px 0 rgb(0 0 0 / 55%), 0 6px 12px rgb(0 0 0 / 40%);
+
+  --font: "Pretendard", "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", system-ui,
+    -apple-system, "Segoe UI", sans-serif;
+  --font-numeric: "SF Mono", "Consolas", "DejaVu Sans Mono", ui-monospace, monospace;
+
+  --spin-duration: 4200ms;
+}
+
+/* ── reset ──────────────────────────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink);
+  background-color: var(--felt-900);
+  background-image: radial-gradient(circle at 50% -10%, #0d3a26 0%, #04140d 62%),
+    repeating-linear-gradient(135deg, rgb(255 255 255 / 2%) 0 2px, transparent 2px 6px);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+h1,
+h2,
+h3,
+p,
+dl,
+dd,
+ol,
+ul {
+  margin: 0;
+}
+
+ol,
+ul {
+  padding: 0;
+  list-style: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+/* ── accessibility primitives ───────────────────────────────────────────────────────── */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -4rem;
+  z-index: 10;
+  padding: 0.6rem 1rem;
+  border-radius: 0 0 var(--radius-m) var(--radius-m);
+  background: var(--gold);
+  color: var(--ink-inverse);
+  font-weight: 700;
+  text-decoration: none;
+  transition: top 160ms ease;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* A focus ring that survives a dark felt background and a gold button alike: a bright
+   inner outline plus a dark outer shadow, so it is visible on every surface here. */
+:where(a, button, input, [tabindex]):focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-s);
+  box-shadow: 0 0 0 6px rgb(0 0 0 / 65%);
+}
+
+/* Keyboard focus on a radio is drawn on its visible proxy, since the input itself is
+   hidden behind the chip or bet-type face. */
+.chip input:focus-visible + .chip__face,
+.bet-type input:focus-visible + .bet-type__face {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px rgb(0 0 0 / 65%);
+}
+
+@supports not selector(:focus-visible) {
+  :where(a, button, input, [tabindex]):focus {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+}
+
+/* ── shell ──────────────────────────────────────────────────────────────────────────── */
+
+.app {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 0.75rem 0.75rem 6.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.panel {
+  background: linear-gradient(180deg, var(--felt-800) 0%, var(--felt-900) 100%);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-panel);
+  padding: 0.9rem;
+}
+
+.panel__heading {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 0.5rem;
+}
+
+.panel__hint {
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  margin-bottom: 0.5rem;
+}
+
+/* ── disclosure and header ──────────────────────────────────────────────────────────── */
+
+.disclosure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  padding: 0.6rem 0.8rem;
+  border: 2px solid var(--gold);
+  border-radius: var(--radius-m);
+  background: repeating-linear-gradient(
+    -45deg,
+    rgb(212 175 55 / 12%) 0 10px,
+    rgb(212 175 55 / 4%) 10px 20px
+  );
+}
+
+.disclosure__flag {
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-s);
+  background: var(--gold);
+  color: var(--ink-inverse);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.disclosure__ko {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--gold-bright);
+}
+
+.disclosure__note {
+  flex-basis: 100%;
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+}
+
+.topbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.topbar__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.topbar__title {
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
+}
+
+.topbar__table {
+  font-family: var(--font-numeric);
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+}
+
+.balance {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+}
+
+.balance__item {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--felt-800);
+  text-align: center;
+}
+
+.balance__item dt {
+  font-size: 0.7rem;
+  color: var(--ink-muted);
+}
+
+.balance__item dd {
+  font-family: var(--font-numeric);
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.balance__item--primary {
+  border-color: var(--gold-dim);
+}
+
+.balance__item--primary dd {
+  font-size: 1.3rem;
+  color: var(--gold-bright);
+}
+
+/* A balance that moved is worth a glance; the animation is decorative only and the number
+   is already correct before it starts. */
+.balance__item dd.is-updated {
+  animation: value-pop 520ms ease-out;
+}
+
+/* ── layout ─────────────────────────────────────────────────────────────────────────── */
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+/* ── stage and wheel ────────────────────────────────────────────────────────────────── */
+
+.stage__wheel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.wheel {
+  width: min(62vw, 15rem);
+  height: auto;
+  filter: drop-shadow(0 8px 18px rgb(0 0 0 / 55%));
+}
+
+.wheel__rim {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 5;
+}
+
+.wheel__hub {
+  fill: var(--felt-700);
+  stroke: var(--gold-dim);
+  stroke-width: 2;
+}
+
+.wheel__hub-ring {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 6;
+}
+
+.wheel__pointer {
+  fill: var(--gold-bright);
+  stroke: var(--felt-900);
+  stroke-width: 1.5;
+}
+
+/* The rotor is turned only by the angle the server's pocket implies. `--wheel-turn` is set
+   from script after a result arrives; it has no other writer. */
+.wheel__rotor {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  transform: rotate(var(--wheel-turn, 0deg));
+  transition: transform var(--spin-duration) cubic-bezier(0.16, 0.84, 0.24, 1);
+}
+
+.wheel__pocket-red {
+  fill: var(--pocket-red);
+}
+
+.wheel__pocket-black {
+  fill: var(--pocket-black);
+}
+
+.wheel__pocket-green {
+  fill: var(--pocket-green);
+}
+
+.wheel__pocket-edge {
+  stroke: rgb(212 175 55 / 45%);
+  stroke-width: 0.5;
+}
+
+.wheel__number {
+  fill: var(--ink);
+  font-family: var(--font-numeric);
+  font-size: 8px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.stage__pocket {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  min-width: 6.5rem;
+}
+
+.stage__pocket-value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 50%;
+  border: 2px solid var(--gold);
+  background: var(--felt-700);
+  font-family: var(--font-numeric);
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.stage__pocket[data-color="red"] .stage__pocket-value {
+  background: var(--pocket-red);
+}
+
+.stage__pocket[data-color="black"] .stage__pocket-value {
+  background: var(--pocket-black);
+}
+
+.stage__pocket[data-color="green"] .stage__pocket-value {
+  background: var(--pocket-green);
+}
+
+.stage__pocket-label {
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+.stage__pocket.is-revealed .stage__pocket-value {
+  animation: value-pop 600ms ease-out;
+}
+
+.stage__phase {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin-top: 0.7rem;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+}
+
+.phase-chip {
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--gold-dim);
+  background: var(--felt-700);
+  color: var(--gold-bright);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.phase-chip[data-phase="SETTLED"] {
+  border-color: var(--positive);
+  color: var(--positive);
+}
+
+.phase-chip[data-phase="SPINNING"],
+.phase-chip[data-phase="SETTLING"],
+.phase-chip[data-phase="LOCKED"] {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.stage__round-id {
+  font-family: var(--font-numeric);
+  font-size: 0.7rem;
+}
+
+.status {
+  margin-top: 0.5rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--line);
+  background: var(--felt-800);
+  font-size: 0.85rem;
+  color: var(--ink);
+  min-height: 2.6rem;
+}
+
+.status[data-tone="win"] {
+  border-color: var(--positive);
+  color: var(--positive);
+}
+
+.status[data-tone="busy"] {
+  border-color: var(--gold-dim);
+  color: var(--gold-bright);
+}
+
+.alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-m);
+  background: var(--danger-bg);
+}
+
+.alert__message {
+  font-size: 0.85rem;
+  color: var(--danger);
+}
+
+.stage__settlement {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+.stage__settlement dt {
+  font-size: 0.7rem;
+  color: var(--ink-muted);
+}
+
+.stage__settlement dd {
+  font-family: var(--font-numeric);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.stage__settlement dd[data-sign="positive"] {
+  color: var(--positive);
+}
+
+.stage__settlement dd[data-sign="negative"] {
+  color: var(--danger);
+}
+
+/* ── history ────────────────────────────────────────────────────────────────────────── */
+
+.history__list {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.history__item {
+  flex: 0 0 auto;
+  width: 2.3rem;
+  height: 2.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--gold-dim);
+  font-family: var(--font-numeric);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.history__item[data-color="red"] {
+  background: var(--pocket-red);
+}
+
+.history__item[data-color="black"] {
+  background: var(--pocket-black);
+}
+
+.history__item[data-color="green"] {
+  background: var(--pocket-green);
+}
+
+.history__empty,
+.slip__empty {
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+}
+
+/* ── chips ──────────────────────────────────────────────────────────────────────────── */
+
+.chips,
+.bet-types {
+  border: 0;
+  padding: 0;
+  margin: 0 0 0.75rem;
+}
+
+.chips legend,
+.bet-types legend {
+  padding: 0;
+  font-size: 0.74rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-bottom: 0.35rem;
+}
+
+.chips__row,
+.bet-types__row {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.chip input,
+.bet-type input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.chip {
+  cursor: pointer;
+}
+
+.chip__face {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  border: 3px dashed var(--ink);
+  background: var(--felt-600);
+  box-shadow: var(--shadow-chip);
+  font-family: var(--font-numeric);
+  font-weight: 800;
+  font-size: 0.9rem;
+  transition: transform 140ms ease, filter 140ms ease;
+}
+
+.chip__face[data-chip="1"] {
+  background: #6d7f75;
+}
+
+.chip__face[data-chip="5"] {
+  background: #8c2230;
+}
+
+.chip__face[data-chip="25"] {
+  background: #16603f;
+}
+
+.chip__face[data-chip="100"] {
+  background: #1f2a44;
+}
+
+.chip__face[data-chip="500"] {
+  background: #5c3a86;
+}
+
+.chip input:checked + .chip__face {
+  border-color: var(--gold-bright);
+  border-style: solid;
+  transform: translateY(-4px) scale(1.06);
+  filter: brightness(1.16);
+}
+
+.chip input:checked + .chip__face .chip__value::after {
+  content: " ✓";
+  font-size: 0.7rem;
+  color: var(--gold-bright);
+}
+
+/* ── bet types ──────────────────────────────────────────────────────────────────────── */
+
+.bet-type {
+  cursor: pointer;
+  flex: 1 1 6rem;
+}
+
+.bet-type__face {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--felt-800);
+  text-align: center;
+}
+
+.bet-type__name {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.bet-type__count {
+  font-size: 0.68rem;
+  color: var(--ink-muted);
+}
+
+.bet-type input:checked + .bet-type__face {
+  border-color: var(--gold);
+  background: var(--felt-600);
+}
+
+.bet-type input:checked + .bet-type__face .bet-type__count {
+  color: var(--gold-bright);
+}
+
+/* ── board ──────────────────────────────────────────────────────────────────────────── */
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.board__cell {
+  position: relative;
+  min-height: 2.6rem;
+  padding: 0.3rem;
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: var(--radius-s);
+  background: var(--pocket-black);
+  font-family: var(--font-numeric);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+.board__cell[data-color="red"] {
+  background: var(--pocket-red);
+}
+
+.board__cell[data-color="green"] {
+  background: var(--pocket-green);
+}
+
+.board__cell--zero {
+  grid-column: 1 / -1;
+}
+
+.board__cell:hover:not([disabled]) {
+  filter: brightness(1.25);
+}
+
+.board__cell[aria-pressed="true"] {
+  border: 2px solid var(--gold-bright);
+  filter: brightness(1.3);
+  transform: translateY(-2px);
+}
+
+/* Selection and placement are never signalled by colour alone: a selected cell also gains
+   a border, and a staked cell shows a chip mark carrying its amount. */
+.board__cell .cell-chip,
+.outside__cell .cell-chip {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  min-width: 1.35rem;
+  padding: 0 0.2rem;
+  border-radius: 999px;
+  border: 1px solid var(--ink);
+  background: var(--gold);
+  color: var(--ink-inverse);
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.cell-chip.is-new {
+  animation: chip-drop 420ms cubic-bezier(0.2, 1.4, 0.5, 1);
+}
+
+/* ── outside bets ───────────────────────────────────────────────────────────────────── */
+
+.outside {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.outside__dozens,
+.outside__columns {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.outside__evens {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.outside__cell {
+  position: relative;
+  min-height: 2.8rem;
+  padding: 0.35rem 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--felt-700);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 120ms ease;
+}
+
+.outside__cell .outside__sub {
+  display: block;
+  font-size: 0.64rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+.outside__cell--red {
+  background: var(--pocket-red);
+}
+
+.outside__cell--black {
+  background: var(--pocket-black);
+}
+
+.outside__cell:hover:not([disabled]) {
+  filter: brightness(1.22);
+}
+
+.board__cell[disabled],
+.outside__cell[disabled],
+.button[disabled] {
+  cursor: not-allowed;
+  filter: grayscale(0.55) brightness(0.75);
+  color: var(--ink-muted);
+}
+
+/* ── slip ───────────────────────────────────────────────────────────────────────────── */
+
+.slip__subheading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  margin-top: 0.6rem;
+}
+
+.slip__badge {
+  min-width: 1.4rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--ink-inverse);
+  font-family: var(--font-numeric);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.slip__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.slip__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--felt-800);
+  font-size: 0.82rem;
+}
+
+.slip__item.is-new {
+  animation: chip-drop 420ms cubic-bezier(0.2, 1.4, 0.5, 1);
+}
+
+.slip__item[data-outcome="won"] {
+  border-color: var(--positive);
+}
+
+.slip__item[data-outcome="lost"] {
+  border-color: var(--pocket-red-strong);
+}
+
+.slip__item-stake {
+  font-family: var(--font-numeric);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.slip__item-outcome {
+  font-size: 0.74rem;
+  color: var(--ink-muted);
+}
+
+.slip__total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px dashed var(--line);
+  font-size: 0.85rem;
+}
+
+.slip__total-value {
+  font-family: var(--font-numeric);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--gold-bright);
+}
+
+/* ── controls ───────────────────────────────────────────────────────────────────────── */
+
+.controls {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.4rem;
+  padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgb(4 20 13 / 82%) 0%, var(--felt-900) 45%);
+  border-top: 1px solid var(--line);
+  backdrop-filter: blur(6px);
+}
+
+.button {
+  min-height: 3rem;
+  padding: 0.5rem 0.4rem;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--gold-dim);
+  background: var(--felt-700);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+.button:hover:not([disabled]) {
+  filter: brightness(1.2);
+}
+
+.button:active:not([disabled]) {
+  transform: translateY(1px);
+}
+
+.button--primary {
+  background: linear-gradient(180deg, var(--gold-bright) 0%, var(--gold) 100%);
+  border-color: var(--gold-bright);
+  color: var(--ink-inverse);
+}
+
+.button--secondary {
+  background: var(--felt-600);
+  color: var(--gold-bright);
+}
+
+.button--ghost {
+  background: transparent;
+  color: var(--ink);
+}
+
+.button.is-busy {
+  position: relative;
+  color: transparent;
+}
+
+.button.is-busy::after {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: -0.55rem 0 0 -0.55rem;
+  border: 2px solid rgb(0 0 0 / 35%);
+  border-top-color: var(--ink-inverse);
+  border-radius: 50%;
+  animation: spinner 720ms linear infinite;
+}
+
+.button--ghost.is-busy::after,
+.button--secondary.is-busy::after {
+  border-color: rgb(255 255 255 / 30%);
+  border-top-color: var(--gold-bright);
+}
+
+/* ── footer ─────────────────────────────────────────────────────────────────────────── */
+
+.footer {
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  background: var(--felt-800);
+  text-align: center;
+}
+
+.footer__notice {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--gold-bright);
+}
+
+.footer__fine {
+  margin-top: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+}
+
+.noscript {
+  margin: 1rem;
+  padding: 1rem;
+  border: 2px solid var(--gold);
+  border-radius: var(--radius-m);
+  color: var(--ink);
+}
+
+/* ── motion ─────────────────────────────────────────────────────────────────────────── */
+
+@keyframes chip-drop {
+  from {
+    transform: translateY(-14px) scale(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes value-pop {
+  0% {
+    transform: scale(0.82);
+  }
+  55% {
+    transform: scale(1.14);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/*
+ * Reduced motion is honoured twice over: the animations below are cut to nothing, and the
+ * script also stops adding extra wheel revolutions, so the rotor moves straight to the
+ * pocket the server chose instead of travelling several turns to reach it.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .wheel__rotor {
+    transition: none;
+  }
+
+  .chip input:checked + .chip__face {
+    transform: none;
+  }
+}
+
+/* ── responsive: tablet ─────────────────────────────────────────────────────────────── */
+
+@media (min-width: 48rem) {
+  .app {
+    padding: 1rem 1rem 6rem;
+    gap: 0.9rem;
+  }
+
+  .topbar__title {
+    font-size: 1.45rem;
+  }
+
+  .wheel {
+    width: min(34vw, 17rem);
+  }
+
+  .board {
+    gap: 6px;
+  }
+
+  .board__cell {
+    min-height: 3rem;
+    font-size: 1.05rem;
+  }
+
+  .controls {
+    grid-template-columns: repeat(4, minmax(0, 12rem));
+    justify-content: center;
+  }
+}
+
+/* ── responsive: desktop ────────────────────────────────────────────────────────────── */
+
+@media (min-width: 64rem) {
+  .app {
+    padding-bottom: 6rem;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(20rem, 26rem) minmax(0, 1fr);
+    grid-template-areas:
+      "stage betting"
+      "history betting"
+      "slip betting";
+    align-items: start;
+  }
+
+  .stage {
+    grid-area: stage;
+  }
+
+  .history {
+    grid-area: history;
+  }
+
+  .betting {
+    grid-area: betting;
+  }
+
+  .slip {
+    grid-area: slip;
+  }
+
+  /* The classic horizontal table: zero on the left spanning three rows, then twelve
+     columns of three. `--col` and `--row` are written per cell by the script, which is why
+     the numbers can flow in reading order in the DOM and still land in the right box. */
+  .board {
+    grid-template-columns: 1.2fr repeat(12, 1fr);
+    grid-template-rows: repeat(3, minmax(2.7rem, 1fr));
+  }
+
+  .board__cell {
+    grid-column: var(--col, auto);
+    grid-row: var(--row, auto);
+  }
+
+  .board__cell--zero {
+    grid-column: 1;
+    grid-row: 1 / -1;
+  }
+
+  .outside__dozens,
+  .outside__columns,
+  .outside__evens {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .outside__dozens .outside__cell,
+  .outside__columns .outside__cell {
+    grid-column: span 2;
+  }
+
+  .wheel {
+    width: min(22vw, 16rem);
+  }
+}

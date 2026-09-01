@@ -1,0 +1,155 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "R4-UI-0006",
+  "chain_namespace": "R4UI",
+  "summary": "R4-UI-0006 내부 로컬 플레이어블 룰렛 슬라이스의 발행·구현·검증 기록. 인간 게이트 판정과 브라우저 시각 QA는 포함되지 않는다.",
+  "events": [
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-01T00:00:00Z",
+      "actor_type": "USER",
+      "actor_id": "USER",
+      "task_id": "R4-UI-0006",
+      "action": "TASK_CONTRACT_ISSUED_READY",
+      "resource_refs": [
+        "repo://tasks/R4-UI-0006.json",
+        "repo://contracts/task.schema.json",
+        "repo://docs/status/R2-STATUS.md"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:2ceeae685e0997fe85b3b3857fdd0fd8590fa6ef57f2767e1545b724df48cba7",
+      "contains_secret": false,
+      "event_id": "AE-R4UI-0001",
+      "previous_event_hash": null,
+      "event_hash": "sha256:33ca672b1704b88df0045f784fbdad32b4f55b5aaae02fd6f3152263727c546c"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "ARTIFACT",
+      "timestamp": "2026-09-01T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-20",
+      "task_id": "R4-UI-0006",
+      "action": "PRE_IMPLEMENTATION_ARTIFACT_REGISTERED",
+      "resource_refs": [
+        "repo://artifacts/R4-UI-0006-artifact.json",
+        "repo://handoffs/R4-UI-0006-handoff.json"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:6fa59bdcd87cbad8e147af252c29b219712a7cfc9a92814045a2612f8e7c0662",
+      "contains_secret": false,
+      "event_id": "AE-R4UI-0002",
+      "previous_event_hash": "sha256:33ca672b1704b88df0045f784fbdad32b4f55b5aaae02fd6f3152263727c546c",
+      "event_hash": "sha256:81b76e9be0ade3becab1e720b207e410854b67463d7605bd67fd3ec6510dd085"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "SECURITY",
+      "timestamp": "2026-09-01T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-00",
+      "task_id": "R4-UI-0006",
+      "action": "DELEGATION_OWNER_REASSIGNED",
+      "resource_refs": [
+        "repo://tasks/R4-UI-0006.json",
+        "repo://operations/collaboration.yaml"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:5612f408496dd633b6a970b3aac0a4a669d12c0ddff0fedbb2d5974df363c023",
+      "contains_secret": false,
+      "event_id": "AE-R4UI-0003",
+      "previous_event_hash": "sha256:81b76e9be0ade3becab1e720b207e410854b67463d7605bd67fd3ec6510dd085",
+      "event_hash": "sha256:d77733a96ac97786108e564fd1e5baefbaa9f62ca178e444c8ff375f91501877"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "ARTIFACT",
+      "timestamp": "2026-09-01T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-20",
+      "task_id": "R4-UI-0006",
+      "action": "PLAYABLE_SLICE_IMPLEMENTATION_COMPLETED",
+      "resource_refs": [
+        "repo://apps/roulette_web/server.py",
+        "repo://apps/roulette_web/table.py",
+        "repo://apps/roulette_web/static/index.html",
+        "repo://apps/roulette_web/static/styles.css",
+        "repo://apps/roulette_web/static/app.js",
+        "repo://games/roulette/playable-slice-contract.yaml"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:819fddbe07e773d707c3d759cd1f8719fc614d30a107f8d4203fff72869c8d36",
+      "contains_secret": false,
+      "event_id": "AE-R4UI-0004",
+      "previous_event_hash": "sha256:d77733a96ac97786108e564fd1e5baefbaa9f62ca178e444c8ff375f91501877",
+      "event_hash": "sha256:60fa7ad7a49bec0338e1c3c7bdc6c2ab136a47dc21275a75c55d3c263f888914"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-01T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-20",
+      "task_id": "R4-UI-0006",
+      "action": "VALIDATION_COMMANDS_REPLAYED",
+      "resource_refs": [
+        "repo://scripts/validate_baseline.py",
+        "repo://tests/test_roulette_web_server.py",
+        "repo://tests/test_roulette_web_ui.py",
+        "repo://docs/approvals/R4-UI-0006-validation-report.md"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:50de8d23c5669d8c2b8e30fd846aa3b6e92c476d556b8baa51d99257b4fd0516",
+      "contains_secret": false,
+      "event_id": "AE-R4UI-0005",
+      "previous_event_hash": "sha256:60fa7ad7a49bec0338e1c3c7bdc6c2ab136a47dc21275a75c55d3c263f888914",
+      "event_hash": "sha256:bc1827befd916529da57e696333c6708949cc41030d9f1a272e2b4f431365afc"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "SECURITY",
+      "timestamp": "2026-09-01T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-20",
+      "task_id": "R4-UI-0006",
+      "action": "BROWSER_VISUAL_QA_NOT_RUN",
+      "resource_refs": [
+        "repo://apps/roulette_web/static/index.html",
+        "repo://docs/approvals/R4-UI-0006-validation-report.md"
+      ],
+      "decision": "BLOCK",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:2955393d93fab24358672279ced7caf15e67bfeadd8fee9641208cfb1b978af5",
+      "contains_secret": false,
+      "event_id": "AE-R4UI-0006",
+      "previous_event_hash": "sha256:bc1827befd916529da57e696333c6708949cc41030d9f1a272e2b4f431365afc",
+      "event_hash": "sha256:c94b148a8540687a0a0dfe23fc4e0ef366caa985bd93a274f94ae56f82ab9387"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "ARTIFACT",
+      "timestamp": "2026-09-01T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-20",
+      "task_id": "R4-UI-0006",
+      "action": "PRE_IMPLEMENTATION_RECORDS_SUPERSEDED",
+      "resource_refs": [
+        "repo://artifacts/R4-UI-0006-artifact.json",
+        "repo://handoffs/R4-UI-0006-handoff.json"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:12bd05aa4b94f0a32857ddd305e41f10797245faeb6ac9b011c2f04b2ddb1a22",
+      "contains_secret": false,
+      "event_id": "AE-R4UI-0007",
+      "previous_event_hash": "sha256:c94b148a8540687a0a0dfe23fc4e0ef366caa985bd93a274f94ae56f82ab9387",
+      "event_hash": "sha256:75adb4143b739e9d3a6e7e743ff7406bb7e524c0d82e19b0b5dd49fa6cf091bb"
+    }
+  ]
+}

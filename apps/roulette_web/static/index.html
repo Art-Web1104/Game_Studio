@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="color-scheme" content="dark" />
+    <meta
+      name="description"
+      content="내부 프로토타입 유러피언 싱글제로 룰렛입니다. 가상 칩만 사용하며 현금 가치가 없습니다."
+    />
+    <title>유러피언 싱글제로 룰렛 · 내부 프로토타입 (가상 칩 · 현금 가치 없음)</title>
+    <!--
+      Every asset is served by this loopback origin. There is no font, script, style or
+      image from anywhere else, which is what lets the server send
+      `default-src 'none'; script-src 'self'; style-src 'self'` without a single exception.
+      For the same reason there is no inline <script>, no inline <style> and no style="…"
+      attribute anywhere in this file: the policy carries no 'unsafe-inline', so any of
+      those would simply be refused by the browser.
+    -->
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#board-heading">베팅 보드로 바로 가기</a>
+
+    <div class="app">
+      <header class="topbar">
+        <p class="disclosure" role="note">
+          <strong class="disclosure__flag" lang="en">INTERNAL PROTOTYPE</strong>
+          <span class="disclosure__ko">내부 프로토타입 · 가상 칩 전용 · 현금 가치 없음</span>
+          <span class="disclosure__note"
+            >이 화면에는 가상 칩을 늘리거나 밖으로 내보내는 경로가 하나도 없습니다.</span
+          >
+        </p>
+
+        <div class="topbar__row">
+          <h1 class="topbar__title">유러피언 싱글제로 룰렛</h1>
+          <p class="topbar__table" id="table-id">테이블 준비 중</p>
+        </div>
+
+        <dl class="balance" aria-label="가상 칩 잔액">
+          <div class="balance__item balance__item--primary">
+            <dt>보유 가상 칩</dt>
+            <dd id="balance-units">—</dd>
+          </div>
+          <div class="balance__item">
+            <dt>베팅 예약</dt>
+            <dd id="reserved-units">—</dd>
+          </div>
+          <div class="balance__item">
+            <dt>사용 가능</dt>
+            <dd id="available-units">—</dd>
+          </div>
+        </dl>
+      </header>
+
+      <main class="layout">
+        <!-- ── stage: wheel, phase, result ─────────────────────────────────────────── -->
+        <section class="panel stage" aria-labelledby="stage-heading">
+          <h2 class="panel__heading" id="stage-heading">라운드</h2>
+
+          <div class="stage__wheel">
+            <svg
+              class="wheel"
+              viewBox="-110 -110 220 220"
+              role="img"
+              aria-labelledby="wheel-title wheel-desc"
+              focusable="false"
+            >
+              <title id="wheel-title">룰렛 휠</title>
+              <desc id="wheel-desc">
+                장식용 휠입니다. 결과는 서버가 결정하며, 휠은 서버가 알려 준 포켓 위치로만
+                멈춥니다.
+              </desc>
+              <circle class="wheel__rim" cx="0" cy="0" r="104" />
+              <g class="wheel__rotor" id="wheel-rotor"></g>
+              <circle class="wheel__hub" cx="0" cy="0" r="34" />
+              <circle class="wheel__hub-ring" cx="0" cy="0" r="27" />
+              <path class="wheel__pointer" d="M0 -112 L11 -92 L-11 -92 Z" />
+            </svg>
+
+            <p class="stage__pocket" id="result-pocket" data-color="none">
+              <span class="stage__pocket-value" id="result-pocket-value">–</span>
+              <span class="stage__pocket-label" id="result-pocket-label">아직 결과 없음</span>
+            </p>
+          </div>
+
+          <p class="stage__phase">
+            <span class="stage__phase-label">라운드 상태</span>
+            <output class="phase-chip" id="round-phase" for="round-id">준비 중</output>
+            <span class="stage__round-id" id="round-id">—</span>
+          </p>
+
+          <!-- The one place the player is told what just happened, and the same text a
+               screen reader hears. Keeping them identical means the visual and the
+               announced state can never disagree. -->
+          <p class="status" id="status" role="status" aria-live="polite" aria-atomic="true">
+            테이블을 불러오는 중입니다.
+          </p>
+          <p class="visually-hidden" id="announcer" aria-live="polite" aria-atomic="true"></p>
+
+          <div class="alert" id="error-alert" role="alert" hidden>
+            <p class="alert__message" id="error-message"></p>
+            <button class="button button--ghost" type="button" id="retry-button">
+              다시 시도
+            </button>
+          </div>
+
+          <dl class="stage__settlement" id="settlement" hidden>
+            <div>
+              <dt>이번 라운드 베팅</dt>
+              <dd id="settlement-stake">—</dd>
+            </div>
+            <div>
+              <dt>서버 지급</dt>
+              <dd id="settlement-return">—</dd>
+            </div>
+            <div>
+              <dt>증감</dt>
+              <dd id="settlement-net">—</dd>
+            </div>
+          </dl>
+        </section>
+
+        <!-- ── history ─────────────────────────────────────────────────────────────── -->
+        <section class="panel history" aria-labelledby="history-heading">
+          <h2 class="panel__heading" id="history-heading">최근 결과</h2>
+          <p class="panel__hint">서버에 커밋된 순서 그대로이며, 최신 결과가 왼쪽입니다.</p>
+          <ol class="history__list" id="history-list">
+            <li class="history__empty">아직 기록이 없습니다.</li>
+          </ol>
+        </section>
+
+        <!-- ── betting board ───────────────────────────────────────────────────────── -->
+        <section class="panel betting" aria-labelledby="board-heading">
+          <h2 class="panel__heading" id="board-heading">베팅</h2>
+
+          <fieldset class="chips" id="chip-group">
+            <legend>칩 금액</legend>
+            <div class="chips__row">
+              <label class="chip">
+                <input type="radio" name="chip" value="1" />
+                <span class="chip__face" data-chip="1"><span class="chip__value">1</span></span>
+                <span class="visually-hidden">가상 칩 1</span>
+              </label>
+              <label class="chip">
+                <input type="radio" name="chip" value="5" />
+                <span class="chip__face" data-chip="5"><span class="chip__value">5</span></span>
+                <span class="visually-hidden">가상 칩 5</span>
+              </label>
+              <label class="chip">
+                <input type="radio" name="chip" value="25" checked />
+                <span class="chip__face" data-chip="25"><span class="chip__value">25</span></span>
+                <span class="visually-hidden">가상 칩 25</span>
+              </label>
+              <label class="chip">
+                <input type="radio" name="chip" value="100" />
+                <span class="chip__face" data-chip="100"><span class="chip__value">100</span></span>
+                <span class="visually-hidden">가상 칩 100</span>
+              </label>
+              <label class="chip">
+                <input type="radio" name="chip" value="500" />
+                <span class="chip__face" data-chip="500"><span class="chip__value">500</span></span>
+                <span class="visually-hidden">가상 칩 500</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset class="bet-types" id="bet-type-group">
+            <legend>인사이드 베팅 종류</legend>
+            <div class="bet-types__row">
+              <label class="bet-type">
+                <input type="radio" name="bet-type" value="straight" checked />
+                <span class="bet-type__face">
+                  <span class="bet-type__name">스트레이트</span>
+                  <span class="bet-type__count" data-count-for="straight">번호 1개</span>
+                </span>
+              </label>
+              <label class="bet-type">
+                <input type="radio" name="bet-type" value="split" />
+                <span class="bet-type__face">
+                  <span class="bet-type__name">스플릿</span>
+                  <span class="bet-type__count" data-count-for="split">번호 2개</span>
+                </span>
+              </label>
+              <label class="bet-type">
+                <input type="radio" name="bet-type" value="street" />
+                <span class="bet-type__face">
+                  <span class="bet-type__name">스트리트</span>
+                  <span class="bet-type__count" data-count-for="street">번호 3개</span>
+                </span>
+              </label>
+              <label class="bet-type">
+                <input type="radio" name="bet-type" value="corner" />
+                <span class="bet-type__face">
+                  <span class="bet-type__name">코너</span>
+                  <span class="bet-type__count" data-count-for="corner">번호 4개</span>
+                </span>
+              </label>
+              <label class="bet-type">
+                <input type="radio" name="bet-type" value="six_line" />
+                <span class="bet-type__face">
+                  <span class="bet-type__name">식스라인</span>
+                  <span class="bet-type__count" data-count-for="six_line">번호 6개</span>
+                </span>
+              </label>
+            </div>
+            <p class="panel__hint" id="selection-hint">
+              번호를 고르면 슬립에 담깁니다. 조합이 규칙에 맞는지는 서버가 판정합니다.
+            </p>
+          </fieldset>
+
+          <!-- Cells are built from the pocket list the server sends, so the board can never
+               show a number the authoritative table does not have. -->
+          <div
+            class="board"
+            id="board"
+            role="group"
+            aria-labelledby="board-heading"
+            aria-describedby="selection-hint"
+          ></div>
+
+          <div class="outside" role="group" aria-label="아웃사이드 베팅">
+            <div class="outside__dozens">
+              <button class="outside__cell" type="button" data-bet-type="dozen" data-selections="1">
+                1st 12<span class="outside__sub">1–12</span>
+              </button>
+              <button class="outside__cell" type="button" data-bet-type="dozen" data-selections="2">
+                2nd 12<span class="outside__sub">13–24</span>
+              </button>
+              <button class="outside__cell" type="button" data-bet-type="dozen" data-selections="3">
+                3rd 12<span class="outside__sub">25–36</span>
+              </button>
+            </div>
+            <div class="outside__columns">
+              <button class="outside__cell" type="button" data-bet-type="column" data-selections="1">
+                1열<span class="outside__sub">1, 4, 7 …</span>
+              </button>
+              <button class="outside__cell" type="button" data-bet-type="column" data-selections="2">
+                2열<span class="outside__sub">2, 5, 8 …</span>
+              </button>
+              <button class="outside__cell" type="button" data-bet-type="column" data-selections="3">
+                3열<span class="outside__sub">3, 6, 9 …</span>
+              </button>
+            </div>
+            <div class="outside__evens">
+              <button class="outside__cell" type="button" data-bet-type="low" data-selections="">
+                1–18<span class="outside__sub">로우</span>
+              </button>
+              <button class="outside__cell" type="button" data-bet-type="even" data-selections="">
+                짝수<span class="outside__sub">이븐</span>
+              </button>
+              <button
+                class="outside__cell outside__cell--red"
+                type="button"
+                data-bet-type="red"
+                data-selections=""
+              >
+                빨강<span class="outside__sub">레드</span>
+              </button>
+              <button
+                class="outside__cell outside__cell--black"
+                type="button"
+                data-bet-type="black"
+                data-selections=""
+              >
+                검정<span class="outside__sub">블랙</span>
+              </button>
+              <button class="outside__cell" type="button" data-bet-type="odd" data-selections="">
+                홀수<span class="outside__sub">오드</span>
+              </button>
+              <button class="outside__cell" type="button" data-bet-type="high" data-selections="">
+                19–36<span class="outside__sub">하이</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── bet slip ────────────────────────────────────────────────────────────── -->
+        <section class="panel slip" aria-labelledby="slip-heading">
+          <h2 class="panel__heading" id="slip-heading">베팅 슬립</h2>
+
+          <h3 class="slip__subheading" id="draft-heading">
+            대기 중 <span class="slip__badge" id="draft-count">0</span>
+          </h3>
+          <p class="panel__hint">스핀을 누르면 서버에 제출됩니다. 제출 전에는 지울 수 있습니다.</p>
+          <ul class="slip__list" id="draft-list" aria-labelledby="draft-heading">
+            <li class="slip__empty">담은 베팅이 없습니다.</li>
+          </ul>
+
+          <h3 class="slip__subheading" id="placed-heading">
+            서버 확정 <span class="slip__badge" id="placed-count">0</span>
+          </h3>
+          <p class="panel__hint">
+            서버가 받아들인 베팅입니다. 확정된 베팅은 클라이언트가 취소할 수 없습니다.
+          </p>
+          <ul class="slip__list" id="placed-list" aria-labelledby="placed-heading">
+            <li class="slip__empty">확정된 베팅이 없습니다.</li>
+          </ul>
+
+          <p class="slip__total">
+            <span>합계 베팅액</span>
+            <output class="slip__total-value" id="slip-total">0 칩</output>
+          </p>
+        </section>
+      </main>
+
+      <!-- ── controls ──────────────────────────────────────────────────────────────── -->
+      <div class="controls" role="group" aria-label="라운드 조작">
+        <button class="button button--ghost" type="button" id="clear-button">
+          지우기<span class="visually-hidden">, 대기 중인 베팅을 모두 비웁니다</span>
+        </button>
+        <button class="button button--ghost" type="button" id="rebet-button">
+          리베팅<span class="visually-hidden">, 직전 라운드와 같은 베팅을 다시 담습니다</span>
+        </button>
+        <button class="button button--primary" type="button" id="spin-button">
+          스핀<span class="visually-hidden">, 대기 중인 베팅을 제출하고 서버에 추첨을 요청합니다</span>
+        </button>
+        <button class="button button--secondary" type="button" id="new-round-button">
+          새 라운드<span class="visually-hidden">, 정산이 끝난 뒤 새 라운드를 엽니다</span>
+        </button>
+      </div>
+
+      <footer class="footer">
+        <p class="footer__notice" id="server-notice" lang="ko">
+          내부 프로토타입입니다. 가상 칩만 사용하며 현금 가치가 없습니다.
+        </p>
+        <p class="footer__notice" lang="en">
+          Internal prototype. Virtual chips only. No cash value.
+        </p>
+        <p class="footer__fine">
+          결과, 지급액, 잔액은 모두 서버가 결정합니다. 이 화면은 서버가 준 값을 표시하고 입력을
+          전달할 뿐입니다. 모든 자산은 이 로컬 서버가 배급하며 외부로 나가는 요청이 없습니다.
+        </p>
+      </footer>
+    </div>
+
+    <noscript>
+      <p class="noscript">
+        이 내부 프로토타입은 자바스크립트로 서버 상태를 표시합니다. 자바스크립트를 켜 주세요.
+        권위 있는 테이블 상태는 <code>/api/state</code>에 있습니다. 내부 프로토타입이며 가상 칩만
+        사용하고 현금 가치가 없습니다.
+      </p>
+    </noscript>
+  </body>
+</html>

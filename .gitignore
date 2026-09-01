@@ -10,3 +10,13 @@ build/
 # Internal reviewer worktrees are scratch copies of the repository and must never be committed.
 .claude/worktrees/
 
+# Runtime SQLite state produced by the R4 roulette slice. The default location is outside the
+# repository (see apps/roulette_web/README.md), so these rules only catch a run that was
+# pointed at the working tree with --db or $ROULETTE_WEB_DB. They match runtime databases and
+# their WAL/SHM sidecars only; no source file in this repository uses these suffixes.
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.sqlite
+*.db
+
