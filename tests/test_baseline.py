@@ -12,6 +12,7 @@ from studio_core.workflow import evaluate_transition
 from scripts.validate_baseline import (
     BaselineValidationError,
     EXPECTED_AGENT_IDS,
+    content_sha256,
     load_json,
     load_yaml,
     validate_agent_registry,
@@ -290,6 +291,45 @@ class BaselineTests(unittest.TestCase):
         self.assertTrue(allowed.allowed)
         self.assertFalse(denied.allowed)
         self.assertEqual(denied.code, "ACTOR_DENIED")
+
+
+class ContentHashTests(unittest.TestCase):
+    """Artifact hashes must survive an autocrlf checkout, not just a Linux one."""
+
+    def _write(self, name: str, payload: bytes):
+        import tempfile
+
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        from pathlib import Path
+
+        path = Path(directory.name) / name
+        path.write_bytes(payload)
+        return path
+
+    def test_text_hash_is_identical_for_lf_and_crlf_checkouts(self) -> None:
+        lf = self._write("lf.yaml", b"key: value\nother: 1\n")
+        crlf = self._write("crlf.yaml", b"key: value\r\nother: 1\r\n")
+        self.assertEqual(content_sha256(lf), content_sha256(crlf))
+
+    def test_text_hash_matches_the_committed_lf_form(self) -> None:
+        import hashlib
+
+        payload = b"key: value\nother: 1\n"
+        crlf = self._write("crlf.yaml", payload.replace(b"\n", b"\r\n"))
+        self.assertEqual(content_sha256(crlf), "sha256:" + hashlib.sha256(payload).hexdigest())
+
+    def test_binary_content_is_hashed_verbatim(self) -> None:
+        import hashlib
+
+        payload = b"\x00\r\n\x01"
+        binary = self._write("blob.bin", payload)
+        self.assertEqual(content_sha256(binary), "sha256:" + hashlib.sha256(payload).hexdigest())
+
+    def test_differing_text_still_produces_differing_hashes(self) -> None:
+        first = self._write("a.txt", b"alpha\n")
+        second = self._write("b.txt", b"beta\n")
+        self.assertNotEqual(content_sha256(first), content_sha256(second))
 
 
 if __name__ == "__main__":

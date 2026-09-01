@@ -1,0 +1,88 @@
+name: CI
+
+# Runs on every pull request and on pushes to the default branch only. This workflow is
+# self-contained: it does not depend on any other branch, workflow or pull request.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Least privilege: the workflow only ever reads the checked-out tree. No job requests write
+# scopes, and no step reads the `secrets` context.
+permissions:
+  contents: read
+
+# Supersede an in-flight run for the same ref instead of queueing duplicate work.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+# Supply chain: every `uses:` below is pinned to a full 40-character commit SHA, with the
+# release tag kept as a trailing comment for readability. Tags are mutable even on official
+# GitHub actions, so a tag reference would let upstream change the code this workflow runs.
+# tests/test_secret_scan.py holds the approved SHA-to-tag mapping and fails on any drift;
+# bumping an action means updating both the workflow line and that mapping.
+
+jobs:
+  baseline:
+    name: Baseline, tests and compile (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        # Smallest matrix that still covers the floor declared in pyproject.toml
+        # (requires-python >= 3.11) and the version used locally.
+        python-version: ["3.11", "3.12"]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          # Do not leave the Actions token in .git/config for later steps to reuse.
+          persist-credentials: false
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install declared runtime dependency
+        run: python -m pip install --disable-pip-version-check --no-input "PyYAML>=6,<7"
+
+      - name: Validate control-plane baseline
+        run: python scripts/validate_baseline.py
+
+      - name: Run the full unit test suite
+        run: python -m unittest discover -s tests -v
+
+      - name: Byte-compile package, scripts and tests
+        run: python -m compileall -q studio_core scripts tests
+
+  secret-scan:
+    name: Repository secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Install declared runtime dependency
+        run: python -m pip install --disable-pip-version-check --no-input "PyYAML>=6,<7"
+
+      - name: Scan the working tree for plaintext credentials
+        run: python scripts/scan_secrets.py

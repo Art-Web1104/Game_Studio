@@ -52,6 +52,22 @@ def load_yaml(relative_path: str) -> dict[str, Any]:
     return value
 
 
+def content_sha256(path: Path) -> str:
+    """Hash repository content in a way that does not depend on the checkout's line endings.
+
+    Artifact and knowledge hashes are recorded against the committed form of a file, which
+    stores text with LF. A Windows checkout with ``core.autocrlf=true`` materializes exactly
+    the same commit as CRLF, so hashing raw working-tree bytes makes one commit validate on a
+    Linux runner and fail on a Windows workstation. Text is therefore normalized to LF before
+    hashing; content holding a NUL byte is treated as binary and hashed verbatim.
+    """
+
+    data = path.read_bytes()
+    if b"\x00" not in data:
+        data = data.replace(b"\r\n", b"\n")
+    return "sha256:" + hashlib.sha256(data).hexdigest()
+
+
 def _resolve_ref(root_schema: dict[str, Any], reference: str) -> dict[str, Any]:
     if not reference.startswith("#/"):
         raise BaselineValidationError(f"external schema reference is not allowed: {reference}")
@@ -264,6 +280,17 @@ def validate_required_files() -> None:
         "handoffs/SYS-CLD-0011-handoff.json",
         "docs/operations/SYS-CLD-0011-codex-claude-collaboration.md",
         "tests/test_collaboration.py",
+        # SYS-CI-0012 continuous validation. The workflow itself runs on GitHub; these files
+        # are what make the pipeline reproducible from a local checkout.
+        ".github/workflows/ci.yml",
+        "studio_core/secret_scan.py",
+        "scripts/scan_secrets.py",
+        "tests/test_secret_scan.py",
+        "tests/fixtures/secret_scan/allowlisted-sample.txt",
+        "docs/operations/SYS-CI-0012-ci-validation.md",
+        "tasks/SYS-CI-0012.json",
+        "artifacts/SYS-CI-0012-artifact.json",
+        "handoffs/SYS-CI-0012-handoff.json",
     ]
     missing = [path for path in required if not (ROOT / path).is_file()]
     if missing:
@@ -444,7 +471,7 @@ def validate_knowledge(agent_definitions: dict[str, dict[str, Any]]) -> dict[str
         content_path = ROOT / referenced_path
         if not content_path.is_file():
             raise BaselineValidationError(f"knowledge content_ref does not exist: {referenced_path}")
-        actual_hash = "sha256:" + hashlib.sha256(content_path.read_bytes()).hexdigest()
+        actual_hash = content_sha256(content_path)
         if item["provenance"]["content_hash"] != actual_hash:
             raise BaselineValidationError("knowledge provenance hash does not match content_ref")
     return item
@@ -701,7 +728,7 @@ def validate_collaboration(agent_definitions: dict[str, dict[str, Any]]) -> dict
         if artifact["uri"].startswith("repo://"):
             if not (ROOT / content_path).is_file():
                 raise BaselineValidationError(f"{task['task_id']}: artifact uri does not exist: {content_path}")
-            actual = "sha256:" + hashlib.sha256((ROOT / content_path).read_bytes()).hexdigest()
+            actual = content_sha256(ROOT / content_path)
             if artifact["content_hash"] != actual:
                 raise BaselineValidationError(f"{task['task_id']}: artifact content_hash does not match {content_path}")
 
