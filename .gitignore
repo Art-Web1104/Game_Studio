@@ -7,3 +7,6 @@ build/
 *.log
 .DS_Store
 
+# Internal reviewer worktrees are scratch copies of the repository and must never be committed.
+.claude/worktrees/
+

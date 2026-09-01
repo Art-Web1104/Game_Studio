@@ -140,15 +140,22 @@ class BaselineTests(unittest.TestCase):
 
     def test_claude_route_blocks_until_connected(self) -> None:
         values = validate_providers(validate_agent_registry())
-        decision = select_provider(values["request"], values["registry"], values["routing"])
+        registry = copy.deepcopy(values["registry"])
+        provider = next(item for item in registry["providers"] if item["provider_id"] == "claude_agent")
+        provider["status"] = "DISABLED_UNTIL_CONFIGURED"
+        decision = select_provider(values["request"], registry, values["routing"])
         self.assertFalse(decision.allowed)
         self.assertEqual(decision.code, "PROVIDER_UNAVAILABLE")
+        self.assertIsNone(decision.provider_id)
 
     def test_claude_route_activates_after_health_checked_configuration(self) -> None:
         values = validate_providers(validate_agent_registry())
-        registry = copy.deepcopy(values["registry"])
-        next(item for item in registry["providers"] if item["provider_id"] == "claude_agent")["status"] = "ENABLED"
-        decision = select_provider(values["request"], registry, values["routing"])
+        provider = next(item for item in values["registry"]["providers"] if item["provider_id"] == "claude_agent")
+        self.assertEqual(provider["status"], "ENABLED")
+        self.assertEqual(
+            provider["activation_evidence"], "providers/evidence/SYS-CLD-0011-claude-connection-proof.yaml"
+        )
+        decision = select_provider(values["request"], values["registry"], values["routing"])
         self.assertTrue(decision.allowed)
         self.assertEqual(decision.provider_id, "claude_agent")
 

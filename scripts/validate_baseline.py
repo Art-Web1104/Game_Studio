@@ -255,6 +255,15 @@ def validate_required_files() -> None:
         "docs/providers/CLAUDE-CODE-SETUP.md",
         "docs/approvals/R1-checklist.md",
         "docs/approvals/R1-validation-report.md",
+        "operations/collaboration.yaml",
+        "studio_core/collaboration.py",
+        "providers/connection-proof.schema.json",
+        "providers/evidence/SYS-CLD-0011-claude-connection-proof.yaml",
+        "tasks/SYS-CLD-0011.json",
+        "artifacts/SYS-CLD-0011-artifact.json",
+        "handoffs/SYS-CLD-0011-handoff.json",
+        "docs/operations/SYS-CLD-0011-codex-claude-collaboration.md",
+        "tests/test_collaboration.py",
     ]
     missing = [path for path in required if not (ROOT / path).is_file()]
     if missing:
@@ -483,7 +492,12 @@ def validate_providers(agent_definitions: dict[str, dict[str, Any]]) -> dict[str
         raise BaselineValidationError("provider routing must deny production writes and require review")
     if provider_map.get("codex_primary", {}).get("status") != "DISABLED":
         raise BaselineValidationError("Codex programming provider must remain disabled by ADR-0003")
-    if provider_map.get("claude_agent", {}).get("status") != "DISABLED_UNTIL_CONFIGURED":
+    claude_status = provider_map.get("claude_agent", {}).get("status")
+    if claude_status == "ENABLED":
+        decision = evaluate_claude_activation(claude_status)
+        if not decision.allowed:
+            raise BaselineValidationError(f"Claude activation is not backed by connection proof: {decision.message}")
+    elif claude_status != "DISABLED_UNTIL_CONFIGURED":
         raise BaselineValidationError("Claude must remain disabled until a real connection health check passes")
     code_route = routing.get("routes", {}).get("code", {})
     if code_route.get("preferred") != "claude_agent" or code_route.get("fallbacks") != []:
@@ -499,6 +513,219 @@ def validate_providers(agent_definitions: dict[str, dict[str, Any]]) -> dict[str
     if no_fallback.get("programming_provider") != "claude_agent" or no_fallback.get("on_unavailable") != "BLOCKED" or no_fallback.get("codex_substitution") != "denied":
         raise BaselineValidationError("Claude-only unavailable and substitution behavior is incomplete")
     return {"request": request, "response": response, "registry": registry, "routing": routing}
+
+
+def load_connection_proof(provider_id: str) -> dict[str, Any] | None:
+    """Return the single connection proof recorded for a provider, if one exists."""
+
+    evidence_dir = ROOT / "providers" / "evidence"
+    if not evidence_dir.is_dir():
+        return None
+    matches = []
+    for path in sorted(evidence_dir.glob("*.yaml")):
+        proof = load_yaml(str(path.relative_to(ROOT)).replace("\\", "/"))
+        if proof.get("provider_id") == provider_id:
+            matches.append(proof)
+    if len(matches) > 1:
+        raise BaselineValidationError(f"{provider_id}: multiple connection proofs are ambiguous")
+    return matches[0] if matches else None
+
+
+def evaluate_claude_activation(target_status: str) -> Any:
+    """Gate claude_agent promotion on a schema-valid, fully passing connection proof."""
+
+    from studio_core.collaboration import evaluate_provider_activation
+
+    protocol = load_yaml("operations/collaboration.yaml")
+    proof = load_connection_proof("claude_agent")
+    if proof is not None:
+        validate_instance(proof, load_json("providers/connection-proof.schema.json"))
+    return evaluate_provider_activation("claude_agent", target_status, proof, protocol=protocol)
+
+
+def _iter_text_files(relative_path: str) -> list[Path]:
+    target = ROOT / relative_path
+    if target.is_file():
+        return [target]
+    if not target.is_dir():
+        return []
+    return sorted(path for path in target.rglob("*") if path.is_file() and path.suffix in {".json", ".yaml", ".md"})
+
+
+def validate_collaboration(agent_definitions: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Validate the SYS-CLD-0011 Codex/Claude collaboration protocol and its task artifacts."""
+
+    from studio_core.collaboration import (
+        evaluate_delegation,
+        evaluate_independent_verification,
+        evaluate_role_action,
+        missing_evidence_commands,
+        scan_for_plaintext_secrets,
+    )
+
+    protocol = load_yaml("operations/collaboration.yaml")
+    proof_schema_path = "providers/connection-proof.schema.json"
+    proof_schema = load_json(proof_schema_path)
+    validate_schema_structure(proof_schema, proof_schema_path)
+
+    roles = protocol["roles"]
+    if set(roles) != {"issuer", "implementer", "independent_verifier"}:
+        raise BaselineValidationError("collaboration protocol must define issuer, implementer, and verifier roles")
+    if roles["implementer"]["console"] == roles["independent_verifier"]["console"]:
+        raise BaselineValidationError("implementation and independent verification must use different consoles")
+    if roles["implementer"]["provider_id"] != "claude_agent":
+        raise BaselineValidationError("Claude must remain the sole implementation provider")
+    for role in ("issuer", "independent_verifier"):
+        if evaluate_role_action(role, "code_generation", protocol=protocol).allowed:
+            raise BaselineValidationError(f"{role} must never be allowed to generate code")
+    if evaluate_role_action("implementer", "final_qa_approval", protocol=protocol).allowed:
+        raise BaselineValidationError("the implementer must never issue the final QA gate")
+    for role, definition in roles.items():
+        unknown = set(definition["acts_for"]) - EXPECTED_AGENT_IDS
+        if unknown:
+            raise BaselineValidationError(f"{role}: unknown agents {sorted(unknown)!r}")
+
+    duties = protocol["separation_of_duties"]
+    for key in ("generator_is_reviewer", "generator_is_final_approver", "self_approval"):
+        if duties[key] != "denied":
+            raise BaselineValidationError(f"collaboration protocol must deny {key}")
+    if not {"A-50", "USER"} <= set(duties["final_gate"]):
+        raise BaselineValidationError("final QA gate must stay with A-50 and the user")
+
+    credentials = protocol["credentials"]
+    if credentials["storage"] not in credentials["allowed_storage"]:
+        raise BaselineValidationError("declared credential storage is not in the allowed list")
+    if any(credentials[target] != "prohibited" for target in ("repository_values", "prompt_values", "log_values")):
+        raise BaselineValidationError("credential values must be prohibited in repository, prompts, and logs")
+    if credentials["reference_prefix"] != "secret-ref://":
+        raise BaselineValidationError("credential references must use the secret-ref:// scheme")
+
+    boundary = protocol["adr_0003_boundary"]
+    if not boundary["claude_is_sole_programming_provider"]:
+        raise BaselineValidationError("ADR-0003 sole-provider boundary must be preserved")
+    if boundary["codex_substitution_on_claude_unavailable"] != "denied":
+        raise BaselineValidationError("Codex substitution must stay denied when Claude is unavailable")
+    if protocol["provider_activation"]["codex_code_provider"] != "denied":
+        raise BaselineValidationError("Codex must never be activated as a code provider")
+    for guard in ("commit_without_user_approval", "push_without_user_approval", "production_direct_access"):
+        if protocol["guards"][guard] != "denied":
+            raise BaselineValidationError(f"collaboration guard {guard} must be denied")
+
+    instructions = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
+    required_checks = protocol["completion_gate"]["required_checks"]
+    for command in required_checks:
+        if command not in instructions:
+            raise BaselineValidationError(f"completion gate command is not declared in CLAUDE.md: {command}")
+
+    activation = protocol["provider_activation"]
+    proof = load_connection_proof(activation["provider_id"])
+    if proof is None:
+        raise BaselineValidationError("a connection proof record is required for the gated provider")
+    validate_instance(proof, proof_schema)
+    if proof["recorded_by"] == proof["verified_by"]:
+        raise BaselineValidationError("connection proof recorder and verifier must be different actors")
+    for actor in (proof["recorded_by"], proof["verified_by"]):
+        if actor != "USER" and actor not in agent_definitions:
+            raise BaselineValidationError(f"connection proof references an unknown actor: {actor}")
+
+    registry = load_yaml("providers/registry.yaml")
+    provider_map = {item["provider_id"]: item for item in registry["providers"]}
+    claude_status = provider_map[activation["provider_id"]]["status"]
+    # Always ask whether a promotion would be allowed, so the recorded status and the evidence
+    # cannot drift apart in either direction.
+    promotion = evaluate_claude_activation(activation["proven_status"])
+    if claude_status == activation["proven_status"] and not promotion.allowed:
+        raise BaselineValidationError(f"claude_agent is ENABLED without proof: {promotion.message}")
+    if claude_status == activation["unproven_status"] and promotion.allowed:
+        raise BaselineValidationError("connection proof passes but claude_agent was not promoted")
+    if claude_status not in {activation["proven_status"], activation["unproven_status"]}:
+        raise BaselineValidationError(f"claude_agent has an unexpected status: {claude_status}")
+
+    task_schema = load_json("contracts/task.schema.json")
+    artifact_schema = load_json("contracts/artifact.schema.json")
+    handoff_schema = load_json("contracts/handoff.schema.json")
+    directories = protocol["directories"]
+
+    tasks: dict[str, Any] = {}
+    for path in sorted((ROOT / directories["task_contracts"]).glob("*.json")):
+        task = load_json(f"{directories['task_contracts']}/{path.name}")
+        validate_instance(task, task_schema)
+        if path.stem != task["task_id"]:
+            raise BaselineValidationError(f"{path.name}: filename must match task_id {task['task_id']}")
+        if task["owner_agent_id"] not in agent_definitions:
+            raise BaselineValidationError(f"{task['task_id']}: unknown owner agent")
+
+        delegation = evaluate_delegation(
+            task,
+            console=roles["implementer"]["console"],
+            actor_agent_id=task["owner_agent_id"],
+            protocol=protocol,
+        )
+        if task["status"] in protocol["delegation_gate"]["allowed_task_status"] and not delegation.allowed:
+            raise BaselineValidationError(f"{task['task_id']}: delegation gate rejects the contract: {delegation.message}")
+
+        artifact_path = f"{directories['artifact_contracts']}/{task['task_id']}-artifact.json"
+        handoff_path = f"{directories['handoff_packets']}/{task['task_id']}-handoff.json"
+        if not (ROOT / artifact_path).is_file() or not (ROOT / handoff_path).is_file():
+            raise BaselineValidationError(f"{task['task_id']}: an Artifact Contract and Handoff Packet are required")
+
+        artifact = load_json(artifact_path)
+        handoff = load_json(handoff_path)
+        validate_instance(artifact, artifact_schema)
+        validate_instance(handoff, handoff_schema)
+
+        if artifact["task_id"] != task["task_id"] or handoff["task_id"] != task["task_id"]:
+            raise BaselineValidationError(f"{task['task_id']}: artifact or handoff task_id does not match")
+        if artifact["project_id"] != task["project_id"]:
+            raise BaselineValidationError(f"{task['task_id']}: artifact project_id does not match the task")
+        if artifact["artifact_id"] not in handoff["artifact_refs"]:
+            raise BaselineValidationError(f"{task['task_id']}: handoff does not reference the artifact")
+        if artifact["source"]["created_by"] in artifact["reviewers"]:
+            raise BaselineValidationError(f"{task['task_id']}: artifact creator may not review its own artifact")
+        if handoff["from_agent_id"] == handoff["to_agent_id"]:
+            raise BaselineValidationError(f"{task['task_id']}: handoff sender and receiver must differ")
+
+        verification = evaluate_independent_verification(
+            handoff,
+            console=roles["independent_verifier"]["console"],
+            verifier_agent_id=handoff["to_agent_id"],
+            protocol=protocol,
+        )
+        if not verification.allowed:
+            raise BaselineValidationError(f"{task['task_id']}: handoff is not independently verifiable: {verification.message}")
+        missing = missing_evidence_commands(handoff, required_checks)
+        if missing:
+            raise BaselineValidationError(f"{task['task_id']}: missing command evidence {missing!r}")
+
+        content_path = artifact["uri"].removeprefix("repo://")
+        if artifact["uri"].startswith("repo://"):
+            if not (ROOT / content_path).is_file():
+                raise BaselineValidationError(f"{task['task_id']}: artifact uri does not exist: {content_path}")
+            actual = "sha256:" + hashlib.sha256((ROOT / content_path).read_bytes()).hexdigest()
+            if artifact["content_hash"] != actual:
+                raise BaselineValidationError(f"{task['task_id']}: artifact content_hash does not match {content_path}")
+
+        tasks[task["task_id"]] = {"task": task, "artifact": artifact, "handoff": handoff}
+
+    if not tasks:
+        raise BaselineValidationError("at least one Task Contract is required under tasks/")
+
+    scanned = [
+        "operations/collaboration.yaml",
+        protocol["guide"],
+        directories["provider_evidence"],
+        directories["task_contracts"],
+        directories["artifact_contracts"],
+        directories["handoff_packets"],
+    ]
+    for entry in scanned:
+        for path in _iter_text_files(entry):
+            matches = scan_for_plaintext_secrets(path.read_text(encoding="utf-8"))
+            if matches:
+                relative = path.relative_to(ROOT).as_posix()
+                raise BaselineValidationError(f"{relative}: plaintext credential material detected ({len(matches)} rules)")
+
+    return {"protocol": protocol, "proof": proof, "tasks": tasks}
 
 
 def validate_claude_workspace() -> dict[str, Any]:
@@ -519,9 +746,12 @@ def validate_claude_workspace() -> dict[str, Any]:
     permissions = settings.get("permissions", {})
     if permissions.get("defaultMode") != "default" or permissions.get("disableBypassPermissionsMode") != "disable":
         raise BaselineValidationError("Claude permissions must use default mode with bypass disabled")
+    # Edit rules also govern Write and NotebookEdit, so secret paths are denied with the
+    # Edit prefix instead of a separate Write rule.
     required_denies = {
         "Bash(rm -rf *)", "Bash(git reset --hard *)", "Bash(git clean *)",
-        "Bash(git push *)", "Read(./.env)", "Write(./.env)",
+        "Bash(git push *)", "Read(./.env)", "Edit(./.env)",
+        "Read(./secrets/**)", "Edit(./secrets/**)",
     }
     if not required_denies <= set(permissions.get("deny", [])):
         raise BaselineValidationError("Claude destructive or secret-path deny rules are incomplete")
@@ -818,6 +1048,8 @@ def run_validation() -> list[str]:
     passed.append("SYS-010 R0 사용자 최종 승인")
     validate_r1_roulette()
     passed.append("R1 룰렛 규칙·경제 후보 기준선")
+    validate_collaboration(agent_definitions)
+    passed.append("SYS-CLD-0011 Codex 발주·Claude 구현·Codex 독립검증 협업 프로토콜")
     return passed
 
 

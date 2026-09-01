@@ -13,12 +13,16 @@ providers:
     health_check: configured_connector_and_schema_probe
   - provider_id: claude_agent
     display_name: Anthropic Claude Code
-    status: DISABLED_UNTIL_CONFIGURED
+    status: ENABLED
     adapter_type: api_or_managed_connector
     capabilities: [code, reasoning, evaluation]
     allowed_data_classifications: [PUBLIC, INTERNAL]
     credential_ref: secret-ref://providers/claude
+    credential_source: OS_CREDENTIAL_STORE
     health_check: configured_connector_and_schema_probe
+    activation_evidence: providers/evidence/SYS-CLD-0011-claude-connection-proof.yaml
+    activated_by_task: SYS-CLD-0011
+    activated_at: '2026-09-01T00:00:00Z'
   - provider_id: layer_ai
     display_name: Layer AI
     status: DISABLED_UNTIL_CONFIGURED
