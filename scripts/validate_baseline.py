@@ -61,6 +61,23 @@ def load_yaml(relative_path: str) -> dict[str, Any]:
     return value
 
 
+def content_sha256(path: Path) -> str:
+    """Hash repository content in a way that does not depend on the checkout's line endings.
+
+    Artifact and knowledge hashes are recorded against the committed form of a file, which
+    stores text with LF. A Windows checkout with ``core.autocrlf=true`` materializes exactly
+    the same commit as CRLF, so hashing raw working-tree bytes makes one commit validate on a
+    Linux runner and fail on a Windows workstation. Text is therefore normalized to LF before
+    hashing; content holding a NUL byte is treated as binary and hashed verbatim.
+
+    The canonical form lives in ``studio_core.integrity`` so the validator, the R2 integrity
+    check, and the CI pipeline all agree on one definition; this stays as the named entry
+    point that the baseline suite and the CI documentation refer to.
+    """
+
+    return hash_file(path, label=str(path))
+
+
 def _resolve_ref(root_schema: dict[str, Any], reference: str) -> dict[str, Any]:
     if not reference.startswith("#/"):
         raise BaselineValidationError(f"external schema reference is not allowed: {reference}")
@@ -289,6 +306,17 @@ def validate_required_files() -> None:
         "handoffs/SYS-CLD-0011-handoff.json",
         "docs/operations/SYS-CLD-0011-codex-claude-collaboration.md",
         "tests/test_collaboration.py",
+        # SYS-CI-0012 continuous validation. The workflow itself runs on GitHub; these files
+        # are what make the pipeline reproducible from a local checkout.
+        ".github/workflows/ci.yml",
+        "studio_core/secret_scan.py",
+        "scripts/scan_secrets.py",
+        "tests/test_secret_scan.py",
+        "tests/fixtures/secret_scan/allowlisted-sample.txt",
+        "docs/operations/SYS-CI-0012-ci-validation.md",
+        "tasks/SYS-CI-0012.json",
+        "artifacts/SYS-CI-0012-artifact.json",
+        "handoffs/SYS-CI-0012-handoff.json",
     ]
     missing = [path for path in required if not (ROOT / path).is_file()]
     if missing:

@@ -1,0 +1,89 @@
+{
+  "schema_version": "1.0.0",
+  "handoff_id": "HO-SYS-CI-0012-001",
+  "task_id": "SYS-CI-0012",
+  "from_agent_id": "A-02",
+  "to_agent_id": "A-20",
+  "created_at": "2026-09-01T00:00:00Z",
+  "summary": "PR과 main push에서 기준선 검증기, 전체 unittest, compileall, 결정론적 저장소 비밀값 스캔을 실행하는 최소 권한 GitHub Actions CI를 추가했다. 스캐너는 규칙·제외·리댁션을 분리한 studio_core/secret_scan.py 엔진과 종료 코드 계약을 갖는 scripts/scan_secrets.py CLI로 구성되며 43개 테스트가 양성 탐지, 허용목록, 오탐 방지, 이진·무시·생성물 제외, 비정상 종료 코드, 워크플로 보안 자세를 고정한다. 호스티드 Actions 실행은 원격 푸시 승인 전이라 관측하지 못했으므로 NOT_RUN으로 남긴다.",
+  "artifact_refs": ["ART-SYS-CI-0012-0001"],
+  "assumptions": [
+    "CI는 GitHub 호스티드 러너에서 실행되며 PyPI에서 PyYAML을 설치할 수 있다.",
+    "워크플로는 저장소 비밀값을 사용하지 않으므로 추가 자격 증명 구성이 필요 없다.",
+    "본 작업은 PR #2와 R2 흐름에 의존하지 않으며 두 흐름의 파일을 수정하지 않았다.",
+    "사용자 세션 지시에 따라 하위 에이전트 위임 없이 구현 콘솔이 직접 구현하고 자체 점검했다.",
+    "tests/test_collaboration.py 338행에는 인라인 허용 마커 주석 한 줄만 추가했고 단언과 동작은 바뀌지 않았다."
+  ],
+  "verification_evidence": [
+    {
+      "check": "python scripts/validate_baseline.py",
+      "result": "PASS",
+      "evidence_uri": "repo://scripts/validate_baseline.py"
+    },
+    {
+      "check": "python -m unittest discover -s tests -v",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_secret_scan.py"
+    },
+    {
+      "check": "python -m compileall -q studio_core scripts tests",
+      "result": "PASS",
+      "evidence_uri": "repo://studio_core/secret_scan.py"
+    },
+    {
+      "check": "python scripts/scan_secrets.py (저장소 전수 스캔, 종료 코드 0)",
+      "result": "PASS",
+      "evidence_uri": "repo://scripts/scan_secrets.py"
+    },
+    {
+      "check": "git diff --check 공백·충돌 표식 검사",
+      "result": "PASS",
+      "evidence_uri": "repo://.github/workflows/ci.yml"
+    },
+    {
+      "check": "Task Contract SYS-CI-0012 READY 스키마 검증과 위임 게이트 통과",
+      "result": "PASS",
+      "evidence_uri": "repo://tasks/SYS-CI-0012.json"
+    },
+    {
+      "check": "Artifact content_hash와 .github/workflows/ci.yml 실제 sha256 일치 확인",
+      "result": "PASS",
+      "evidence_uri": "repo://artifacts/SYS-CI-0012-artifact.json"
+    },
+    {
+      "check": "GitHub 호스티드 Actions 실행 결과 관측",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://docs/operations/SYS-CI-0012-ci-validation.md"
+    }
+  ],
+  "known_risks": [
+    {
+      "severity": "MEDIUM",
+      "description": "호스티드 GitHub Actions 실행 결과를 아직 관측하지 못했다. 워크플로 문법과 명령은 로컬에서 파싱·실행으로 검증했으나 러너 환경 차이(네트워크 설치 실패, 러너 이미지 변경)는 첫 원격 실행 전까지 확인할 수 없다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "LOW",
+      "description": "모든 액션이 40자 커밋 SHA로 고정되어 있고(actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4, actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5) tests/test_secret_scan.py의 APPROVED_ACTION_PINS가 이탈을 실패시킨다. 대신 유지보수 부담이 남는다. 고정된 SHA는 자동으로 갱신되지 않으므로 상위 보안 패치를 받으려면 워크플로 라인과 APPROVED_ACTION_PINS 매핑을 함께 바꾸는 의도적 버전 갱신이 필요하다.",
+      "owner_agent_id": "A-20"
+    },
+    {
+      "severity": "LOW",
+      "description": "규칙 기반 스캐너는 알려진 형식만 탐지한다. 형식이 없는 자체 발급 토큰이나 난독화된 값은 놓칠 수 있으므로 secret-ref:// 참조 정책이 여전히 1차 방어선이다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "LOW",
+      "description": "스캐너는 .gitignore를 해석하지 않고 ScanConfig의 명시적 제외 목록만 사용한다. 새 생성물 디렉터리가 생기면 목록을 갱신해야 한다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "LOW",
+      "description": "필수 상태 검사(branch protection) 지정은 저장소 관리 권한이 필요해 미적용이다. 지정 전까지 CI 실패가 병합을 차단하지 않는다.",
+      "owner_agent_id": "A-20"
+    }
+  ],
+  "next_action": "Codex 콘솔에서 A-20으로 네 검증 명령을 재실행하고 워크플로 권한·동시성·타임아웃·자격 증명 비보존과 스캐너 규칙·허용목록 동작을 독립 검증한 뒤 A-50에게 최종 QA 게이트를 요청한다.",
+  "readiness": "READY_FOR_REVIEW",
+  "acknowledgement_required": true
+}

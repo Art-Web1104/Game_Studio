@@ -1,0 +1,174 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "SYS-CI-0012",
+  "project_id": "casino-core",
+  "title": "GitHub Actions 기준선 검증·비밀값 스캔 CI 파이프라인 구축",
+  "goal": "main 브랜치 push와 모든 Pull Request에서 기준선 검증기, 전체 unittest, 바이트코드 컴파일, 결정론적 저장소 비밀값 스캔을 최소 권한으로 자동 실행하는 GitHub Actions CI를 구축한다. 스캐너는 재사용 가능한 모듈과 CLI로 분리해 양성·허용목록·이진/생성물 제외·비정상 종료 코드를 테스트로 고정하고, 워크플로가 참조하는 모든 액션은 승인된 커밋 SHA로 고정한다. 또한 기준선 검증기의 콘텐츠 해시 계산을 개행 정규화 방식으로 바꿔 Windows 로컬 체크아웃과 Linux 러너가 동일한 해시를 산출하게 한다.",
+  "owner_agent_id": "A-02",
+  "status": "READY",
+  "risk_class": "MEDIUM",
+  "inputs": [
+    {
+      "uri": "repo://docs/decisions/ADR-0003-claude-only-programming.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:6c1e345ea9555db2ec9f626dbd598845176df129d236fc9d7f64782a5cea0bdb"
+    },
+    {
+      "uri": "repo://operations/collaboration.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:03031cf600fe847737d535c364f183b6f0031464fc3a8fdd076b79826506733a"
+    },
+    {
+      "uri": "repo://contracts/task.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:32158d90825790b90929b5c1464140651c201b603745bc4bafa27e446d723527"
+    },
+    {
+      "uri": "repo://policies/security.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:c85fd12606c9d52cfb555b5d9a11b4f83b16a2247cd9dddffb3432a1fb34adac"
+    },
+    {
+      "uri": "repo://scripts/validate_baseline.py",
+      "version": "1.3.0",
+      "content_hash": "sha256:7297f159019d22d9e26ea939872943b82d4ddb7d0b6adbef1aa2144f8ac3bf89"
+    }
+  ],
+  "deliverables": [
+    {
+      "name": "github-actions-ci-workflow",
+      "artifact_type": "BUILD",
+      "target_uri": "repo://.github/workflows/ci.yml"
+    },
+    {
+      "name": "repository-secret-scan-engine",
+      "artifact_type": "CODE",
+      "target_uri": "repo://studio_core/secret_scan.py"
+    },
+    {
+      "name": "repository-secret-scan-cli",
+      "artifact_type": "CODE",
+      "target_uri": "repo://scripts/scan_secrets.py"
+    },
+    {
+      "name": "secret-scan-test-suite",
+      "artifact_type": "CODE",
+      "target_uri": "repo://tests/test_secret_scan.py"
+    },
+    {
+      "name": "secret-scan-allowlist-fixture",
+      "artifact_type": "DATASET",
+      "target_uri": "repo://tests/fixtures/secret_scan/allowlisted-sample.txt"
+    },
+    {
+      "name": "baseline-validator-newline-normalized-hashing",
+      "artifact_type": "CODE",
+      "target_uri": "repo://scripts/validate_baseline.py"
+    },
+    {
+      "name": "baseline-validator-content-hash-tests",
+      "artifact_type": "CODE",
+      "target_uri": "repo://tests/test_baseline.py"
+    },
+    {
+      "name": "collaboration-test-inline-allow-marker",
+      "artifact_type": "CODE",
+      "target_uri": "repo://tests/test_collaboration.py"
+    },
+    {
+      "name": "ci-operations-guide",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://docs/operations/SYS-CI-0012-ci-validation.md"
+    },
+    {
+      "name": "sys-ci-0012-artifact-contract",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://artifacts/SYS-CI-0012-artifact.json"
+    },
+    {
+      "name": "sys-ci-0012-handoff-packet",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://handoffs/SYS-CI-0012-handoff.json"
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "criterion_id": "AC-001",
+      "statement": "CI 워크플로는 main 브랜치 push와 모든 Pull Request에서 기동하고, 기준선 검증기·전체 unittest·compileall·비밀값 스캔 네 가지 검사를 모두 실행해야 한다.",
+      "verification": "워크플로 트리거·잡·스텝 구조를 검사하는 tests/test_secret_scan.py의 CI 워크플로 테스트"
+    },
+    {
+      "criterion_id": "AC-002",
+      "statement": "워크플로는 최소 권한(contents: read)으로 실행되고, 동시성 그룹에서 이전 실행을 취소하며, 모든 잡에 timeout-minutes가 설정되고, 체크아웃은 자격 증명을 보존하지 않아야 한다.",
+      "verification": "워크플로 YAML을 파싱해 permissions·concurrency·timeout-minutes·persist-credentials를 단언하는 테스트"
+    },
+    {
+      "criterion_id": "AC-003",
+      "statement": "워크플로에는 어떤 비밀값, 토큰, 자격 증명 리터럴도 포함되지 않아야 하며 secrets 컨텍스트를 참조하지 않아야 한다.",
+      "verification": "워크플로 텍스트에 대한 비밀값 스캔과 secrets 컨텍스트 부재 단언"
+    },
+    {
+      "criterion_id": "AC-004",
+      "statement": "비밀값 스캐너는 알려진 자격 증명 형식을 탐지해 규칙 ID·경로·행 번호를 결정론적 정렬 순서로 보고하고, 탐지된 비밀값 원문은 출력하지 않아야 한다.",
+      "verification": "양성 샘플에 대한 탐지·정렬·비노출 단위 테스트"
+    },
+    {
+      "criterion_id": "AC-005",
+      "statement": "스캐너는 인라인 허용 마커와 경로 허용목록을 존중하고, 정책 어휘(secret-ref://, secrets_policy 등)를 오탐하지 않아야 한다.",
+      "verification": "허용목록·오탐 방지 단위 테스트와 저장소 전체 스캔 통과"
+    },
+    {
+      "criterion_id": "AC-006",
+      "statement": "스캐너는 이진 파일, 무시 디렉터리(.git, __pycache__, .venv, .claude/worktrees 등), 생성물 확장자를 스캔 대상에서 제외해야 한다.",
+      "verification": "임시 트리에 이진·무시·생성 파일을 만들어 제외를 확인하는 단위 테스트"
+    },
+    {
+      "criterion_id": "AC-007",
+      "statement": "스캐너 CLI는 탐지가 있을 때 0이 아닌 종료 코드를, 탐지가 없을 때 0을 반환해야 하며, 의도적으로 커밋된 테스트 픽스처가 저장소 전체 스캔을 실패시키지 않아야 한다.",
+      "verification": "CLI main()의 종료 코드 테스트와 저장소 루트 스캔 무탐지 테스트"
+    },
+    {
+      "criterion_id": "AC-008",
+      "statement": "python scripts/validate_baseline.py와 python -m unittest discover -s tests -v 두 명령이 로컬에서 모두 성공해야 한다.",
+      "verification": "두 표준 검증 명령의 실행 로그"
+    },
+    {
+      "criterion_id": "AC-009",
+      "statement": "본 작업은 PR #2 및 R2 범위와 독립이어야 하며 R2 산출물이나 R1 승인 기준선 규칙·RNG·정산 코드를 수정하지 않아야 한다.",
+      "verification": "git diff 파일 목록 검토와 games/·studio_core 규칙 모듈 무변경 확인"
+    }
+  ],
+  "dependencies": [],
+  "budget": {
+    "max_cost_usd": 12.0,
+    "max_runtime_seconds": 7200,
+    "stop_on_limit": true
+  },
+  "approvers": ["USER", "A-20", "A-50"],
+  "rollback": {
+    "strategy": "신규 파일(.github/workflows/ci.yml, studio_core/secret_scan.py, scripts/scan_secrets.py, tests/test_secret_scan.py, tests/fixtures/secret_scan/, docs/operations/SYS-CI-0012-ci-validation.md, tasks/SYS-CI-0012.json, artifacts/SYS-CI-0012-artifact.json, handoffs/SYS-CI-0012-handoff.json)을 삭제하고, 본 작업이 수정한 추적 파일 세 개(scripts/validate_baseline.py, tests/test_baseline.py, tests/test_collaboration.py)를 직전 커밋 상태로 전부 되돌린다(`git checkout -- scripts/validate_baseline.py tests/test_baseline.py tests/test_collaboration.py`). 부분 되돌리기는 허용하지 않는다. scripts/validate_baseline.py는 필수 파일 목록 추가분과 content_sha256 개행 정규화 해싱 변경을 함께 되돌려야 하고, tests/test_baseline.py는 ContentHashTests 전체를, tests/test_collaboration.py는 인라인 허용 마커 주석을 되돌려야 한다. 커밋과 푸시를 수행하지 않으므로 작업 트리 복원만으로 완전 복구되며 GitHub 측 상태 변경은 없다.",
+    "source_preserved": true,
+    "verification": "복원 후 python scripts/validate_baseline.py와 python -m unittest discover -s tests -v 재실행"
+  },
+  "security": {
+    "data_classification": "INTERNAL",
+    "contains_pii": false,
+    "workspace_access": "DEPARTMENT_WRITE",
+    "network_policy": "NONE",
+    "secrets_policy": "NONE"
+  },
+  "assumptions": [
+    "CI는 GitHub 호스티드 러너에서 실행되며 PyPI에서 PyYAML을 설치할 수 있다.",
+    "워크플로는 저장소 비밀값을 전혀 사용하지 않으므로 GITHUB_TOKEN 이외의 자격 증명 구성이 필요 없다.",
+    "본 작업은 PR #2와 R2 작업 흐름에 의존하지 않으며 두 흐름의 파일을 수정하지 않는다.",
+    "GitHub Actions 호스티드 실행 결과는 원격 푸시 승인 이후에만 관측 가능하므로 이번 제출에서는 PENDING으로 남긴다.",
+    "사용자 세션 지시에 따라 하위 에이전트 위임 없이 구현 콘솔이 직접 구현하고 자체 점검을 수행했다.",
+    "액션 고정 방식은 결정이 끝났다. 워크플로의 모든 `uses:`는 40자 커밋 SHA로 고정되어 있고(actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4, actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5), tests/test_secret_scan.py의 APPROVED_ACTION_PINS가 SHA와 태그 주석을 함께 단언해 이탈을 실패로 만든다."
+  ],
+  "open_decisions": [
+    "필수 상태 검사(branch protection) 지정은 여전히 미결이다. 사용자 상시 승인이 있으므로 원격 푸시로 호스티드 체크가 생성된 뒤 Codex가 필수 검사로 지정한다. 그때까지는 CI 실패가 병합을 차단하지 않는다.",
+    "엔트로피 기반 탐지 추가 여부는 오탐 비용 측정 후 결정한다."
+  ],
+  "created_at": "2026-09-01T00:00:00Z",
+  "updated_at": "2026-09-01T00:00:00Z"
+}
