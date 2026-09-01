@@ -12,7 +12,7 @@
 | 이월 위험 | 상태 | 유닛 |
 | --- | --- | --- |
 | 생산용 CSPRNG 추첨 경계와 독립 통계 검증 | `CLOSED_PENDING_REVIEW` | `R2-RNG-0001` (계약 발행됨) |
-| 데이터베이스 격리 수준과 동시성·장애 복구 | `OPEN` | `R2-DBC-0002` (후보, 계약 없음) |
+| 데이터베이스 격리 수준과 동시성·장애 복구 | `CLOSED_PENDING_REVIEW` | `R2-DBC-0002` (계약 발행됨) |
 | 실제 네트워크 재접속과 라운드 연속성 | `OPEN` | `R2-NET-0003` (후보, 계약 없음) |
 | 부하와 성능 특성 | `OPEN` | `R2-LOAD-0004` (후보, 계약 없음) |
 | 보안 침투 시험 | `OPEN` | `R2-SEC-0005` (후보, 계약 없음) |
@@ -37,16 +37,30 @@
   `handoffs/R2-RNG-0001-handoff.json`, `audit/events/R2-RNG-0001-events.json`,
   `docs/operations/R2-RNG-0001-recovery.md`.
 
-## 데이터베이스 격리·동시성·장애 복구 — `OPEN`
+## 데이터베이스 격리·동시성·장애 복구 — `CLOSED_PENDING_REVIEW`
 
-`R2-RNG-0001`에서 구현하지 않았고 계약도 없다. 닫아야 할 공백은 현재 코드에서 실측 가능하다.
+`R2-DBC-0002` 계약 아래에서 구현과 자동 검증이 끝났고, **인간 게이트 판정만 남아 있다.**
+`CLOSED`가 아니라 `CLOSED_PENDING_REVIEW`인 이유가 그것이다.
 
-- 추첨 엔진 상태가 프로세스 메모리에만 있어 재시작하면 모든 `request_id`를 잊는다.
-- `AuditChain`이 인메모리 참조 구현이므로 감사 불변성은 아직 선언이지 보장이 아니다.
-- `audit_event_ref` 순번이 엔진 인스턴스마다 1에서 다시 시작한다.
-- 원장 멱등성이 호출자가 넘긴 키 집합에 의존하며, 동시 제출 경로는 저장소 격리 수준의 문제다.
-
-기술적 선행 관계: 추첨 기록과 감사 이벤트 형태가 저장 대상이므로 `R2-RNG-0001` 뒤에 온다.
+- 완료된 것: `BEGIN IMMEDIATE` 권위 경로(검사-후-행동 원자성), `SERIALIZABLE` 격리 선언,
+  `journal_mode=wal`·`synchronous=full`·`foreign_keys=ON`, 유계 busy 재시도(`BEGIN`만 재시도),
+  추첨·정산·감사의 단일 트랜잭션 커밋, 커밋 이전 모든 고장 지점의 완전 롤백, 재시작 후
+  `request_id` 멱등성과 엔트로피 무재소비, 감사 이벤트의 전역 유일 참조와 데이터베이스 수준
+  추가 전용성, 재적재 후 체인 검증, 정수 최소 단위 강제, `:memory:`·`file:` URI 거부,
+  스키마 버전 고정과 자동 승격·강등 거부, 발행 SQL과 구현 문장의 일치, 기준선 검증기 통합.
+- 확인된 것: 기준선 `PASS`, 단위 시험 `PASS`(`Ran 353 tests`), `compileall` `PASS`,
+  평문 비밀값 스캔에서 의도된 탐지기 픽스처 외 일치 없음, 정규 LF/CRLF 무결성 대조 `PASS`.
+  이 재실행은 구현자 콘솔의 기술적 재현이며 인간 검토 서명이 아니다.
+- 남은 것: `A-50`, `A-02`, `A-00`, `USER`의 검토·승인 전건 `PENDING`. 독립
+  `code-reviewer` 검토 미수행. Artifact 상태는 `SUBMITTED`, `approved_at`은 비어 있다.
+  호스팅 CI는 커밋·푸시를 하지 않았으므로 `NOT_RUN`이다.
+- 남은 위험: 인간 게이트 미발행(`HIGH`), 독립 검토 미수행(`HIGH`), SQLite 단일 노드
+  참조 경계의 한계(`MEDIUM`), 동시성 증거가 로컬 스레드 범위(`MEDIUM`),
+  `synchronous=full`의 쓰기 지연 미측정(`MEDIUM`), 감사 세그먼트 상한 소진 시 실패
+  폐쇄(`LOW`), 호스팅 CI 이력 없음(`LOW`).
+- 증거: `docs/approvals/R2-DBC-0002-validation-report.md`, `docs/games/R2-durable-state.md`,
+  `handoffs/R2-DBC-0002-handoff.json`, `audit/events/R2-DBC-0002-events.json`,
+  `games/roulette/durable-state-contract.yaml`.
 
 ## 네트워크 재접속과 라운드 연속성 — `OPEN`
 

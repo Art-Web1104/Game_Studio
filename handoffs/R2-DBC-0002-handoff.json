@@ -1,0 +1,96 @@
+{
+  "schema_version": "1.0.0",
+  "handoff_id": "HO-R2-DBC-0002-001",
+  "task_id": "R2-DBC-0002",
+  "from_agent_id": "A-02",
+  "to_agent_id": "A-50",
+  "created_at": "2026-09-01T00:00:00Z",
+  "summary": "R2-DBC-0002 내구 상태 경계의 구현을 제출하고 독립 검증을 요청한다. studio_core/durable_state.py가 추첨 기록·정산 원장·감사 이벤트를 BEGIN IMMEDIATE 단일 트랜잭션으로 커밋하고, games/roulette/durable-state-contract.yaml과 durable-state-schema.sql이 격리 수준·트랜잭션 모드·WAL·내구성 pragma·busy 재시도·스키마 버전·경로 처리를 계약으로 고정하며, tests/test_durable_state.py가 재시작 후 멱등성, 실제 스레드 동시 제출, 단계별 장애 주입 롤백, 감사 체인 변조 탐지, 정수 최소 단위 CHECK 제약을 시험한다. 아티팩트 ART-R2-DBC-0002-0001은 SUBMITTED이며 구현 파일의 정규 LF 해시와 계약·SQL·시험 스위트 해시를 함께 기록한다. 로컬에서 기준선 검증기, 전체 unittest, compileall, 저장소 비밀값 스캔, 변경 파일 범위 검토가 모두 통과했다. GitHub 호스티드 CI는 원격 푸시 승인 전이므로 실행하지 않았고 NOT_RUN으로 기록한다. 독립 코드 검토와 A-50·USER의 최종 QA 게이트는 아직 수행되지 않았다. 커밋과 푸시는 수행하지 않았다.",
+  "artifact_refs": ["ART-R2-DBC-0002-0001"],
+  "assumptions": [
+    "사용자가 R2-DBC-0002의 착수와 수행을 승인했고 그 승인은 착수 권한이지 최종 QA 게이트 판정이 아니다.",
+    "내구 저장소는 파이썬 표준 라이브러리 sqlite3만 사용하는 참조 경계이며 외부 데이터베이스 서버는 도입하지 않았다.",
+    "studio_core/rng.py는 수정하지 않았고 EntropySource, AuditSink, DrawRequest, DrawRecord, RngDenied 인터페이스로만 사용했다.",
+    "시험이 만드는 SQLite 파일은 임시 디렉터리에만 생성되며 저장소에 남지 않는다.",
+    "이 패킷의 PASS 기록은 이 작업 트리 상태에서 실제로 실행한 명령의 결과이며 호스티드 러너 결과가 아니다.",
+    "A-50, A-02, A-00, USER의 인간 승인 서명은 수행되지 않았고 이 패킷은 그것을 수행된 것으로 주장하지 않는다.",
+    "Claude는 이 작업에서 커밋과 푸시를 수행하지 않고 작업 트리 변경만 남겼다."
+  ],
+  "verification_evidence": [
+    {
+      "check": "python scripts/validate_baseline.py",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/approvals/R2-DBC-0002-validation-report.md"
+    },
+    {
+      "check": "python -m unittest discover -s tests -v",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/approvals/R2-DBC-0002-validation-report.md"
+    },
+    {
+      "check": "python -m compileall -q studio_core scripts tests",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/approvals/R2-DBC-0002-validation-report.md"
+    },
+    {
+      "check": "python scripts/scan_secrets.py (저장소 전체 평문 비밀값 스캔)",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/approvals/R2-DBC-0002-validation-report.md"
+    },
+    {
+      "check": "변경 범위 검토: 수정 파일은 scripts/validate_baseline.py, studio_core/__init__.py, docs/status/R2-STATUS.md, docs/operations/R2-followup-units.md 네 건뿐이고 R1 승인 기준선의 규칙·RNG·정산 코드는 무변경",
+      "result": "PASS",
+      "evidence_uri": "repo://tasks/R2-DBC-0002.json"
+    },
+    {
+      "check": "아티팩트 선언 해시와 실제 파일의 정규 LF 해시 대조(durable_state.py, durable-state-contract.yaml, durable-state-schema.sql, test_durable_state.py)",
+      "result": "PASS",
+      "evidence_uri": "repo://artifacts/R2-DBC-0002-artifact.json"
+    },
+    {
+      "check": "GitHub Actions 호스티드 CI 실행 결과 관측",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://.github/workflows/ci.yml"
+    },
+    {
+      "check": "독립 읽기 전용 코드 검토(code-reviewer) 및 A-20 검토 서명",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://handoffs/R2-DBC-0002-handoff.json"
+    },
+    {
+      "check": "A-50·USER 최종 QA 게이트 판정",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://docs/approvals/R2-DBC-0002-validation-report.md"
+    }
+  ],
+  "known_risks": [
+    {
+      "severity": "HIGH",
+      "description": "내구 상태 경계는 추첨·정산·감사의 원자성과 멱등성을 다루므로 policies/risk.yaml 기준 High 위험이다. A-50, A-02, A-00의 독립 검토와 최종 QA 게이트가 필요하며 구현자가 자체 승인할 수 없다. 이 패킷은 제출이지 완료 판정이 아니다.",
+      "owner_agent_id": "A-50"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "GitHub Actions 호스티드 CI 결과는 아직 관측되지 않았다. 로컬 통과가 Linux 러너 통과를 보장하지 않으므로 원격 푸시 승인 후 호스티드 실행 결과를 확인하기 전까지 이 증거는 로컬 범위에 한정된다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "동시성 증명은 실제 스레드와 별도 연결로 수행했으나 단일 프로세스·단일 호스트 범위다. 다중 프로세스, 다중 호스트, 네트워크 분단 상황의 동작은 이 유닛이 닫지 않는다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "SQLite 참조 경계는 운영 규모 엔진 결정을 대신하지 않는다. 네트워크 재접속(R2-NET-0003), 부하·성능(R2-LOAD-0004), 침투 시험(R2-SEC-0005), 백업·복구와 WAL 체크포인트 주기는 후속 유닛으로 명시 이월되어 열린 상태로 남는다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "LOW",
+      "description": "감사 세그먼트는 event_id 네 자리 제약 때문에 세그먼트당 9999개, 최대 99 세그먼트로 유한하다. 소진 시 식별자를 재사용하지 않고 실패 폐쇄하므로 안전하지만, 장기 보관·아카이빙 정책은 policies/audit.yaml의 retention 결정에 종속되어 미결이다.",
+      "owner_agent_id": "A-02"
+    }
+  ],
+  "next_action": "A-50은 이 패킷을 제출물로 접수해 codex 콘솔에서 python scripts/validate_baseline.py와 python -m unittest discover -s tests -v를 독립 재실행하고, studio_core/durable_state.py의 트랜잭션 경계·멱등성·동시성 처리와 계약 선언값의 일치를 읽기 전용으로 검토한 뒤 PASS 또는 REWORK 판정을 내려라. 판정 전까지 이 작업을 DONE으로 표시하지 말고, 커밋·푸시와 호스티드 CI 실행은 USER의 명시 승인 이후에만 진행하라.",
+  "readiness": "READY_FOR_REVIEW",
+  "acknowledgement_required": true
+}

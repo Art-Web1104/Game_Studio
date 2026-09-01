@@ -1,0 +1,211 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "R2-DBC-0002",
+  "project_id": "casino-core",
+  "title": "R2 유닛 2: 내구 상태 경계의 데이터베이스 격리 수준과 동시성·장애 복구",
+  "goal": "R1 검증 보고서가 R2로 이월한 두 번째 기술 위험인 '데이터베이스 격리 수준과 동시성·장애 복구'를 닫는다. docs/operations/R2-followup-units.md 2절이 실측 사실로 적어 둔 네 개의 공백, 즉 추첨 엔진 상태의 비내구성, 인메모리 감사 체인, audit_event_ref의 전역 유일성 부재, 호출자 소유 원장 멱등성 키 집합을 표준 라이브러리 SQLite 참조 경계로 닫는다. 추첨 기록·정산 원장·감사 이벤트가 하나의 트랜잭션으로 커밋되거나 전부 롤백되고, 프로세스 재시작 뒤에도 같은 request_id가 엔트로피를 다시 소비하지 않고 원본 결과를 반환하며, 서로 다른 연결과 스레드에서 온 동시 중복 제출이 정확히 하나의 권위 결과와 하나의 정산만 커밋하도록 만든다. 격리 수준·트랜잭션 모드·busy 재시도·WAL·외래키·내구성 pragma·스키마 버전·경로 처리 선택과 그 근거를 문서로 남긴다. studio_core/rng.py의 인터페이스와 계약은 약화하지 않고 그대로 사용한다. 외부 데이터베이스 서버, 네트워크 재접속, 부하 시험, 침투 시험, 운영 배포는 이 작업 범위가 아니다.",
+  "owner_agent_id": "A-02",
+  "status": "READY",
+  "risk_class": "HIGH",
+  "inputs": [
+    {
+      "uri": "repo://studio_core/rng.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:0ceea3c08a4c526a1d203f54fcbb31b35fff088450477f95270526d9f38e1d1e"
+    },
+    {
+      "uri": "repo://studio_core/ledger.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:07acd9aeac4dbfe6d2d9394e3cb0ccf335685e529fa07ce6af56d33e699ce71b"
+    },
+    {
+      "uri": "repo://games/roulette/rng-contract.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:9d8ea76aef04c25d182fc2f25f3c3e0e988aa3e997b82cc918ad3ee86004114b"
+    },
+    {
+      "uri": "repo://games/roulette/ledger-transaction.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:fd37bb2e051c1dc5455953ea4c8525490e445d00b093027ff8802fe02f5f1eb3"
+    },
+    {
+      "uri": "repo://audit/audit-event.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:7e0f6b22977048dc40c39756293201042870a188c5f64926d7606e4b4da6c1eb"
+    },
+    {
+      "uri": "repo://policies/audit.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:5b9b87595424162de8b495058cc80aa0ff276024a20b3bf55172ed364e43c1e4"
+    },
+    {
+      "uri": "repo://contracts/task.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:32158d90825790b90929b5c1464140651c201b603745bc4bafa27e446d723527"
+    },
+    {
+      "uri": "repo://operations/collaboration.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:03031cf600fe847737d535c364f183b6f0031464fc3a8fdd076b79826506733a"
+    }
+  ],
+  "deliverables": [
+    {
+      "name": "r2-dbc-durable-state-boundary",
+      "artifact_type": "CODE",
+      "target_uri": "repo://studio_core/durable_state.py"
+    },
+    {
+      "name": "r2-dbc-durable-state-contract",
+      "artifact_type": "SCHEMA",
+      "target_uri": "repo://games/roulette/durable-state-contract.yaml"
+    },
+    {
+      "name": "r2-dbc-durable-state-sql-schema",
+      "artifact_type": "SCHEMA",
+      "target_uri": "repo://games/roulette/durable-state-schema.sql"
+    },
+    {
+      "name": "r2-dbc-test-suite",
+      "artifact_type": "CODE",
+      "target_uri": "repo://tests/test_durable_state.py"
+    },
+    {
+      "name": "r2-dbc-baseline-validator-integration",
+      "artifact_type": "CODE",
+      "target_uri": "repo://scripts/validate_baseline.py"
+    },
+    {
+      "name": "r2-dbc-design-document",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://docs/games/R2-durable-state.md"
+    },
+    {
+      "name": "r2-dbc-audit-events",
+      "artifact_type": "DATASET",
+      "target_uri": "repo://audit/events/R2-DBC-0002-events.json"
+    },
+    {
+      "name": "r2-dbc-validation-report",
+      "artifact_type": "TEST_REPORT",
+      "target_uri": "repo://docs/approvals/R2-DBC-0002-validation-report.md"
+    },
+    {
+      "name": "r2-dbc-status-update",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://docs/status/R2-STATUS.md"
+    },
+    {
+      "name": "r2-dbc-artifact-contract",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://artifacts/R2-DBC-0002-artifact.json"
+    },
+    {
+      "name": "r2-dbc-handoff-packet",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://handoffs/R2-DBC-0002-handoff.json"
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "criterion_id": "AC-001",
+      "statement": "권위 추첨 요청과 결과가 내구 저장소에 커밋되어야 하고, 저장소를 닫았다가 다시 연 뒤에도 같은 request_id 재요청이 엔트로피를 다시 소비하지 않고 원본 기록을 그대로 반환해야 한다.",
+      "verification": "저장소 close 후 reopen 재요청 시험과 엔트로피 소비 바이트 수 계측 단언"
+    },
+    {
+      "criterion_id": "AC-002",
+      "statement": "감사 이벤트는 전역 유일한 내구 참조를 가져야 하고, 저장소 재적재 뒤에도 studio_core.rng.verify_audit_chain이 문제 없음을 보고해야 하며, 이벤트 갱신·삭제가 데이터베이스 수준에서 거부되어야 한다.",
+      "verification": "event_id UNIQUE 제약 시험, 재적재 후 체인 검증 시험, UPDATE·DELETE 트리거 거부 시험"
+    },
+    {
+      "criterion_id": "AC-003",
+      "statement": "감사 체인이 저장소 안에서 변조되면 재적재 검증이 그 사실을 탐지해야 한다.",
+      "verification": "트리거를 우회해 본문을 변조한 뒤 체인 검증이 문제를 보고하는 시험"
+    },
+    {
+      "criterion_id": "AC-004",
+      "statement": "원장 거래는 정수 최소 단위로만 저장되어야 하고, idempotency_key에 데이터베이스 UNIQUE 제약이 존재해야 하며, 소수 금액이나 균형이 맞지 않는 항목은 저장이 거부되어야 한다.",
+      "verification": "원시 SQL 중복 키 삽입이 IntegrityError를 내는 시험과 정수·영합 CHECK 위반 시험"
+    },
+    {
+      "criterion_id": "AC-005",
+      "statement": "추첨 기록·정산 원장·감사 이벤트가 하나의 트랜잭션으로 커밋되어야 하고, 커밋 이전 어느 단계에서 장애가 주입되더라도 세 가지가 모두 롤백되어 저장소 재적재 뒤에도 흔적이 남지 않아야 한다.",
+      "verification": "단계별 장애 주입 시험과 롤백 후 reopen 상태 단언"
+    },
+    {
+      "criterion_id": "AC-006",
+      "statement": "서로 다른 연결을 쓰는 여러 스레드가 같은 request_id를 동시에 제출해도 정확히 하나의 권위 결과와 하나의 정산만 커밋되어야 하고, 모든 호출자가 같은 커밋 결과를 관측해야 한다. 경쟁 조건은 단위 시험이 아니라 실제 동시 실행으로 증명한다.",
+      "verification": "배리어 동기화된 실제 스레드 동시 제출 시험과 커밋 건수·잔액 델타 단언"
+    },
+    {
+      "criterion_id": "AC-007",
+      "statement": "같은 request_id 또는 같은 idempotency_key가 다른 페이로드로 재사용되면 실패로 닫혀야 하고, 무관한 이전 결과를 반환해서는 안 된다.",
+      "verification": "요청 지문 불일치 시 DUPLICATE_REQUEST_CONFLICT와 원장 키 재사용 충돌 네거티브 시험"
+    },
+    {
+      "criterion_id": "AC-008",
+      "statement": "격리 수준, 트랜잭션 모드, busy timeout과 재시도 정책, WAL 선택, 외래키 강제, 내구성 pragma, 스키마 버전·마이그레이션, 안전한 경로 처리가 문서와 계약 파일에 기록되어야 하고, 구현이 선언한 값과 일치해야 한다.",
+      "verification": "games/roulette/durable-state-contract.yaml과 구현 상수의 대조 검증"
+    },
+    {
+      "criterion_id": "AC-009",
+      "statement": "지원 범위를 벗어난 스키마 버전의 데이터베이스를 열면 조용한 마이그레이션이나 다운그레이드 없이 거부되어야 한다.",
+      "verification": "상위 user_version과 메타 불일치 데이터베이스 개방 거부 시험"
+    },
+    {
+      "criterion_id": "AC-010",
+      "statement": "엔트로피 바이트, 시드 값, 평문 비밀값, 통화용 부동소수, 클라이언트 권위 상태가 저장소에 기록되지 않아야 한다.",
+      "verification": "금지 필드·비밀 패턴 스캔과 typeof 정수 CHECK 제약 시험"
+    },
+    {
+      "criterion_id": "AC-011",
+      "statement": "scripts/validate_baseline.py가 R2 내구 상태 검증 단계를 포함해야 하고, 계약 위반 입력이 주어지면 그 단계가 실패해야 한다.",
+      "verification": "기준선 검증기 실행 로그와 검증기 함수 네거티브 시험"
+    },
+    {
+      "criterion_id": "AC-012",
+      "statement": "python scripts/validate_baseline.py와 python -m unittest discover -s tests -v 두 명령이 모두 성공하고 compileall과 평문 비밀값 스캔이 통과해야 한다.",
+      "verification": "두 표준 명령과 compileall·비밀값 스캔의 실제 실행 로그"
+    },
+    {
+      "criterion_id": "AC-013",
+      "statement": "외부 데이터베이스 서버·서비스 의존, 네트워크 재접속, 부하 시험, 침투 시험, 운영 배포는 이 작업에서 수행하지 않고 후속 R2 유닛으로 명시 이월되어야 한다.",
+      "verification": "산출물 목록과 이월 위험 기록 검토"
+    }
+  ],
+  "dependencies": ["R2-RNG-0001"],
+  "budget": {
+    "max_cost_usd": 25.0,
+    "max_runtime_seconds": 14400,
+    "stop_on_limit": true
+  },
+  "approvers": ["USER", "A-50", "A-02", "A-00"],
+  "rollback": {
+    "strategy": "롤백 대상 목록. 신규 파일 9개: tasks/R2-DBC-0002.json, artifacts/R2-DBC-0002-artifact.json, handoffs/R2-DBC-0002-handoff.json, studio_core/durable_state.py, games/roulette/durable-state-contract.yaml, games/roulette/durable-state-schema.sql, tests/test_durable_state.py, audit/events/R2-DBC-0002-events.json, docs/games/R2-durable-state.md, docs/approvals/R2-DBC-0002-validation-report.md. 수정 파일 4개: scripts/validate_baseline.py, studio_core/__init__.py, docs/status/R2-STATUS.md, docs/operations/R2-followup-units.md. 경로 A(이 작업의 PR 커밋이 이미 존재하는 경우): 해당 커밋 해시를 정확히 지정해 git revert <commit>으로 되돌리는 새 커밋을 만든다. 이력 재작성, 강제 푸시, 브랜치 삭제는 하지 않는다. 경로 B(커밋 이전, 작업 트리에만 존재하는 경우): (1) 위 경로 전체를 quarantine/R2-DBC-0002/<UTC-timestamp>/ 아래에 원본 그대로 복사해 격리 사본을 먼저 만든다. (2) 수정 파일 4개는 git diff 69b3145 -- <경로>로 역패치 후보를 생성해 사람이 내용을 검토한 뒤 git apply --reverse로 기준 커밋 69b3145 상태로 복원한다. 검토 없이 작업 트리를 덮어쓰는 명령은 사용하지 않는다. (3) 신규 파일은 삭제하지 않고 같은 quarantine 디렉터리로 이동한다. 이 작업이 만드는 SQLite 데이터베이스 파일은 저장소 안에 두지 않고 시험은 임시 디렉터리에서만 생성하므로 롤백 대상 저장소 파일이 없다. 파괴적 Git·파일시스템 명령은 어느 단계에서도 사용하지 않는다. 두 경로 모두 마지막에 python scripts/validate_baseline.py와 python -m unittest discover -s tests -v를 실행해 직전 기준선 통과를 확인한다. Claude는 커밋과 푸시를 수행하지 않는다.",
+    "source_preserved": true,
+    "verification": "복원 후 git status가 quarantine 경로를 제외하고 69b3145 기준으로 깨끗해야 하며, python scripts/validate_baseline.py와 python -m unittest discover -s tests -v를 재실행해 R2-RNG-0001 시점 기준선이 그대로 통과함을 확인한다."
+  },
+  "security": {
+    "data_classification": "INTERNAL",
+    "contains_pii": false,
+    "workspace_access": "DEPARTMENT_WRITE",
+    "network_policy": "ALLOWLISTED_PROVIDER",
+    "secrets_policy": "NONE"
+  },
+  "assumptions": [
+    "사용자가 이 세션에서 R2-DBC-0002 작업의 착수와 수행을 명시적으로 승인했고 그 승인은 작업 착수 권한이지 최종 QA 게이트 판정이 아니다.",
+    "내구 저장소는 파이썬 표준 라이브러리 sqlite3만 사용하는 참조 경계이며 외부 데이터베이스 서버나 서비스를 도입하지 않는다. 운영 규모 저장소 선택은 이 작업에서 확정하지 않는다.",
+    "network_policy: ALLOWLISTED_PROVIDER는 구현 콘솔이 Claude Provider를 사용한다는 뜻이고, 게임 런타임 네트워크 입출력은 이 작업에서 구현하지 않는다.",
+    "studio_core/rng.py의 추첨 경계는 수정하지 않고 그 인터페이스(EntropySource, AuditSink, DrawRequest, DrawRecord, RngDenied)를 통해서만 사용한다.",
+    "시험이 만드는 데이터베이스 파일은 임시 디렉터리에만 생성하고 저장소에 커밋하지 않는다.",
+    "Claude는 이 작업에서 커밋과 푸시를 수행하지 않고 작업 트리 변경만 남긴다."
+  ],
+  "open_decisions": [
+    "운영 규모에서 사용할 실제 데이터베이스 엔진과 배치 형태는 미결이며 이 유닛은 SQLite 참조 경계로 격리 수준·원자성·동시성 요구를 고정하는 데 그친다.",
+    "WAL 체크포인트 주기, 백업·복구 절차, 보존 기간은 후속 운영 유닛에서 결정한다.",
+    "감사 이벤트 세그먼트 분할 이후의 장기 보관·아카이빙 정책은 policies/audit.yaml의 retention 결정에 종속되어 미결이다.",
+    "R5 이전이므로 상용 제작 일정과 출시일은 확정하지 않는다."
+  ],
+  "created_at": "2026-09-01T00:00:00Z",
+  "updated_at": "2026-09-01T00:00:00Z"
+}
