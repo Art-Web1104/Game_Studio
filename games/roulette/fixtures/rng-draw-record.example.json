@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0.0",
+  "request_id": "RNG-R2-FIXTURE-0001",
+  "round_id": "RR-R2-FIXTURE-0001",
+  "ruleset_id": "ROULETTE-EU-SINGLE-ZERO-1",
+  "algorithm_id": "CSPRNG-REJECTION-UNIFORM-37",
+  "algorithm_version": "1.0.0",
+  "draw_index": 0,
+  "pocket": 17,
+  "seed_reference": "entropy-ref://deterministic-test/CSPRNG-REJECTION-UNIFORM-37",
+  "proof_hash": "sha256:816b309e55f6fec1a2075073f137551577a29e6fd567a5a11ea488a20425b0af",
+  "audit_event_ref": "audit://AE-RNG-0001",
+  "environment": "NON_PRODUCTION",
+  "entropy_source_id": "deterministic-test",
+  "entropy_source_deterministic": true,
+  "created_at": "2026-09-01T00:00:00Z"
+}

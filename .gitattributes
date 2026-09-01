@@ -1,0 +1,25 @@
+# Artifact Contracts bind a content_hash to a repo:// path, so the bytes Git stores for a
+# file must not depend on which platform cloned it. `text=auto` makes Git normalise every
+# detected text blob to LF regardless of a contributor's local core.autocrlf setting, which
+# is the canonical representation studio_core/integrity.py hashes against.
+* text=auto
+
+# Binary assets must never be line-ending normalised: studio_core/integrity.py hashes their
+# raw bytes, and Git must store them the same way.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.wav binary
+*.ogg binary
+*.mp3 binary
+*.mp4 binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary

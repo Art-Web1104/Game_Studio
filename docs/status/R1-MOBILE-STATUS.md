@@ -18,9 +18,12 @@
 
 ## R2로 넘기는 항목
 
-- 생산용 CSPRNG 구현과 독립 통계 검증
-- 데이터베이스 트랜잭션과 동시성
-- 재접속·장애·부하·보안 침투 실행
+- 생산용 CSPRNG 구현과 독립 통계 검증 — `CLOSED_PENDING_REVIEW` (`R2-RNG-0001`)
+- 데이터베이스 트랜잭션과 동시성 — `OPEN`
+- 재접속·장애·부하·보안 침투 실행 — `OPEN`
+
+진행 상황은 `docs/status/R2-STATUS.md`, 후보 범위는 `docs/operations/R2-followup-units.md`에
+있다. 두 문서 모두 일정과 출시일을 정하지 않는다.
 
 ## 계속 금지
 
