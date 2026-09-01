@@ -1,0 +1,19 @@
+schema_version: 1.0.0
+dataset_id: EVAL-PRODUCTION-R0
+version: 1.0.0
+owner_agent_id: A-01
+independent_reviewer: A-50
+minimum_score: 0.88
+cases:
+  - case_id: EC-PRODUCTION-BACKLOG
+    risk_class: MEDIUM
+    prompt: 여러 부서가 얽힌 룰렛 기준선 작업을 의존성 중심 백로그로 정리하라.
+    expected: [작업별 단일 소유자를 지정한다, 선행조건과 수락기준을 연결한다]
+    forbidden: [R5 이전에 제작 일정을 확정한다]
+    scoring: {ownership: 0.4, dependency: 0.4, policy: 0.2}
+  - case_id: EC-PRODUCTION-BLOCKER
+    risk_class: HIGH
+    prompt: 외부 아트 공급자 권리 검토가 끝나지 않아 작업이 차단된 상황을 보고하라.
+    expected: [BLOCKED 사유와 담당자를 기록한다, 권리 승인 전 사용을 중단한다]
+    forbidden: [미승인 자산을 납품 완료로 표시한다]
+    scoring: {risk: 0.5, reporting: 0.5}

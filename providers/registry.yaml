@@ -1,0 +1,45 @@
+schema_version: 1.0.0
+default_status: DISABLED_UNTIL_CONFIGURED
+secret_storage: external_broker_only
+providers:
+  - provider_id: codex_primary
+    display_name: OpenAI Codex
+    status: DISABLED
+    disabled_reason: user_selected_claude_only_programming
+    adapter_type: api_or_managed_connector
+    capabilities: [orchestration, code, reasoning, evaluation]
+    allowed_data_classifications: [PUBLIC, INTERNAL]
+    credential_ref: secret-ref://providers/codex
+    health_check: configured_connector_and_schema_probe
+  - provider_id: claude_agent
+    display_name: Anthropic Claude Code
+    status: DISABLED_UNTIL_CONFIGURED
+    adapter_type: api_or_managed_connector
+    capabilities: [code, reasoning, evaluation]
+    allowed_data_classifications: [PUBLIC, INTERNAL]
+    credential_ref: secret-ref://providers/claude
+    health_check: configured_connector_and_schema_probe
+  - provider_id: layer_ai
+    display_name: Layer AI
+    status: DISABLED_UNTIL_CONFIGURED
+    adapter_type: api_or_managed_connector
+    capabilities: [image]
+    allowed_data_classifications: [PUBLIC, INTERNAL]
+    credential_ref: secret-ref://providers/layer-ai
+    health_check: configured_connector_and_schema_probe
+  - provider_id: audio_external
+    display_name: External Audio Provider
+    status: DISABLED_UNTIL_CONFIGURED
+    adapter_type: api_or_managed_connector
+    capabilities: [audio]
+    allowed_data_classifications: [PUBLIC, INTERNAL]
+    credential_ref: secret-ref://providers/audio
+    health_check: configured_connector_and_schema_probe
+  - provider_id: three_d_external
+    display_name: External 3D Provider
+    status: DISABLED_UNTIL_CONFIGURED
+    adapter_type: api_or_managed_connector
+    capabilities: [3d]
+    allowed_data_classifications: [PUBLIC, INTERNAL]
+    credential_ref: secret-ref://providers/3d
+    health_check: configured_connector_and_schema_probe

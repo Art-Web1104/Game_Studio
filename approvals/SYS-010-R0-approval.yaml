@@ -1,0 +1,30 @@
+schema_version: 1.0.0
+approval_id: SYS-010
+baseline_version: 1.1.0
+decision: APPROVED
+approved_at: "2026-08-31T00:43:56Z"
+final_approver: USER
+approval_source:
+  channel: current_chat
+  statement: "그래 승인할께"
+agent_recommendations:
+  - agent_id: A-00
+    status: PASS
+    basis: 운영 구조와 권한·상태 워크플로 자동 검증 통과
+  - agent_id: A-02
+    status: PASS
+    basis: Provider·보안·비용·감사 정책 자동 검증 통과
+  - agent_id: A-50
+    status: PASS
+    basis: 통합 검증 9개 항목과 회귀 테스트 27개 통과
+evidence_refs:
+  - docs/approvals/R0-validation-report.md
+  - docs/approvals/R0-checklist.md
+  - games/roulette/test-spec.yaml
+  - evals/gates.yaml
+binding_constraints:
+  - 환전·현금 인출이 없는 소셜 카드·카지노 게임 범위를 유지한다.
+  - 외부 AI 공급자는 연결·권한·권리 검토 완료 전까지 비활성화한다.
+  - 에이전트의 운영 환경 직접 접근과 사람 전용 최종 승인을 허용하지 않는다.
+  - R5 제작 준비도 승인 전에는 제작 일정·출시일·확정 예산을 약속하지 않는다.
+next_gate: R1_RULES_AND_ECONOMY_BASELINE

@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0.0",
+  "knowledge_id": "K-ROULETTE-0001",
+  "title": "유럽식 단일 제로 룰렛 내부 규칙 기준선",
+  "version": "1.0.0",
+  "status": "APPROVED",
+  "scope": "casino-core",
+  "provenance": {
+    "source_type": "INTERNAL",
+    "source_uri": "repo://games/roulette/rules-reference.yaml",
+    "captured_by": "A-03",
+    "captured_at": "2026-08-28T00:00:00Z",
+    "content_hash": "sha256:c823eb3ec4325cabc610568162b14ff6bd0b29332307216609aa2c7381b962e6"
+  },
+  "rights": {
+    "license": "TS-STUDIO-INTERNAL",
+    "ai_use_allowed": true,
+    "commercial_use_allowed": true,
+    "attribution_required": false
+  },
+  "retrieval": {
+    "allowed_agents": ["A-00", "A-03", "A-10", "A-20", "A-50"],
+    "tags": ["roulette", "rules", "single-zero"],
+    "effective_from": "2026-08-28T00:00:00Z",
+    "expires_at": null
+  },
+  "quality": {
+    "reviewer": "A-50",
+    "evidence_refs": ["repo://games/roulette/test-spec.yaml"],
+    "confidence": 0.98
+  },
+  "security": {
+    "classification": "INTERNAL",
+    "contains_pii": false,
+    "prompt_injection_reviewed": true
+  },
+  "content_ref": "repo://games/roulette/rules-reference.yaml",
+  "supersedes": null,
+  "created_at": "2026-08-28T00:00:00Z",
+  "updated_at": "2026-08-28T00:00:00Z",
+  "approved_at": "2026-08-28T00:00:00Z",
+  "deprecated_at": null
+}

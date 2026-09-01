@@ -1,0 +1,25 @@
+schema_version: 1.0.0
+mode: deny_by_default
+principles: [least_privilege, separation_of_duties, data_minimization, defense_in_depth]
+classifications: [PUBLIC, INTERNAL, CONFIDENTIAL, RESTRICTED]
+external_provider:
+  PUBLIC: allow_with_contract
+  INTERNAL: allow_with_contract_and_provider_policy
+  CONFIDENTIAL: deny_by_default_requires_human_security_exception
+  RESTRICTED: denied
+secrets:
+  storage: external_secret_broker
+  repository_values: prohibited
+  prompt_values: prohibited
+  log_values: prohibited
+  agent_access: reference_or_brokered_use_only
+production:
+  agent_direct_access: denied
+  deployment: human_approved_pipeline_only
+  data_mutation: human_approved_service_identity_only
+prompt_injection:
+  external_content_untrusted: true
+  strip_embedded_instructions: true
+  require_review_before_knowledge_promotion: true
+incident:
+  on_suspected_secret_exposure: [stop_task, revoke_reference, quarantine_logs, notify_A-02_and_user, create_audit_event]

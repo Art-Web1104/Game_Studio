@@ -1,0 +1,41 @@
+schema_version: 1.0.0
+policy: department_hubs_with_scoped_subrooms
+default_visibility: department_only
+cross_department_access: handoff_or_explicit_grant
+rooms:
+  - hub: "#00-command"
+    owner: A-00
+    members: [A-00, A-01, A-02, A-03, A-10, A-20, A-30, A-40, A-50]
+    subrooms: [brief-intake, priority, decision-log, risk-budget, release-approval]
+  - hub: "#01-production"
+    owner: A-01
+    members: [A-00, A-01, A-50]
+    subrooms: [backlog, dependencies, weekly-status, vendors]
+  - hub: "#02-platform"
+    owner: A-02
+    members: [A-00, A-02, A-20, A-50]
+    subrooms: [model-gateway, tool-mcp, security, observability, cost]
+  - hub: "#03-knowledge"
+    owner: A-03
+    members: [A-00, A-03, A-50]
+    subrooms: [ingestion, review, playbooks, eval-datasets, retrospective]
+  - hub: "#10-design"
+    owner: A-10
+    members: [A-00, A-01, A-10, A-50]
+    subrooms: [gdd-core, card-casino-rules, economy-balance, content-liveops, analytics-spec]
+  - hub: "#20-engineering"
+    owner: A-20
+    members: [A-00, A-01, A-02, A-20, A-50]
+    subrooms: [client-unity, game-server, backend-api, data-protocol, build-devops]
+  - hub: "#30-art"
+    owner: A-30
+    members: [A-00, A-01, A-30, A-50]
+    subrooms: [art-direction, concept-2d, ui-ux, modeling-animation, vfx-techart, asset-review]
+  - hub: "#40-audio"
+    owner: A-40
+    members: [A-00, A-01, A-40, A-50]
+    subrooms: [music-bgm, sfx-ui, voice-localization, audio-implementation]
+  - hub: "#50-qa"
+    owner: A-50
+    members: [A-00, A-01, A-02, A-10, A-20, A-30, A-40, A-50]
+    subrooms: [test-plan, rules-math, automation-regression, load-security, release-gate]

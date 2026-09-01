@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ts-studio.local/games/roulette/round.schema.json",
+  "title": "Server-Authoritative Roulette Round",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "round_id", "ruleset_id", "state", "server_sequence", "bet_close_at",
+    "result", "rng_record", "ledger_transaction_refs", "created_at", "updated_at"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "round_id": {"type": "string", "pattern": "^RR-[A-Z0-9-]+$"},
+    "ruleset_id": {"const": "ROULETTE-EU-SINGLE-ZERO-1"},
+    "state": {"enum": ["OPEN", "LOCKED", "SPINNING", "SETTLING", "SETTLED", "VOIDED"]},
+    "server_sequence": {"type": "integer", "minimum": 1},
+    "bet_close_at": {"type": "string", "format": "date-time"},
+    "result": {"type": ["integer", "null"], "minimum": 0, "maximum": 36},
+    "rng_record": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["algorithm_id", "version", "seed_reference", "draw_index", "proof_hash"],
+          "properties": {
+            "algorithm_id": {"type": "string", "minLength": 3},
+            "version": {"type": "string", "minLength": 1},
+            "seed_reference": {"type": "string", "minLength": 5},
+            "draw_index": {"type": "integer", "minimum": 0},
+            "proof_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}
+          }
+        }
+      ]
+    },
+    "ledger_transaction_refs": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 5}},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"}
+  }
+}

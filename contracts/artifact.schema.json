@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ts-studio.local/contracts/artifact.schema.json",
+  "title": "TS STUDIO Artifact Contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "task_id",
+    "project_id",
+    "artifact_type",
+    "name",
+    "uri",
+    "version",
+    "content_hash",
+    "status",
+    "source",
+    "rights",
+    "specification",
+    "reviewers",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "artifact_id": {"type": "string", "pattern": "^ART-[A-Z0-9-]+-[0-9]{4}$"},
+    "task_id": {"type": "string", "pattern": "^[A-Z][A-Z0-9]+-[A-Z][A-Z0-9]+-[0-9]{4}$"},
+    "project_id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{2,40}$"},
+    "artifact_type": {
+      "enum": ["DOCUMENT", "CODE", "SCHEMA", "BUILD", "IMAGE", "MODEL_3D", "ANIMATION", "VFX", "AUDIO", "TEST_REPORT", "DATASET", "DECISION"]
+    },
+    "name": {"type": "string", "minLength": 3},
+    "uri": {"type": "string", "minLength": 5},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?$"},
+    "content_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "status": {"enum": ["DRAFT", "SUBMITTED", "REVIEWED", "QA_PASSED", "APPROVED", "ENGINE_READY", "DEPRECATED", "REJECTED"]},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "created_by", "provider", "model", "input_hash"],
+      "properties": {
+        "kind": {"enum": ["HUMAN", "AI_GENERATED", "AI_ASSISTED", "TOOL_GENERATED", "IMPORTED"]},
+        "created_by": {"oneOf": [{"type": "string", "pattern": "^A-[0-9]{2}$"}, {"const": "USER"}]},
+        "provider": {"type": ["string", "null"]},
+        "model": {"type": ["string", "null"]},
+        "input_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}
+      }
+    },
+    "rights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["license", "commercial_use", "training_permission", "provenance_complete"],
+      "properties": {
+        "license": {"type": "string", "minLength": 2},
+        "commercial_use": {"type": "boolean"},
+        "training_permission": {"enum": ["ALLOWED", "NOT_ALLOWED", "NOT_APPLICABLE", "UNKNOWN"]},
+        "provenance_complete": {"type": "boolean"}
+      }
+    },
+    "specification": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"type": ["string", "number", "integer", "boolean"]}
+    },
+    "reviewers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "pattern": "^A-[0-9]{2}$"},
+      "uniqueItems": true
+    },
+    "created_at": {"type": "string", "format": "date-time"},
+    "approved_at": {"type": ["string", "null"], "format": "date-time"}
+  }
+}

@@ -1,0 +1,37 @@
+schema_version: 1.0.0
+model_id: ECON-ROULETTE-R1
+status: BASELINE_NOT_PRODUCTION_TUNING
+currency:
+  id: VIRTUAL_CHIP
+  storage: signed_integer_minimum_units
+  fractional_units: prohibited
+  cash_redemption: prohibited
+  real_world_reward: prohibited
+ledger:
+  accounting: balanced_entries_sum_to_zero
+  idempotency_key_required: true
+  negative_player_balance: prohibited
+  bet_flow: PLAYER_TO_BET_ESCROW
+  win_flow: BET_ESCROW_AND_HOUSE_BANKROLL_TO_PLAYER
+  loss_flow: BET_ESCROW_TO_HOUSE_BANKROLL
+  void_flow: BET_ESCROW_TO_PLAYER
+mathematics:
+  pockets: 37
+  common_rtp_fraction: 36/37
+  common_rtp_decimal: 0.972972972972973
+  house_edge_fraction: 1/37
+  house_edge_decimal: 0.027027027027027
+  payout_source: games/roulette/rules-reference.yaml
+exposure:
+  max_stake_source: games/roulette/rules-reference.yaml
+  max_liability_formula: sum_of_winning_total_returns_per_pocket
+  accept_bet_only_when_reserved_house_bankroll_covers_max_liability: true
+faucets_and_sinks:
+  production_values: undecided_until_balance_simulation
+  automatic_real_money_purchase: out_of_scope
+  required_future_metrics: [chips_issued, chips_wagered, chips_won, chips_sunk, active_balance_distribution]
+balance_gate:
+  exact_math_verified: true
+  simulation_required_before_R4: true
+  monetization_review_required: true
+  legal_market_review_required: true

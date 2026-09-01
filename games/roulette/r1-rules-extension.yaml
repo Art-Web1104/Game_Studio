@@ -1,0 +1,13 @@
+schema_version: 1.0.0
+ruleset_ref: games/roulette/rules-reference.yaml
+gate_status: R1_CANDIDATE
+limits:
+  min_stake_units: 1
+  max_stake_units: 100000
+  max_bets_per_player_per_round: 100
+  max_total_stake_units_per_player_per_round: 1000000
+unsupported_bets:
+  - basket_0_1_2_3
+  - trio_0_1_2
+  - trio_0_2_3
+  - neighbors_and_call_bets

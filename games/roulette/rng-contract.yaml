@@ -1,0 +1,23 @@
+schema_version: 1.0.0
+contract_id: RNG-ROULETTE-R1
+status: INTERFACE_BASELINE
+authority: GAME_SERVER
+interface:
+  input: [round_id, ruleset_id, algorithm_id, algorithm_version, protected_seed_reference, draw_index]
+  output: [pocket_0_to_36, proof_hash, audit_event_ref]
+requirements:
+  production_csprng: required_before_R2_exit
+  deterministic_test_adapter: required
+  unbiased_mapping: rejection_sampling_or_equivalent
+  modulo_bias: prohibited
+  seed_value_in_logs: prohibited
+  seed_reference_in_audit: required
+  one_authoritative_draw_per_round: true
+  algorithm_and_version_pinned: true
+  replay_test_exact_match: true
+failure_behavior:
+  missing_or_invalid_proof: VOID_ROUND
+  duplicate_draw_request: RETURN_ORIGINAL_RESULT
+  algorithm_version_mismatch: BLOCK_AND_ESCALATE
+  audit_write_failure: BLOCK_AND_VOID
+approval_for_production: [A-02, A-20, A-50, USER]

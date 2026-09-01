@@ -1,0 +1,9 @@
+[project]
+name = "ts-ai-game-studio-baseline"
+version = "1.3.0"
+description = "R0-approved control plane with an R1 roulette candidate and Claude-only programming workspace"
+requires-python = ">=3.11"
+dependencies = ["PyYAML>=6,<7"]
+
+[tool.unittest]
+test-dir = "tests"

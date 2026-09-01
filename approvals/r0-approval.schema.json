@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ts-studio.local/approvals/r0-approval.schema.json",
+  "title": "TS STUDIO R0 Approval Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "approval_id", "baseline_version", "decision", "approved_at",
+    "final_approver", "approval_source", "agent_recommendations", "evidence_refs",
+    "binding_constraints", "next_gate"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "approval_id": {"const": "SYS-010"},
+    "baseline_version": {"const": "1.1.0"},
+    "decision": {"const": "APPROVED"},
+    "approved_at": {"type": "string", "format": "date-time"},
+    "final_approver": {"const": "USER"},
+    "approval_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["channel", "statement"],
+      "properties": {
+        "channel": {"const": "current_chat"},
+        "statement": {"type": "string", "minLength": 3}
+      }
+    },
+    "agent_recommendations": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["agent_id", "status", "basis"],
+        "properties": {
+          "agent_id": {"type": "string", "pattern": "^A-[0-9]{2}$"},
+          "status": {"const": "PASS"},
+          "basis": {"type": "string", "minLength": 10}
+        }
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "minItems": 3,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 5}
+    },
+    "binding_constraints": {
+      "type": "array",
+      "minItems": 4,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 10}
+    },
+    "next_gate": {"const": "R1_RULES_AND_ECONOMY_BASELINE"}
+  }
+}

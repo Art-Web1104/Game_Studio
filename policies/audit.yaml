@@ -1,0 +1,25 @@
+schema_version: 1.0.0
+mode: append_only_hash_chained
+event_schema: audit/audit-event.schema.json
+clock: UTC
+required_event_types: [TASK_STATE, APPROVAL, KNOWLEDGE, PROVIDER_CALL, COST, SECURITY, ARTIFACT, RELEASE_GATE]
+required_on:
+  - every task state transition and denial
+  - every approval and rejection
+  - every knowledge lifecycle change and retrieval
+  - every provider request, response, retry, and policy denial
+  - every cost reservation and final usage record
+  - every security exception and incident
+  - every artifact version and release gate
+integrity:
+  immutable: true
+  previous_event_hash_required_after_genesis: true
+  request_and_output_content_hashes: true
+privacy:
+  secret_values: prohibited
+  raw_pii: prohibited
+  minimum_metadata_only: true
+retention:
+  policy: project_and_legal_policy_defined
+  deletion_requires: [USER, A-02, audit_record]
+access: [A-00, A-02, A-50, USER]

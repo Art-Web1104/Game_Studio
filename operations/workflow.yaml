@@ -1,0 +1,31 @@
+schema_version: 1.0.0
+initial_state: DRAFT
+terminal_states: [DONE, CANCELLED]
+states: [DRAFT, READY, IN_PROGRESS, REVIEW, QA, BLOCKED, REWORK, DONE, CANCELLED]
+transitions:
+  - {from: DRAFT, to: READY, actor: owner, requires_evidence: true}
+  - {from: READY, to: IN_PROGRESS, actor: owner}
+  - {from: IN_PROGRESS, to: REVIEW, actor: owner, requires_evidence: true}
+  - {from: REVIEW, to: QA, actor: owner, requires_evidence: true}
+  - {from: REVIEW, to: REWORK, actor: owner, requires_evidence: true}
+  - {from: QA, to: DONE, actor: "agent:A-50", requires_evidence: true}
+  - {from: QA, to: REWORK, actor: "agent:A-50", requires_evidence: true}
+  - {from: REWORK, to: IN_PROGRESS, actor: owner}
+  - {from: DRAFT, to: BLOCKED, actor: owner, requires_blocked_reason: true}
+  - {from: READY, to: BLOCKED, actor: owner, requires_blocked_reason: true}
+  - {from: IN_PROGRESS, to: BLOCKED, actor: owner, requires_blocked_reason: true}
+  - {from: REVIEW, to: BLOCKED, actor: owner, requires_blocked_reason: true}
+  - {from: QA, to: BLOCKED, actor: "agent:A-50", requires_blocked_reason: true}
+  - {from: BLOCKED, to: READY, actor: owner, requires_evidence: true}
+  - {from: DRAFT, to: CANCELLED, actor: owner, requires_evidence: true}
+  - {from: READY, to: CANCELLED, actor: owner, requires_evidence: true}
+done_gate:
+  LOW: [OWNER_LEAD, A-50]
+  MEDIUM: [OWNER_LEAD, A-50, A-00]
+  HIGH: [A-50, A-02, A-00]
+global_guards:
+  one_owner: true
+  deny_direct_done: true
+  creator_cannot_be_sole_reviewer: true
+  production_schedule_before_r5: denied
+  release_requires_user: true

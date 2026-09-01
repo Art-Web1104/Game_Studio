@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "CASINO-RULE-0001",
+  "project_id": "casino-core",
+  "title": "룰렛 단일 제로 규칙 기준선 정의",
+  "goal": "유럽식 단일 제로 룰렛의 베팅·당첨·지급·예외 규칙을 결정론적으로 구현 가능한 계약으로 정의한다.",
+  "owner_agent_id": "A-10",
+  "status": "READY",
+  "risk_class": "HIGH",
+  "inputs": [
+    {
+      "uri": "docs://briefs/roulette-v1",
+      "version": "1.0.0",
+      "content_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  ],
+  "deliverables": [
+    {
+      "name": "roulette-ruleset",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "docs://games/roulette/ruleset-v1"
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "criterion_id": "AC-001",
+      "statement": "모든 지원 베팅 유형의 유효 조건과 지급 배수가 정의되어야 한다.",
+      "verification": "QA 전수 열거 테스트"
+    },
+    {
+      "criterion_id": "AC-002",
+      "statement": "동일 ruleset과 seed에서 최종 결과와 지급 합계가 항상 동일해야 한다.",
+      "verification": "결정론적 리플레이 테스트"
+    }
+  ],
+  "dependencies": [],
+  "budget": {
+    "max_cost_usd": 10.0,
+    "max_runtime_seconds": 3600,
+    "stop_on_limit": true
+  },
+  "approvers": ["A-50", "A-02", "A-00"],
+  "rollback": {
+    "strategy": "승인 전 ruleset 버전으로 복원하고 신규 지급표 참조를 제거한다.",
+    "source_preserved": true,
+    "verification": "이전 시드 리플레이 재실행"
+  },
+  "security": {
+    "data_classification": "INTERNAL",
+    "contains_pii": false,
+    "workspace_access": "DEPARTMENT_WRITE",
+    "network_policy": "ALLOWLISTED_READ",
+    "secrets_policy": "NONE"
+  },
+  "assumptions": ["환전과 현금 인출이 없는 소셜 게임이다."],
+  "open_decisions": ["테이블별 최소·최대 베팅 한도는 후속 경제 모델에서 확정한다."],
+  "created_at": "2026-08-28T00:00:00Z",
+  "updated_at": "2026-08-28T00:00:00Z"
+}
+

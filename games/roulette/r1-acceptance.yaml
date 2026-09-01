@@ -1,0 +1,25 @@
+schema_version: 1.0.0
+gate_id: R1-ROULETTE-RULES-ECONOMY
+status: CANDIDATE
+owner: A-10
+reviewers: [A-20, A-02, A-50, A-00]
+required:
+  pockets_and_wheel_topology_exact: true
+  all_supported_bet_geometry_validated: true
+  all_payouts_and_zero_behavior_exhaustive: true
+  rtp_equals_36_over_37_for_each_supported_type: true
+  house_edge_equals_1_over_37_for_each_supported_type: true
+  integer_balanced_ledger_contract: true
+  idempotent_duplicate_noop: true
+  server_authoritative_round_state: true
+  deterministic_rng_test_adapter_contract: true
+  cash_out_and_real_world_rewards_absent: true
+  blocker_critical_high_defects: 0
+deferred_to_R2:
+  - production CSPRNG implementation and independent statistical certification
+  - database transaction and concurrency implementation
+  - load, reconnect, failover, and security penetration execution
+deferred_to_later_gates:
+  - production faucet and sink values
+  - monetization design and jurisdiction-specific legal review
+  - production schedule and release date

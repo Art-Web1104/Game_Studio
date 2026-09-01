@@ -1,0 +1,54 @@
+schema_version: 1.0.0
+baseline_version: 1.1.0
+registry_id: REGISTRY-R0-001
+status: R0_APPROVED
+approval_record: approvals/SYS-010-R0-approval.yaml
+constitution: docs/constitution/studio-constitution-v1.md
+production_schedule_policy: prohibited_before_r5
+permanent_agent_count: 9
+agents:
+  - agent_id: A-00
+    slug: game_director
+    role: Game Director
+    department: command
+    definition: agents/director/game-director.yaml
+  - agent_id: A-01
+    slug: producer_pm
+    role: Producer / PM
+    department: production
+    definition: agents/production/producer-pm.yaml
+  - agent_id: A-02
+    slug: platform_integrator
+    role: Platform Integrator
+    department: platform
+    definition: agents/platform/platform-integrator.yaml
+  - agent_id: A-03
+    slug: knowledge_curator
+    role: Knowledge Curator
+    department: knowledge
+    definition: agents/knowledge/knowledge-curator.yaml
+  - agent_id: A-10
+    slug: design_lead
+    role: Design Lead
+    department: design
+    definition: agents/design/design-lead.yaml
+  - agent_id: A-20
+    slug: engineering_lead
+    role: Engineering Lead
+    department: engineering
+    definition: agents/engineering/engineering-lead.yaml
+  - agent_id: A-30
+    slug: art_lead
+    role: Art Lead
+    department: art
+    definition: agents/art/art-lead.yaml
+  - agent_id: A-40
+    slug: audio_lead
+    role: Audio Lead
+    department: audio
+    definition: agents/audio/audio-lead.yaml
+  - agent_id: A-50
+    slug: qa_lead
+    role: QA Lead
+    department: qa
+    definition: agents/qa/qa-lead.yaml

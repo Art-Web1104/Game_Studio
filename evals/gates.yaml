@@ -1,0 +1,11 @@
+schema_version: 1.0.0
+evaluation_frequency: before_role_activation_and_after_material_change
+scoring_scale: 0_to_1
+required:
+  schema_valid: true
+  minimum_score_met: true
+  independent_reviewer_pass: true
+  high_risk_critical_failures: 0
+  forbidden_behavior_hits: 0
+failure_action: disable_role_or_provider_and_create_rework_task
+evidence_retention: immutable_versioned_report

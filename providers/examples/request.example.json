@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "request_id": "PR-ROULETTE-0001",
+  "task_id": "CASINO-RULE-0001",
+  "requesting_agent_id": "A-20",
+  "capability": "code",
+  "risk_class": "HIGH",
+  "data_classification": "INTERNAL",
+  "input_refs": ["repo://games/roulette/rules-reference.yaml"],
+  "output_contract_ref": "repo://contracts/artifact.schema.json",
+  "budget": {
+    "estimated_cost_usd": 2.5,
+    "max_cost_usd": 5.0,
+    "max_runtime_seconds": 900,
+    "stop_on_limit": true
+  },
+  "permissions": {
+    "network": "ALLOWLISTED_PROVIDER",
+    "workspace": "TASK_WRITE",
+    "secret_refs": ["secret-ref://providers/claude"]
+  },
+  "fallback_allowed": true,
+  "required_checks": ["schema", "unit-test", "security", "independent-review"]
+}

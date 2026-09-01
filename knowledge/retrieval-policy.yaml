@@ -1,0 +1,12 @@
+schema_version: 1.0.0
+default: deny
+required_status: APPROVED
+filters: [scope, allowed_agents, classification, effective_time, rights]
+query_log_required: true
+return_metadata: [knowledge_id, version, content_hash, provenance, confidence]
+conflict_policy: newest_approved_non_deprecated_version
+no_result_behavior: explicit_no_approved_knowledge
+forbidden:
+  - use PROPOSED or REVIEWED content as authoritative
+  - return content above the requesting agent clearance
+  - omit provenance from a generated decision or artifact

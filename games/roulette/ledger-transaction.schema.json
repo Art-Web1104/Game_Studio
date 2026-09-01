@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ts-studio.local/games/roulette/ledger-transaction.schema.json",
+  "title": "Roulette Virtual-Chip Ledger Transaction",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "transaction_id", "idempotency_key", "round_id", "transaction_type",
+    "currency", "entries", "created_at", "request_hash", "audit_event_ref"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "transaction_id": {"type": "string", "pattern": "^LT-[A-Z0-9-]+$"},
+    "idempotency_key": {"type": "string", "pattern": "^idem:[a-zA-Z0-9:_-]+$"},
+    "round_id": {"type": "string", "pattern": "^RR-[A-Z0-9-]+$"},
+    "transaction_type": {"enum": ["BET_RESERVE", "BET_CANCEL", "ROUND_SETTLEMENT", "ROUND_VOID"]},
+    "currency": {"const": "VIRTUAL_CHIP"},
+    "entries": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["account_id", "account_type", "amount_units"],
+        "properties": {
+          "account_id": {"type": "string", "minLength": 3},
+          "account_type": {"enum": ["PLAYER", "BET_ESCROW", "HOUSE_BANKROLL", "SYSTEM_CLEARING"]},
+          "amount_units": {"type": "integer"}
+        }
+      }
+    },
+    "created_at": {"type": "string", "format": "date-time"},
+    "request_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "audit_event_ref": {"type": "string", "minLength": 5}
+  }
+}

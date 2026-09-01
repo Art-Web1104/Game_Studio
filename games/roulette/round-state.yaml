@@ -1,0 +1,19 @@
+schema_version: 1.0.0
+authority: GAME_SERVER
+initial_state: OPEN
+terminal_states: [SETTLED, VOIDED]
+states: [OPEN, LOCKED, SPINNING, SETTLING, SETTLED, VOIDED]
+transitions:
+  - {from: OPEN, to: LOCKED, actor: GAME_SERVER, requires_evidence: true}
+  - {from: LOCKED, to: SPINNING, actor: GAME_SERVER, requires_evidence: true}
+  - {from: SPINNING, to: SETTLING, actor: GAME_SERVER, requires_evidence: true}
+  - {from: SETTLING, to: SETTLED, actor: GAME_SERVER, requires_evidence: true}
+  - {from: OPEN, to: VOIDED, actor: GAME_SERVER, requires_evidence: true}
+  - {from: LOCKED, to: VOIDED, actor: GAME_SERVER, requires_evidence: true}
+  - {from: SPINNING, to: VOIDED, actor: GAME_SERVER, requires_evidence: true}
+guards:
+  accept_bets_only_in: OPEN
+  result_generated_only_in: SPINNING
+  ledger_settlement_only_in: SETTLING
+  client_authority: denied
+  terminal_state_mutation: denied

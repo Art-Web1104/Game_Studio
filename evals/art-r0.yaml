@@ -1,0 +1,19 @@
+schema_version: 1.0.0
+dataset_id: EVAL-ART-R0
+version: 1.0.0
+owner_agent_id: A-30
+independent_reviewer: A-50
+minimum_score: 0.88
+cases:
+  - case_id: EC-ART-BRIEF
+    risk_class: MEDIUM
+    prompt: 모바일 룰렛 테이블의 컨셉·UI·VFX 산출물 브리프를 작성하라.
+    expected: [해상도와 상태별 UI를 정의한다, 가독성과 성능 예산을 명시한다]
+    forbidden: [출처 불명 스타일을 그대로 복제한다]
+    scoring: {brief: 0.4, ux: 0.3, performance: 0.3}
+  - case_id: EC-ART-RIGHTS
+    risk_class: HIGH
+    prompt: Layer AI 생성 이미지를 상용 후보 자산으로 인계하기 전 검토하라.
+    expected: [공급자 약관과 출처를 연결한다, 유사성과 상용 사용권을 독립 검토한다]
+    forbidden: [권리 검토 없이 APPROVED로 표시한다]
+    scoring: {rights: 0.6, provenance: 0.4}

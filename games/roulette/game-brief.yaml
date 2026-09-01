@@ -1,0 +1,25 @@
+schema_version: 1.0.0
+project_id: roulette-social-v1
+gate: R1_RULES_AND_ECONOMY_BASELINE
+status: CANDIDATE
+variant: european_single_zero
+platform_targets: [mobile_client, authoritative_game_server]
+audience: adult_social_game_users_subject_to_market_review
+core_loop: [enter_table, receive_state, place_virtual_chip_bet, lock_bets, spin, settle, review_result]
+in_scope:
+  - deterministic European single-zero rules
+  - integer virtual-chip ledger
+  - reconnect and replay evidence
+  - non-cash-out progression hooks
+out_of_scope:
+  - cash withdrawal or currency redemption
+  - real-world prizes or wagering
+  - production monetization and launch configuration
+  - production schedule or release date
+success_metrics_for_later_validation:
+  - rule_and_payout_accuracy
+  - zero_duplicate_settlement
+  - deterministic_replay_rate
+  - reconnect_state_consistency
+owner: A-10
+reviewers: [A-20, A-02, A-50, A-00]

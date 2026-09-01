@@ -1,0 +1,18 @@
+schema_version: 1.0.0
+currency: USD
+accounting_unit: provider_request
+required_limits: [task_max_cost, task_max_runtime, provider_attempts, stop_on_limit]
+stop_on_limit: true
+reservation_required_before_provider_call: true
+actual_usage_record_required: true
+retry:
+  max_attempts: 2
+  reuse_same_contract: true
+  no_retry_on: [POLICY_DENIED, BUDGET_EXCEEDED, RIGHTS_UNVERIFIED]
+thresholds:
+  warning_ratio: 0.80
+  hard_stop_ratio: 1.00
+overage:
+  automatic_extension: denied
+  required_approval: USER
+reports: [per_task, per_provider, per_department, monthly]

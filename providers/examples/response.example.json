@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0.0",
+  "request_id": "PR-ROULETTE-0001",
+  "task_id": "CASINO-RULE-0001",
+  "provider_id": "claude_agent",
+  "model_id": "configured-claude-code-model",
+  "status": "SUCCEEDED",
+  "output_refs": ["artifact://roulette-code/1.0.0"],
+  "usage": {"input_units": 1200, "output_units": 800, "runtime_seconds": 42.5, "cost_usd": 1.75},
+  "rights": {"provider_terms_recorded": true, "commercial_use_reviewed": true, "provenance_attached": true},
+  "review_required": true,
+  "audit_event_ref": "audit://AE-ROULETTE-0001",
+  "error": null
+}

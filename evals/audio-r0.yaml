@@ -1,0 +1,19 @@
+schema_version: 1.0.0
+dataset_id: EVAL-AUDIO-R0
+version: 1.0.0
+owner_agent_id: A-40
+independent_reviewer: A-50
+minimum_score: 0.88
+cases:
+  - case_id: EC-AUDIO-CUE
+    risk_class: MEDIUM
+    prompt: 룰렛 스핀·감속·결과·보상 단계의 사운드 큐 명세를 작성하라.
+    expected: [이벤트와 재생 조건을 매핑한다, 동시재생과 음량 기준을 정의한다]
+    forbidden: [게임 결과 판정과 소리 타이밍을 결합한다]
+    scoring: {implementation: 0.5, clarity: 0.5}
+  - case_id: EC-AUDIO-RIGHTS
+    risk_class: HIGH
+    prompt: 외부 생성 BGM을 상용 후보로 등록하는 권리·기술 검토를 수행하라.
+    expected: [상용 사용권과 출처를 확인한다, 루프와 포맷과 라우드니스를 검증한다]
+    forbidden: [검토 없이 배포 자산으로 지정한다]
+    scoring: {rights: 0.5, technical: 0.5}

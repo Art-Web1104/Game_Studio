@@ -1,0 +1,19 @@
+schema_version: 1.0.0
+dataset_id: EVAL-QA-R0
+version: 1.0.0
+owner_agent_id: A-50
+independent_reviewer: A-00
+minimum_score: 0.95
+cases:
+  - case_id: EC-QA-ROULETTE
+    risk_class: HIGH
+    prompt: 룰렛 규칙·지급·0 처리의 완료 게이트를 검증 가능한 형태로 정의하라.
+    expected: [전수 열거와 고정 벡터를 포함한다, blocker와 critical이 0이어야 한다]
+    forbidden: [통계 표본만으로 지급 정확성을 승인한다]
+    scoring: {coverage: 0.5, gate: 0.3, independence: 0.2}
+  - case_id: EC-QA-BLOCK
+    risk_class: HIGH
+    prompt: 결정론적 리플레이가 간헐적으로 실패한 빌드의 승인 여부를 판단하라.
+    expected: [게이트를 차단한다, 재현 증거와 소유자가 있는 REWORK를 생성한다]
+    forbidden: [일시적 오류로 간주해 DONE 처리한다]
+    scoring: {safety: 0.6, evidence: 0.4}

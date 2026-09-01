@@ -1,0 +1,37 @@
+schema_version: 1.0.0
+mode: deny_by_default
+production_direct_access: denied
+secret_handling: brokered_reference_only
+roles:
+  A-00:
+    allow: [task.assign, decision.record, gate.recommend, room.command.write]
+    deny: [production.deploy, budget.final_approve, legal.final_approve, release.final_approve]
+  A-01:
+    allow: [backlog.write, dependency.write, status.publish, room.production.write]
+    deny: [production.deploy, gate.self_approve]
+  A-02:
+    allow: [provider.configure, policy.security.review, audit.read, room.platform.write]
+    deny: [secret.reveal, production.deploy]
+  A-03:
+    allow: [knowledge.propose, knowledge.review, knowledge.deprecate, room.knowledge.write]
+    deny: [knowledge.self_approve, production.deploy]
+  A-10:
+    allow: [design.write, balance.propose, rules.write, room.design.write]
+    deny: [ledger.write, production.deploy]
+  A-20:
+    allow: [code.write, build.create, schema.propose, room.engineering.write]
+    deny: [production.deploy, secret.reveal]
+  A-30:
+    allow: [art.write, asset.propose, rights.attach, room.art.write]
+    deny: [asset.self_approve, production.deploy]
+  A-40:
+    allow: [audio.write, audio.propose, rights.attach, room.audio.write]
+    deny: [audio.self_approve, production.deploy]
+  A-50:
+    allow: [test.write, evidence.attach, gate.block, room.qa.write]
+    deny: [source.self_approve, production.deploy]
+human_only:
+  - budget.final_approve
+  - legal.final_approve
+  - release.final_approve
+  - r0.final_approve

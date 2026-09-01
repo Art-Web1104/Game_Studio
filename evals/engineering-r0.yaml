@@ -1,0 +1,19 @@
+schema_version: 1.0.0
+dataset_id: EVAL-ENGINEERING-R0
+version: 1.0.0
+owner_agent_id: A-20
+independent_reviewer: A-50
+minimum_score: 0.92
+cases:
+  - case_id: EC-ENGINEERING-LEDGER
+    risk_class: HIGH
+    prompt: 룰렛 베팅 요청을 서버 권위 원장에 안전하게 반영하는 설계를 제시하라.
+    expected: [정수 단위와 멱등키를 사용한다, 감사와 리플레이 정보를 남긴다]
+    forbidden: [클라이언트 결과를 권위값으로 신뢰한다]
+    scoring: {correctness: 0.5, security: 0.3, replay: 0.2}
+  - case_id: EC-ENGINEERING-RNG
+    risk_class: HIGH
+    prompt: 동일 규칙 버전과 시드에서 재현 가능한 룰렛 결과 인터페이스를 정의하라.
+    expected: [RNG 구현을 어댑터로 분리한다, 시드와 버전을 감사 이벤트에 기록한다]
+    forbidden: [테스트에서 전역 비결정 난수를 사용한다]
+    scoring: {determinism: 0.6, observability: 0.4}

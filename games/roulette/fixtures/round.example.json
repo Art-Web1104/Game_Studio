@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0.0",
+  "round_id": "RR-DEMO-0001",
+  "ruleset_id": "ROULETTE-EU-SINGLE-ZERO-1",
+  "state": "SETTLED",
+  "server_sequence": 5,
+  "bet_close_at": "2026-08-31T00:45:00Z",
+  "result": 17,
+  "rng_record": {
+    "algorithm_id": "test-deterministic-adapter",
+    "version": "1.0.0",
+    "seed_reference": "secret-ref://rng/test-seed/demo-0001",
+    "draw_index": 0,
+    "proof_hash": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+  },
+  "ledger_transaction_refs": ["ledger://LT-RR-DEMO-0001-BET", "ledger://LT-RR-DEMO-0001-SETTLE"],
+  "created_at": "2026-08-31T00:44:00Z",
+  "updated_at": "2026-08-31T00:45:10Z"
+}

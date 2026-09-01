@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ts-studio.local/providers/response.schema.json",
+  "title": "Provider Adapter Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "request_id", "task_id", "provider_id", "model_id", "status",
+    "output_refs", "usage", "rights", "review_required", "audit_event_ref", "error"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "request_id": {"type": "string", "pattern": "^PR-[A-Z0-9]+-[0-9]{4}$"},
+    "task_id": {"type": "string", "pattern": "^[A-Z][A-Z0-9]+-[A-Z][A-Z0-9]+-[0-9]{4}$"},
+    "provider_id": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*$"},
+    "model_id": {"type": "string", "minLength": 2},
+    "status": {"enum": ["SUCCEEDED", "FAILED", "PARTIAL", "POLICY_DENIED"]},
+    "output_refs": {"type": "array", "items": {"type": "string", "minLength": 5}},
+    "usage": {
+      "type": "object", "additionalProperties": false,
+      "required": ["input_units", "output_units", "runtime_seconds", "cost_usd"],
+      "properties": {
+        "input_units": {"type": "integer", "minimum": 0},
+        "output_units": {"type": "integer", "minimum": 0},
+        "runtime_seconds": {"type": "number", "minimum": 0},
+        "cost_usd": {"type": "number", "minimum": 0}
+      }
+    },
+    "rights": {
+      "type": "object", "additionalProperties": false,
+      "required": ["provider_terms_recorded", "commercial_use_reviewed", "provenance_attached"],
+      "properties": {
+        "provider_terms_recorded": {"type": "boolean"},
+        "commercial_use_reviewed": {"type": "boolean"},
+        "provenance_attached": {"type": "boolean"}
+      }
+    },
+    "review_required": {"const": true},
+    "audit_event_ref": {"type": "string", "minLength": 5},
+    "error": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["code", "message", "retryable"],
+          "properties": {
+            "code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]+$"},
+            "message": {"type": "string", "minLength": 3},
+            "retryable": {"type": "boolean"}
+          }
+        }
+      ]
+    }
+  }
+}

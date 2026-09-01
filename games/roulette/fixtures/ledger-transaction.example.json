@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0.0",
+  "transaction_id": "LT-RR-DEMO-0001-BET",
+  "idempotency_key": "idem:roulette:demo-0001:bet:001",
+  "round_id": "RR-DEMO-0001",
+  "transaction_type": "BET_RESERVE",
+  "currency": "VIRTUAL_CHIP",
+  "entries": [
+    {"account_id": "player:demo", "account_type": "PLAYER", "amount_units": -100},
+    {"account_id": "escrow:RR-DEMO-0001", "account_type": "BET_ESCROW", "amount_units": 100}
+  ],
+  "created_at": "2026-08-31T00:43:56Z",
+  "request_hash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+  "audit_event_ref": "audit://AE-ROULETTE-R1-0001"
+}

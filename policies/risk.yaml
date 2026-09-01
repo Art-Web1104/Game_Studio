@@ -1,0 +1,10 @@
+schema_version: 1.0.0
+default: MEDIUM
+classes:
+  LOW: reversible_single_department_no_external_publication
+  MEDIUM: cross_department_or_external_provider_or_material_asset
+  HIGH: rules_rng_payout_ledger_security_rights_budget_release_or_production
+mandatory_high_risk_reviewers: [A-50, A-02, A-00]
+human_final_approval: [budget, legal, external_publication, production_release, r0_baseline]
+automatic_downgrade: denied
+unresolved_risk_action: BLOCKED

@@ -1,0 +1,10 @@
+schema_version: 1.0.0
+errors:
+  INVALID_REQUEST: {retryable: false, action: return_to_owner}
+  POLICY_DENIED: {retryable: false, action: escalate_to_platform}
+  BUDGET_EXCEEDED: {retryable: false, action: stop_and_request_human_budget_decision}
+  TIMEOUT: {retryable: true, action: retry_once_with_same_contract}
+  PROVIDER_UNAVAILABLE: {retryable: true, action: use_configured_fallback}
+  INVALID_OUTPUT: {retryable: true, action: retry_once_then_fail}
+  QUALITY_FAILED: {retryable: false, action: send_to_rework}
+  RIGHTS_UNVERIFIED: {retryable: false, action: quarantine_output}

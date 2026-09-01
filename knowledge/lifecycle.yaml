@@ -1,0 +1,16 @@
+schema_version: 1.0.0
+initial_state: PROPOSED
+retrievable_state: APPROVED
+states: [PROPOSED, REVIEWED, APPROVED, DEPRECATED, REJECTED]
+transitions:
+  - {from: PROPOSED, to: REVIEWED, actor: A-03, requires: [provenance, rights, injection_review, evidence]}
+  - {from: PROPOSED, to: REJECTED, actor: A-03, requires: [reason]}
+  - {from: REVIEWED, to: APPROVED, actor: A-00, requires: [independent_review, scope, effective_from]}
+  - {from: REVIEWED, to: REJECTED, actor: A-00, requires: [reason]}
+  - {from: APPROVED, to: DEPRECATED, actor: A-03, requires: [reason, replacement_or_exception]}
+guards:
+  self_approval: denied
+  automatic_conversation_ingest: denied
+  external_output_direct_promotion: denied
+  immutable_approved_versions: true
+  new_revision_required_for_changes: true

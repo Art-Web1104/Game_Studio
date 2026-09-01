@@ -1,0 +1,45 @@
+schema_version: 1.0.0
+spec_id: TEST-ROULETTE-EU-001
+ruleset_ref: games/roulette/rules-reference.yaml
+risk_class: HIGH
+owner: A-50
+required_reviewers: [A-10, A-20, A-02]
+suites:
+  - suite_id: topology
+    method: exhaustive
+    verifies: [pockets_0_through_36_exactly_once, wheel_order_permutation, color_partition, parity_and_ranges]
+  - suite_id: bet_validation
+    method: valid_and_invalid_vectors
+    verifies: [selection_count, table_adjacency_for_inside_bets, dozen_and_column_index, positive_integer_stake]
+  - suite_id: payout
+    method: exhaustive_per_bet_type_and_result
+    verifies: [win_detection, net_profit, total_return, losing_stake]
+  - suite_id: zero_behavior
+    method: fixed_vectors
+    verifies: [zero_wins_only_straight_zero, zero_loses_even_money, no_en_prison, no_la_partage]
+  - suite_id: deterministic_replay
+    method: seed_and_version_replay
+    verifies: [same_input_same_result, recorded_rng_metadata, version_mismatch_rejected]
+  - suite_id: ledger
+    method: transaction_property_tests
+    verifies: [integer_units, balance_conservation, idempotent_request, atomic_settlement, duplicate_rejected]
+  - suite_id: concurrency_reconnect
+    method: fault_injection
+    verifies: [single_authoritative_result, reconnect_state_recovery, timeout_no_double_debit]
+  - suite_id: statistical_sanity
+    method: distribution_monitor
+    verifies: [all_pockets_reachable, deviation_alert]
+    restriction: cannot_replace_exact_rule_and_payout_tests
+  - suite_id: scope
+    method: contract_scan
+    verifies: [non_cash_out_only, no_real_world_reward, server_authoritative]
+acceptance_gate:
+  blocker: 0
+  critical: 0
+  high: 0
+  exhaustive_rule_vectors_pass_rate: 1.0
+  deterministic_replay_pass_rate: 1.0
+  ledger_property_pass_rate: 1.0
+  fixed_vector_file: games/roulette/fixtures/test-vectors.json
+  independent_qa_required: true
+release_note: This gate validates the rules baseline only and is not a production release approval.

@@ -1,0 +1,29 @@
+schema_version: 1.0.0
+default: deny
+max_attempts: 2
+production_write: denied
+human_review_required: true
+restricted_external_transfer: denied
+routes:
+  code: {preferred: claude_agent, fallbacks: []}
+  reasoning: {preferred: claude_agent, fallbacks: []}
+  evaluation: {preferred: claude_agent, fallbacks: []}
+  image: {preferred: layer_ai, fallbacks: []}
+  audio: {preferred: audio_external, fallbacks: []}
+  3d: {preferred: three_d_external, fallbacks: []}
+preflight:
+  - validate request schema
+  - authorize requesting agent and capability
+  - resolve approved knowledge references
+  - redact secrets and prohibited data
+  - reserve task budget
+postflight:
+  - validate output contract
+  - attach provenance and provider terms
+  - scan output for policy and security violations
+  - record usage, cost, and audit event
+  - route to independent review
+no_fallback_policy:
+  programming_provider: claude_agent
+  on_unavailable: BLOCKED
+  codex_substitution: denied
