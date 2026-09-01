@@ -1,0 +1,306 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "R4-UI-0006",
+  "project_id": "casino-core",
+  "title": "R4 유닛 1: 내부용 로컬 플레이어블 유러피언 싱글제로 룰렛 수직 슬라이스",
+  "goal": "지금까지 계약과 코어 경계로만 존재하던 유러피언 싱글제로 룰렛을 사람이 실제로 만져 볼 수 있는 내부 프로토타입 수직 슬라이스로 닫는다. 파이썬 3.11 이상 표준 라이브러리 HTTP 서버와 순수 HTML·CSS·JavaScript 클라이언트만 사용한다. Node.js와 npm 생태계는 이 작업 환경에서 사용할 수 없으므로 번들러, 프레임워크, 외부 패키지, CDN 자산에 의존하지 않는다. 서버가 권위를 전부 보유한다. 정수 최소 단위 가상 칩 잔액, 베팅 검증, OPEN·LOCKED·SPINNING·SETTLING·SETTLED 라운드 전이, 추첨, 정산, 최근 결과 목록을 서버가 결정하고, 같은 요청 식별자로 들어온 중복 제출은 엔트로피를 다시 소비하지 않고 원본 결과를 그대로 반환한다. 클라이언트는 권위 결과나 지급액을 계산하지 않고 서버가 준 상태를 표시하고 입력을 전달하기만 한다. 추첨은 studio_core.rng의 RouletteDrawEngine 경계로, 규칙과 정산은 studio_core.roulette로, 내구 커밋과 멱등성은 studio_core.durable_state의 DurableRoundStore로 처리하며 이 세 모듈의 인터페이스와 계약을 약화하지 않는다. 화면은 모바일 세로 화면을 기준으로 반응형이어야 하고 키보드 조작, 보이는 포커스, 축소된 모션 설정 존중, 화면 낭독기용 상태 안내를 갖춘다. 모든 화면과 응답에 내부 프로토타입·가상 칩·현금 가치 없음 표시를 명확히 남긴다. 환전·결제·실물 보상, 로그인과 개인정보 수집, 네트워크 재접속 보증, 운영 배포, 수익화, 출시 일정은 이 작업의 범위가 아니다.",
+  "owner_agent_id": "A-02",
+  "status": "READY",
+  "risk_class": "HIGH",
+  "inputs": [
+    {
+      "uri": "repo://games/roulette/game-brief.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:915a3dc3dd276b424254f841a368e5f68f50664467bd666a7f3119257587786a"
+    },
+    {
+      "uri": "repo://games/roulette/rules-reference.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:c823eb3ec4325cabc610568162b14ff6bd0b29332307216609aa2c7381b962e6"
+    },
+    {
+      "uri": "repo://games/roulette/r1-rules-extension.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:deadab21bc3fda2feacd470821cec4bda12cccd4d5b09d4914dcf8d907af69ae"
+    },
+    {
+      "uri": "repo://games/roulette/round-state.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:194b874aac8872fa23f0142577b04ba17dfd8d10ce4d64fd0a30ed69980d1921"
+    },
+    {
+      "uri": "repo://games/roulette/round.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:9cc640a758badf4352a10911567dda08c6ee34dbcbef4fa7ecb19c0cb90483bb"
+    },
+    {
+      "uri": "repo://games/roulette/economy-model.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:07a7a7421abb1d3086f20cfb80f15b83e2cc25aec6f3388a3fbaded37679cba0"
+    },
+    {
+      "uri": "repo://games/roulette/ledger-transaction.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:fd37bb2e051c1dc5455953ea4c8525490e445d00b093027ff8802fe02f5f1eb3"
+    },
+    {
+      "uri": "repo://games/roulette/rng-contract.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:9d8ea76aef04c25d182fc2f25f3c3e0e988aa3e997b82cc918ad3ee86004114b"
+    },
+    {
+      "uri": "repo://games/roulette/durable-state-contract.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:3920a1a87c46871353b936f56252d39dbd5542f628b7e2471c9e35a1d175fdd4"
+    },
+    {
+      "uri": "repo://studio_core/rng.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:0ceea3c08a4c526a1d203f54fcbb31b35fff088450477f95270526d9f38e1d1e"
+    },
+    {
+      "uri": "repo://studio_core/durable_state.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:5b24d3e265a5e3ac2f6b21adcdefb21356393089e905fe1df93cf583e56cb8ed"
+    },
+    {
+      "uri": "repo://studio_core/roulette.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:a56ef8f0c3eaff4735fc148b2ab2caa8e59a2474c5799da7f58c7a6901fdedbe"
+    },
+    {
+      "uri": "repo://studio_core/ledger.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:07acd9aeac4dbfe6d2d9394e3cb0ccf335685e529fa07ce6af56d33e699ce71b"
+    },
+    {
+      "uri": "repo://tasks/R2-RNG-0001.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:c9d700d18d144c4a76f7f7c8cb2525829023540d5c280de3863ae77a18155966"
+    },
+    {
+      "uri": "repo://tasks/R2-DBC-0002.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:fc2bec02f86d0a84eacb7f5d753b45f5b2aa6e388b7d6105c445d3b0490abe6d"
+    },
+    {
+      "uri": "repo://docs/status/R2-STATUS.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:778cae65b85ebbd1b00b870ee90c0f218d105f85297b849b8930d92e682c6970"
+    },
+    {
+      "uri": "repo://operations/collaboration.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:03031cf600fe847737d535c364f183b6f0031464fc3a8fdd076b79826506733a"
+    },
+    {
+      "uri": "repo://contracts/task.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:32158d90825790b90929b5c1464140651c201b603745bc4bafa27e446d723527"
+    },
+    {
+      "uri": "repo://policies/security.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:c85fd12606c9d52cfb555b5d9a11b4f83b16a2247cd9dddffb3432a1fb34adac"
+    }
+  ],
+  "deliverables": [
+    {
+      "name": "r4-ui-slice-protocol-contract",
+      "artifact_type": "SCHEMA",
+      "target_uri": "repo://games/roulette/playable-slice-contract.yaml"
+    },
+    {
+      "name": "r4-ui-slice-package-init",
+      "artifact_type": "CODE",
+      "target_uri": "repo://apps/roulette_web/__init__.py"
+    },
+    {
+      "name": "r4-ui-slice-authoritative-table",
+      "artifact_type": "CODE",
+      "target_uri": "repo://apps/roulette_web/table.py"
+    },
+    {
+      "name": "r4-ui-slice-http-server",
+      "artifact_type": "CODE",
+      "target_uri": "repo://apps/roulette_web/server.py"
+    },
+    {
+      "name": "r4-ui-slice-client-markup",
+      "artifact_type": "CODE",
+      "target_uri": "repo://apps/roulette_web/static/index.html"
+    },
+    {
+      "name": "r4-ui-slice-client-styles",
+      "artifact_type": "CODE",
+      "target_uri": "repo://apps/roulette_web/static/styles.css"
+    },
+    {
+      "name": "r4-ui-slice-client-script",
+      "artifact_type": "CODE",
+      "target_uri": "repo://apps/roulette_web/static/app.js"
+    },
+    {
+      "name": "r4-ui-slice-local-runbook",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://apps/roulette_web/README.md"
+    },
+    {
+      "name": "r4-ui-slice-server-test-suite",
+      "artifact_type": "CODE",
+      "target_uri": "repo://tests/test_roulette_web_server.py"
+    },
+    {
+      "name": "r4-ui-slice-client-test-suite",
+      "artifact_type": "CODE",
+      "target_uri": "repo://tests/test_roulette_web_ui.py"
+    },
+    {
+      "name": "r4-ui-slice-baseline-validator-integration",
+      "artifact_type": "CODE",
+      "target_uri": "repo://scripts/validate_baseline.py"
+    },
+    {
+      "name": "r4-ui-slice-design-document",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://docs/games/R4-roulette-playable-slice.md"
+    },
+    {
+      "name": "r4-ui-slice-audit-events",
+      "artifact_type": "DATASET",
+      "target_uri": "repo://audit/events/R4-UI-0006-events.json"
+    },
+    {
+      "name": "r4-ui-slice-validation-report",
+      "artifact_type": "TEST_REPORT",
+      "target_uri": "repo://docs/approvals/R4-UI-0006-validation-report.md"
+    },
+    {
+      "name": "r4-ui-slice-artifact-contract",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://artifacts/R4-UI-0006-artifact.json"
+    },
+    {
+      "name": "r4-ui-slice-handoff-packet",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://handoffs/R4-UI-0006-handoff.json"
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "criterion_id": "AC-001",
+      "statement": "슬라이스는 파이썬 3.11 이상 표준 라이브러리만으로 기동해야 하고, Node.js·npm·번들러·외부 패키지·CDN 자산에 의존하지 않아야 하며, 클라이언트 자산은 같은 로컬 서버가 배급해야 한다.",
+      "verification": "임포트 스캔과 클라이언트 자산의 외부 출처 참조 부재 검사, 표준 라이브러리 외 의존성 없이 기동하는 시험"
+    },
+    {
+      "criterion_id": "AC-002",
+      "statement": "가상 칩 잔액, 베팅 금액, 지급액, 잔액 변화는 모두 정수 최소 단위여야 하고 어떤 경로에서도 부동소수 통화 값이 생성되거나 저장되거나 전송되지 않아야 한다.",
+      "verification": "응답 페이로드 타입 단언과 부동소수 통화 값 금지 시험, 저장소 정수 CHECK 제약 시험"
+    },
+    {
+      "criterion_id": "AC-003",
+      "statement": "베팅 검증은 서버에서 수행되어야 하고, 잘못된 베팅 유형·선택 집합·비정수 금액·잔액 초과·OPEN이 아닌 상태의 베팅은 거부되어야 하며, 거부는 잔액과 라운드 상태를 변경하지 않아야 한다.",
+      "verification": "studio_core.roulette.validate_bet 경유 네거티브 시험과 거부 후 상태·잔액 불변 단언"
+    },
+    {
+      "criterion_id": "AC-004",
+      "statement": "라운드는 games/roulette/round-state.yaml이 정의한 OPEN, LOCKED, SPINNING, SETTLING, SETTLED 전이만 따라야 하고, 베팅은 OPEN에서만, 추첨은 SPINNING에서만, 정산은 SETTLING에서만 일어나야 하며, 종결 상태는 변경될 수 없어야 한다.",
+      "verification": "상태 전이 표 대조 시험과 금지 전이·종결 상태 변경 거부 네거티브 시험"
+    },
+    {
+      "criterion_id": "AC-005",
+      "statement": "권위 추첨은 라운드당 정확히 한 번 studio_core.rng의 추첨 경계로 수행되어야 하고, 추첨 기록·정산 원장·감사 이벤트는 studio_core.durable_state의 단일 트랜잭션으로 커밋되어야 한다.",
+      "verification": "라운드당 추첨 호출 횟수 계측과 커밋 후 저장소의 세 기록 동시 존재 단언"
+    },
+    {
+      "criterion_id": "AC-006",
+      "statement": "같은 요청 식별자로 들어온 중복 제출은 엔트로피를 다시 소비하지 않고 원본 결과와 원본 정산을 그대로 반환해야 하고, 같은 식별자가 다른 페이로드로 재사용되면 실패로 닫혀야 한다.",
+      "verification": "중복 제출 재요청 시험, 엔트로피 소비 바이트 계측, 요청 지문 불일치 충돌 네거티브 시험"
+    },
+    {
+      "criterion_id": "AC-007",
+      "statement": "클라이언트는 권위 결과 포켓, 승패, 지급액, 잔액을 스스로 계산하지 않아야 하고, 서버 응답이 준 값만 표시해야 하며, 클라이언트가 보낸 결과·지급액·잔액 필드는 서버가 무시하거나 거부해야 한다.",
+      "verification": "클라이언트 스크립트의 규칙·지급 계산 부재 검토와 위조 결과·잔액 필드를 실은 요청의 서버 거부 시험"
+    },
+    {
+      "criterion_id": "AC-008",
+      "statement": "최근 결과 목록은 서버 권위 기록에서만 만들어져야 하고 저장된 커밋 순서와 일치해야 하며, 클라이언트가 보낸 이력으로 갱신되지 않아야 한다.",
+      "verification": "저장소 기록과 최근 결과 응답의 순서·내용 대조 시험"
+    },
+    {
+      "criterion_id": "AC-009",
+      "statement": "모든 화면과 API 응답에 내부 프로토타입, 가상 칩, 현금 가치 없음 표시가 명확히 포함되어야 하고, 환전·결제·실물 보상·수익화·출시 일정을 시사하는 문구나 경로가 존재하지 않아야 한다.",
+      "verification": "표시 문구 존재 시험과 금지 용어·금지 경로 스캔"
+    },
+    {
+      "criterion_id": "AC-010",
+      "statement": "화면은 모바일 세로 화면 기준으로 반응형이어야 하고, 모든 조작이 키보드만으로 가능해야 하며, 보이는 포커스 표시, prefers-reduced-motion 존중, 라운드 상태·결과·잔액 변화의 화면 낭독기 안내가 제공되어야 한다.",
+      "verification": "뷰포트 규칙·포커스 스타일·reduced-motion 분기·ARIA 라이브 영역과 접근 가능한 이름의 정적 검증 시험"
+    },
+    {
+      "criterion_id": "AC-011",
+      "statement": "로그인, 계정 등록, 개인정보 수집, 외부 네트워크 호출, 텔레메트리 전송이 없어야 하고, 서버는 루프백 주소에만 바인딩되어야 하며, 비밀값이 코드·응답·로그에 기록되지 않아야 한다.",
+      "verification": "바인딩 주소 단언, 외부 요청 부재 검토, 저장소 평문 비밀값 스캔"
+    },
+    {
+      "criterion_id": "AC-012",
+      "statement": "서버는 잘못된 형식·과대 페이로드·알 수 없는 경로·허용되지 않은 메서드 요청에 대해 실패로 닫혀야 하고, 내부 예외 추적이나 파일 경로를 응답에 노출하지 않아야 하며, 정적 자산 경로 탐색이 차단되어야 한다.",
+      "verification": "잘못된 요청·경로 탐색 네거티브 시험과 응답 본문의 내부 정보 비노출 단언"
+    },
+    {
+      "criterion_id": "AC-013",
+      "statement": "games/roulette/playable-slice-contract.yaml이 엔드포인트, 요청·응답 필드, 권위 경계, 상태 전이, 오류 코드를 계약으로 선언해야 하고, 구현이 선언한 값과 정확히 일치해야 한다.",
+      "verification": "계약 파일과 구현 상수·라우팅 표의 대조 검증 및 기준선 검증기 단계 추가"
+    },
+    {
+      "criterion_id": "AC-014",
+      "statement": "python scripts/validate_baseline.py와 python -m unittest discover -s tests -v 두 명령이 모두 성공하고 compileall과 평문 비밀값 스캔이 통과해야 하며, R1·R2 승인 기준선의 규칙·RNG·정산·내구 상태 코드는 변경되지 않아야 한다.",
+      "verification": "두 표준 명령과 compileall·비밀값 스캔의 실제 실행 로그, 변경 파일 범위 검토"
+    },
+    {
+      "criterion_id": "AC-015",
+      "statement": "네트워크 재접속 보증, 다중 사용자 동시 테이블, 운영 배포, 수익화, 실서비스 인증, 성능·부하 특성은 이 작업에서 수행하지 않고 후속 유닛으로 명시 이월되어야 하며, 어떤 산출물도 이를 구현했다고 주장하지 않아야 한다.",
+      "verification": "산출물 문구 검토와 이월 위험 기록 대조"
+    }
+  ],
+  "dependencies": ["R2-RNG-0001", "R2-DBC-0002"],
+  "budget": {
+    "max_cost_usd": 30.0,
+    "max_runtime_seconds": 18000,
+    "stop_on_limit": true
+  },
+  "approvers": ["USER", "A-50", "A-30", "A-02", "A-00"],
+  "rollback": {
+    "strategy": "롤백 대상 목록. 신규 파일 14개: tasks/R4-UI-0006.json, artifacts/R4-UI-0006-artifact.json, handoffs/R4-UI-0006-handoff.json, games/roulette/playable-slice-contract.yaml, app/roulette_slice/__init__.py, app/roulette_slice/table.py, app/roulette_slice/server.py, app/roulette_slice/static/index.html, app/roulette_slice/static/app.css, app/roulette_slice/static/app.js, scripts/run_roulette_slice.py, tests/test_roulette_slice.py, audit/events/R4-UI-0006-events.json, docs/games/R4-roulette-playable-slice.md, docs/approvals/R4-UI-0006-validation-report.md. 수정 예정 파일 2개: scripts/validate_baseline.py, docs/status/R2-STATUS.md. 경로 A(이 작업의 커밋이 이미 존재하는 경우): 해당 커밋 해시를 정확히 지정해 git revert <commit>으로 되돌리는 새 커밋을 만든다. 이력 재작성, 강제 푸시, 브랜치 삭제는 하지 않는다. 경로 B(커밋 이전, 작업 트리에만 존재하는 경우): (1) 위 경로 전체를 quarantine/R4-UI-0006/<UTC-timestamp>/ 아래에 원본 그대로 복사해 격리 사본을 먼저 만든다. (2) 수정 파일 2개는 git diff 8a3f986 -- <경로>로 역패치 후보를 생성해 사람이 내용을 검토한 뒤 git apply --reverse로 기준 커밋 8a3f986 상태로 복원한다. 검토 없이 작업 트리를 덮어쓰는 명령은 사용하지 않는다. (3) 신규 파일은 삭제하지 않고 같은 quarantine 디렉터리로 이동한다. 슬라이스가 만드는 SQLite 파일과 실행 로그는 저장소 안에 두지 않고 임시 디렉터리에만 생성하므로 롤백 대상 저장소 파일이 없다. 파괴적 Git·파일시스템 명령은 어느 단계에서도 사용하지 않는다. 두 경로 모두 마지막에 python scripts/validate_baseline.py와 python -m unittest discover -s tests -v를 실행해 직전 기준선 통과를 확인한다. Claude는 커밋과 푸시를 수행하지 않는다.",
+    "source_preserved": true,
+    "verification": "복원 후 git status가 quarantine 경로를 제외하고 8a3f986 기준으로 깨끗해야 하며, python scripts/validate_baseline.py와 python -m unittest discover -s tests -v를 재실행해 R2-DBC-0002 시점 기준선이 그대로 통과함을 확인한다."
+  },
+  "security": {
+    "data_classification": "INTERNAL",
+    "contains_pii": false,
+    "workspace_access": "DEPARTMENT_WRITE",
+    "network_policy": "ALLOWLISTED_PROVIDER",
+    "secrets_policy": "NONE"
+  },
+  "assumptions": [
+    "이 계약은 Phase A 산출물이다. 이 파일이 만들어졌다는 사실은 착수 허가도, 구현 완료도, 게이트 판정도 아니다.",
+    "구현 착수는 USER의 명시 승인 이후에만 가능하며, 그 승인 역시 착수 권한이지 최종 QA 게이트 판정이 아니다.",
+    "실행 환경에 Node.js와 npm이 없다고 가정한다. 클라이언트는 빌드 단계 없이 브라우저가 그대로 읽는 HTML·CSS·JavaScript로만 구성한다.",
+    "network_policy: ALLOWLISTED_PROVIDER는 구현 콘솔이 Claude Provider를 사용한다는 뜻이다. 슬라이스 서버 자체는 루프백 주소에만 바인딩하고 외부 네트워크 호출을 하지 않는다.",
+    "studio_core/rng.py, studio_core/roulette.py, studio_core/durable_state.py, studio_core/ledger.py는 수정하지 않고 공개 인터페이스로만 사용한다.",
+    "슬라이스가 만드는 SQLite 파일은 임시 디렉터리에만 생성하고 저장소에 커밋하지 않는다.",
+    "단일 로컬 사용자, 단일 프로세스, 단일 테이블을 가정한다. 다중 사용자 동시 테이블과 세션 분리는 이 유닛의 범위가 아니다.",
+    "가상 칩은 내부 시연용 초기 잔액으로만 제공되며 구매·충전·환전 경로가 존재하지 않는다.",
+    "Claude는 이 작업에서 커밋과 푸시를 수행하지 않고 작업 트리 변경만 남긴다.",
+    "owner_agent_id는 발주자의 명시 지시에 따라 A-30에서 A-02로 조정되었다. operations/collaboration.yaml의 roles.implementer.acts_for가 [A-02, A-20]이므로 A-02 소유자는 위임 게이트를 프로토콜 호환으로 통과한다. A-30은 소유자에서 빠졌을 뿐 approvers에 그대로 남아 클라이언트·UI 설계 검토자 역할을 계속 수행하며, A-30의 설계 검토 승인 없이는 이 작업을 닫지 않는다."
+  ],
+  "open_decisions": [
+    "위임 게이트가 A-30 소유자를 수용하도록 operations/collaboration.yaml의 implementer.acts_for를 개정할지, 아니면 이 작업의 소유자를 구현 역할이 허용된 에이전트로 변경할지는 A-00과 USER의 미결 결정이다.",
+    "다중 사용자 동시 테이블, 세션 분리, 네트워크 재접속(R2-NET-0003)과의 결합 방식은 미결이다.",
+    "가상 칩 초기 잔액과 칩 단위 구성은 economy-model.yaml의 승인된 값 범위 안에서 확정해야 하며 최종 수치는 미결이다.",
+    "실기기 브라우저 접근성 검증을 자동 검사에 더해 사람 검사로 언제 수행할지는 A-50의 미결 결정이다.",
+    "R5 이전이므로 상용 제작 일정과 출시일은 확정하지 않는다."
+  ],
+  "created_at": "2026-09-01T00:00:00Z",
+  "updated_at": "2026-09-01T00:00:00Z"
+}

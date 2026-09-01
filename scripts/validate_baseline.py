@@ -9,6 +9,7 @@ import sqlite3
 import sys
 import tempfile
 from contextlib import closing
+from html.parser import HTMLParser
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Mapping
@@ -334,6 +335,26 @@ def validate_required_files() -> None:
         "docs/approvals/R2-DBC-0002-validation-report.md",
         "docs/status/R2-STATUS.md",
         "docs/operations/R2-followup-units.md",
+        # R4-UI-0006 internal playable slice. The authoritative SQLite database this app
+        # creates lives outside the repository by design, so no runtime state file appears
+        # here -- ``validate_r4_playable_slice`` asserts the absence rather than the presence.
+        "apps/__init__.py",
+        "apps/roulette_web/__init__.py",
+        "apps/roulette_web/table.py",
+        "apps/roulette_web/server.py",
+        "apps/roulette_web/static/index.html",
+        "apps/roulette_web/static/styles.css",
+        "apps/roulette_web/static/app.js",
+        "apps/roulette_web/README.md",
+        "games/roulette/playable-slice-contract.yaml",
+        "tests/test_roulette_web_server.py",
+        "tests/test_roulette_web_ui.py",
+        "audit/events/R4-UI-0006-events.json",
+        "tasks/R4-UI-0006.json",
+        "artifacts/R4-UI-0006-artifact.json",
+        "handoffs/R4-UI-0006-handoff.json",
+        "docs/games/R4-roulette-playable-slice.md",
+        "docs/approvals/R4-UI-0006-validation-report.md",
     ]
     missing = [path for path in required if not (ROOT / path).is_file()]
     if missing:
@@ -1976,6 +1997,589 @@ def validate_r2_durable_state(root: Path | None = None) -> dict[str, Any]:
     }
 
 
+#: Files ``validate_r4_playable_slice`` reads. Exposed so a caller can materialise an isolated
+#: copy and exercise the negative cases without mutating the live repository -- two of these,
+#: the validation report and the R4 design document, would forge a human approval if a
+#: mutation ever leaked into the working tree.
+R4_UI_INPUT_FILES: tuple[str, ...] = (
+    "games/roulette/playable-slice-contract.yaml",
+    "games/roulette/round-state.yaml",
+    "audit/audit-event.schema.json",
+    "audit/events/R4-UI-0006-events.json",
+    "tasks/R4-UI-0006.json",
+    "artifacts/R4-UI-0006-artifact.json",
+    "apps/roulette_web/table.py",
+    "apps/roulette_web/server.py",
+    "apps/roulette_web/static/index.html",
+    "apps/roulette_web/static/styles.css",
+    "apps/roulette_web/static/app.js",
+    "apps/roulette_web/README.md",
+    "tests/test_roulette_web_server.py",
+    "tests/test_roulette_web_ui.py",
+    "docs/games/R4-roulette-playable-slice.md",
+    "docs/approvals/R4-UI-0006-validation-report.md",
+    "docs/status/R2-STATUS.md",
+    "docs/operations/R2-followup-units.md",
+)
+
+#: Audit actions the R4-UI-0006 record must carry. The owner reassignment is one of them on
+#: purpose: the delegation gate refused the contract as issued, and a later reader must be
+#: able to see how that was resolved instead of inferring it from a diff.
+R4_UI_REQUIRED_AUDIT_ACTIONS = frozenset(
+    {
+        "TASK_CONTRACT_ISSUED_READY",
+        "PRE_IMPLEMENTATION_ARTIFACT_REGISTERED",
+        "DELEGATION_OWNER_REASSIGNED",
+        "PLAYABLE_SLICE_IMPLEMENTATION_COMPLETED",
+        "VALIDATION_COMMANDS_REPLAYED",
+        "BROWSER_VISUAL_QA_NOT_RUN",
+        "PRE_IMPLEMENTATION_RECORDS_SUPERSEDED",
+    }
+)
+
+#: ``studio_core`` modules the slice consumes through their published interfaces. The task
+#: declares a hash for each, so "used, not modified" is a comparison rather than a claim.
+R4_UI_BASELINE_MODULES = (
+    "studio_core/rng.py",
+    "studio_core/roulette.py",
+    "studio_core/durable_state.py",
+    "studio_core/ledger.py",
+)
+
+#: Suffixes that would mean a runtime database escaped into the repository surface. The slice
+#: writes its authoritative state outside the working tree; if one ever lands inside, the
+#: baseline should say so before a commit does.
+R4_UI_RUNTIME_STATE_SUFFIXES = (".sqlite3", ".sqlite", ".db", ".sqlite3-wal", ".sqlite3-shm")
+
+#: ``document.createElementNS`` requires this exact string to build SVG nodes; it is an XML
+#: namespace identifier, never fetched, so it is the one URL app.js may spell out. It is
+#: elided before the off-origin scan so every other ``http://``/``https://`` still fails.
+R4_UI_SVG_NAMESPACE = "http://www.w3.org/2000/svg"
+
+#: Anything in the client that would mean the browser is deciding an authoritative value, or
+#: reaching somewhere other than this loopback origin.
+R4_UI_CLIENT_PROHIBITED = (
+    "Math.random",
+    "getRandomValues",
+    "crypto.subtle",
+    "eval(",
+    "new Function(",
+    "localStorage",
+    "sessionStorage",
+    "indexedDB",
+    "document.cookie",
+    "XMLHttpRequest",
+    "WebSocket",
+    "EventSource",
+    "navigator.sendBeacon",
+    "http://",
+    "https://",
+    "//cdn.",
+)
+
+
+class _R4MarkupScan(HTMLParser):
+    """Report the markup in index.html that the slice's content security policy would refuse.
+
+    A pattern cannot tell an element from a mention of one. The CSP note in index.html spells
+    out ``<script>``, ``<style>`` and ``style="..."`` inside an HTML comment to record why none
+    of them are present, and a regular expression reads those words as the very markup the note
+    promises is absent. A parser sees a comment as a comment, so only real elements and real
+    attributes are reported -- which is also the only thing a browser would refuse.
+    """
+
+    def __init__(self, source: str) -> None:
+        super().__init__(convert_charrefs=True)
+        self.refused: list[str] = []
+        self._script_depth = 0
+        self.feed(source)
+        self.close()
+
+    def _inspect(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attributes = {name.lower(): (value or "") for name, value in attrs}
+        # No 'unsafe-inline' in the policy, so a script element without a real src is dead
+        # markup at best and a blocked inline script at worst.
+        if tag == "script" and not attributes.get("src", "").strip():
+            self.refused.append("<script> element without a src attribute")
+        if tag == "style":
+            self.refused.append("<style> element")
+        if "style" in attributes:
+            self.refused.append(f"style attribute on <{tag}>")
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self._inspect(tag, attrs)
+        if tag == "script":
+            self._script_depth += 1
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self._inspect(tag, attrs)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "script" and self._script_depth:
+            self._script_depth -= 1
+
+    def handle_data(self, data: str) -> None:
+        # An external script element with a body would still be an inline script.
+        if self._script_depth and data.strip():
+            self.refused.append("inline script body")
+
+
+def _r4_floats(payload: Any, path: str = "$") -> list[str]:
+    """Return the location of every floating-point value inside ``payload``."""
+
+    found: list[str] = []
+    if isinstance(payload, Mapping):
+        for key, value in payload.items():
+            found.extend(_r4_floats(value, f"{path}.{key}"))
+    elif isinstance(payload, list):
+        for index, value in enumerate(payload):
+            found.extend(_r4_floats(value, f"{path}[{index}]"))
+    elif isinstance(payload, float):
+        found.append(path)
+    return found
+
+
+def _r4_declared_error_codes(table_source: str, server_source: str) -> set[str]:
+    """Return every refusal code the slice can actually put in ``error.code``.
+
+    Read out of the source rather than imported, because a code only exists at the moment a
+    refusal is raised. Extracting them makes the contract's list a two-way check: an added
+    refusal fails the baseline until it is declared, and a declared code that no longer
+    exists fails it too.
+    """
+
+    codes = set(re.findall(r'TableError\(\s*"([A-Z0-9_]+)"', table_source))
+    codes |= set(re.findall(r'TableError\(\s*"([A-Z0-9_]+)"', server_source))
+    codes |= set(re.findall(r'_send_error_json\(\s*[^,]+?,\s*"([A-Z0-9_]+)"', server_source, re.S))
+    return codes
+
+
+R4_HUMAN_GATE_HEADING = re.compile(
+    r"^##\s*\d+\.\s*Human approval gates\s*$", re.IGNORECASE | re.MULTILINE
+)
+
+
+def _r4_human_gate_section(report: str) -> str | None:
+    """Return the body of the R4 report's human approval gate section, or ``None``.
+
+    The section is bounded by its own heading and the next ``##`` heading, so no later
+    section can be mistaken for gate content. The R2 report uses a different heading
+    ('## 9. 인간 게이트'); matching on the R4 wording keeps this check tied to the
+    document it is actually reading. The section number is not pinned, so renumbering
+    the report cannot silently turn the check off.
+    """
+
+    match = R4_HUMAN_GATE_HEADING.search(report)
+    if match is None:
+        return None
+    body = report[match.end() :]
+    following = re.search(r"^##\s", body, re.MULTILINE)
+    return body if following is None else body[: following.start()]
+
+
+def validate_r4_playable_slice(root: Path | None = None) -> dict[str, Any]:
+    """Validate the R4 unit 1 internal playable slice against its published contract.
+
+    ``root`` defaults to the repository; pointing it at a copy lets a negative test prove
+    that a contract, disclosure or evidence file which disagrees with the implementation is
+    actually rejected without writing to tracked files. The implementation constants are
+    always read from the installed package, because the thing being checked is whether the
+    *declaration* still describes the code that runs.
+
+    The live exercise runs against a throwaway SQLite database in a temporary directory. The
+    task contract forbids a database file inside the repository, and a validator that left
+    one behind would be the first thing to break that rule. No socket is bound here: the HTTP
+    surface is exercised over real connections in ``tests/test_roulette_web_server.py``.
+    """
+
+    base = ROOT if root is None else Path(root)
+
+    def _json(relative_path: str) -> dict[str, Any]:
+        with (base / relative_path).open("r", encoding="utf-8") as handle:
+            value = json.load(handle)
+        if not isinstance(value, dict):
+            raise BaselineValidationError(f"{relative_path}: root must be an object")
+        return value
+
+    def _yaml(relative_path: str) -> dict[str, Any]:
+        with (base / relative_path).open("r", encoding="utf-8") as handle:
+            value = yaml.safe_load(handle)
+        if not isinstance(value, dict):
+            raise BaselineValidationError(f"{relative_path}: root must be a mapping")
+        return value
+
+    def _text(relative_path: str) -> str:
+        return (base / relative_path).read_text(encoding="utf-8")
+
+    from studio_core.collaboration import scan_for_plaintext_secrets
+    from studio_core.rng import DeterministicTestEntropySource, RngEnvironment, verify_audit_chain
+
+    from apps.roulette_web.server import (
+        ALLOWED_STATIC_SUFFIXES,
+        DEFAULT_HOST,
+        DEFAULT_PORT,
+        LOOPBACK_HOSTS,
+        MAX_BODY_BYTES,
+        ROUTES,
+        SECURITY_HEADERS,
+        STATIC_ROOT,
+        create_server,
+        open_table,
+    )
+    from apps.roulette_web.table import (
+        CLIENT_AUTHORITY_FIELDS,
+        NOTICE,
+        TERMINAL_PHASES,
+        TRANSITIONS,
+        RoundPhase,
+        TableConfig,
+        TableError,
+        default_database_path,
+        prohibited_client_fields,
+    )
+
+    contract_path = "games/roulette/playable-slice-contract.yaml"
+    contract = _yaml(contract_path)
+
+    # -- the contract must state the interface the transport actually serves ---------------
+    if dict(contract.get("endpoints", {})) != ROUTES:
+        raise BaselineValidationError(f"{contract_path}: declared endpoints do not match server.ROUTES")
+    declared_headers = dict(contract.get("security_headers", {}))
+    if declared_headers != dict(SECURITY_HEADERS):
+        differing = sorted(
+            name
+            for name in set(declared_headers) | {name for name, _ in SECURITY_HEADERS}
+            if declared_headers.get(name) != dict(SECURITY_HEADERS).get(name)
+        )
+        raise BaselineValidationError(f"{contract_path}: security headers do not match the server: {differing!r}")
+    policy = dict(SECURITY_HEADERS)["Content-Security-Policy"]
+    for directive in ("default-src 'none'", "script-src 'self'", "style-src 'self'", "frame-ancestors 'none'"):
+        if directive not in policy:
+            raise BaselineValidationError(f"the content security policy no longer pins {directive!r}")
+    if "unsafe-inline" in policy or "unsafe-eval" in policy:
+        raise BaselineValidationError("the content security policy must not permit inline or evaluated code")
+
+    static = contract.get("static_assets", {})
+    if dict(static.get("allowed_suffixes", {})) != ALLOWED_STATIC_SUFFIXES:
+        raise BaselineValidationError(f"{contract_path}: the static asset allowlist does not match the server")
+    if static.get("traversal_defence") != "resolve_then_containment_check":
+        raise BaselineValidationError(f"{contract_path}: the declared traversal defence is not the implemented one")
+    served_root = Path(str(static.get("root", ""))).name
+    if served_root != STATIC_ROOT.name:
+        raise BaselineValidationError(f"{contract_path}: the declared static root is not the served directory")
+    stray = sorted(
+        path.name
+        for path in STATIC_ROOT.rglob("*")
+        if path.is_file() and path.suffix.lower() not in ALLOWED_STATIC_SUFFIXES
+    )
+    if stray:
+        raise BaselineValidationError(f"the static directory holds files outside the allowlist: {stray!r}")
+
+    limits = contract.get("transport_limits", {})
+    if limits.get("bind") != "loopback_only" or set(limits.get("allowed_hosts", [])) != set(LOOPBACK_HOSTS):
+        raise BaselineValidationError(f"{contract_path}: the declared binding policy is not the implemented one")
+    if limits.get("default_host") != DEFAULT_HOST or limits.get("default_port") != DEFAULT_PORT:
+        raise BaselineValidationError(f"{contract_path}: the declared default bind address is wrong")
+    if limits.get("max_body_bytes") != MAX_BODY_BYTES:
+        raise BaselineValidationError(f"{contract_path}: the declared body limit is not the enforced one")
+
+    # -- the client may not compute an authoritative value, or leave this origin -----------
+    authority = contract.get("authority", {})
+    if set(authority.get("rejected_client_fields", [])) != set(CLIENT_AUTHORITY_FIELDS):
+        raise BaselineValidationError(f"{contract_path}: the rejected client field list has drifted")
+    for key in (
+        "client_computes_result",
+        "client_computes_payout",
+        "client_computes_balance",
+        "baseline_modules_modified",
+    ):
+        if authority.get(key) is not False:
+            raise BaselineValidationError(f"{contract_path}: authority.{key} must be declared false")
+    if authority.get("client_authority") != "denied" or authority.get("client_source_of_randomness") != "none":
+        raise BaselineValidationError(f"{contract_path}: the client authority boundary is not declared closed")
+    if authority.get("currency_units") != "integer_minimum_units_only":
+        raise BaselineValidationError(f"{contract_path}: currency must be declared as integer minimum units")
+
+    script = _text("apps/roulette_web/static/app.js")
+    markup = _text("apps/roulette_web/static/index.html")
+    styles = _text("apps/roulette_web/static/styles.css")
+    for label, source in (("app.js", script), ("index.html", markup), ("styles.css", styles)):
+        # Only app.js may name the SVG namespace, and only as that literal; dropping it here
+        # narrows the exemption to those characters instead of relaxing the off-origin rule.
+        scanned = source.replace(R4_UI_SVG_NAMESPACE, "") if label == "app.js" else source
+        present = [needle for needle in R4_UI_CLIENT_PROHIBITED if needle in scanned]
+        if present:
+            raise BaselineValidationError(f"{label} carries client-side authority or off-origin access: {present!r}")
+    # A payout multiplier in the client would be a second, unversioned copy of the rule the
+    # server settles by, so the payout table must not be reproducible from this file.
+    payouts_module = __import__("studio_core.roulette", fromlist=["load_r1_rules"])
+    payouts = payouts_module.load_r1_rules()["payouts"]
+    for bet_type, multiplier in payouts.items():
+        if re.search(rf'["\']?{re.escape(bet_type)}["\']?\s*:\s*{int(multiplier)}\b', script):
+            raise BaselineValidationError(f"app.js appears to carry the payout multiplier for {bet_type!r}")
+    refused = sorted(set(_R4MarkupScan(markup).refused))
+    if refused:
+        raise BaselineValidationError(
+            f"index.html contains markup the content security policy would refuse: {refused!r}"
+        )
+
+    # -- the disclosure must be impossible to miss and must promise nothing ----------------
+    disclosure = contract.get("disclosure", {})
+    for key in ("scope", "currency", "cash_value", "text_en", "text_ko"):
+        if disclosure.get(key) != NOTICE[key]:
+            raise BaselineValidationError(f"{contract_path}: disclosure.{key} does not match the served notice")
+    for surface, source in (("index.html", markup), ("apps/roulette_web/README.md", _text("apps/roulette_web/README.md"))):
+        for phrase in (NOTICE["text_en"], NOTICE["text_ko"]):
+            if phrase not in source:
+                raise BaselineValidationError(f"{surface} does not carry the disclosure: {phrase!r}")
+
+    # -- the round state machine must be the published one ---------------------------------
+    round_state = _yaml("games/roulette/round-state.yaml")
+    declared = [(item["from"], item["to"]) for item in contract["round_state"]["transitions"]]
+    published = [(item["from"], item["to"]) for item in round_state["transitions"]]
+    implemented = [(source.value, target.value) for source, target in TRANSITIONS]
+    if declared != published or implemented != published:
+        raise BaselineValidationError("the slice transition table does not match games/roulette/round-state.yaml")
+    if set(contract["round_state"]["terminal_states"]) != {phase.value for phase in TERMINAL_PHASES}:
+        raise BaselineValidationError(f"{contract_path}: the declared terminal states are not the implemented ones")
+    guards = round_state["guards"]
+    for key, expected in (
+        ("accept_bets_only_in", contract["round_state"]["accept_bets_only_in"]),
+        ("result_generated_only_in", contract["round_state"]["result_generated_only_in"]),
+        ("ledger_settlement_only_in", contract["round_state"]["ledger_settlement_only_in"]),
+    ):
+        if guards[key] != expected:
+            raise BaselineValidationError(f"{contract_path}: round_state.{key} does not match the published guard")
+
+    # -- every refusal the slice can emit must be declared, and only those --------------------
+    table_source = _text("apps/roulette_web/table.py")
+    server_source = _text("apps/roulette_web/server.py")
+    raised = _r4_declared_error_codes(table_source, server_source)
+    listed = set(contract["error_codes"]["authority"]) | set(contract["error_codes"]["transport"])
+    if raised != listed:
+        raise BaselineValidationError(
+            f"{contract_path}: error codes disagree with the implementation; "
+            f"undeclared={sorted(raised - listed)!r} unimplemented={sorted(listed - raised)!r}"
+        )
+
+    # -- the baseline modules are used, never modified ---------------------------------------
+    task = _json("tasks/R4-UI-0006.json")
+    if task["status"] not in {"READY", "IN_PROGRESS", "REVIEW", "QA"} or task["risk_class"] != "HIGH":
+        raise BaselineValidationError("R4-UI-0006 must remain a HIGH risk task under an open gate")
+    if not {"A-50", "A-02", "A-00"} <= set(task["approvers"]):
+        raise BaselineValidationError("a HIGH risk playable-slice task requires the mandatory reviewers")
+    inputs = {item["uri"]: item["content_hash"] for item in task["inputs"]}
+    for relative in R4_UI_BASELINE_MODULES:
+        expected = inputs.get(f"repo://{relative}")
+        if expected is None:
+            raise BaselineValidationError(f"tasks/R4-UI-0006.json must declare {relative} as an input")
+        decision = verify_file(base / relative, expected, label=relative)
+        if not decision.matches:
+            raise BaselineValidationError(f"a baseline module was modified by this unit: {decision.message}")
+
+    # -- a real table, exercised end to end ---------------------------------------------------
+    with tempfile.TemporaryDirectory(prefix="r4ui-validate-") as workspace:
+        database = Path(workspace) / "runtime" / "roulette-web.sqlite3"
+        # Bytes that all survive the debiasing rule, so the draw is reached deterministically.
+        entropy = DeterministicTestEntropySource(bytes([7, 11, 13, 17, 19, 23]))
+        store, table = open_table(
+            database,
+            config=TableConfig(opening_player_units=1000, opening_house_units=100000),
+            clock=lambda: "2026-09-01T00:00:00Z",
+            entropy_source=entropy,
+            environment=RngEnvironment.NON_PRODUCTION,
+        )
+        try:
+            opening = table.state()
+            if opening["notice"] != dict(NOTICE) or opening["currency"] != "VIRTUAL_CHIP":
+                raise BaselineValidationError("the authoritative snapshot does not carry the disclosure")
+            if opening["round"]["phase"] != RoundPhase.OPEN.value:
+                raise BaselineValidationError("a fresh table does not open a round in OPEN")
+
+            placed = table.place_bet("R4-VALIDATOR-BET-01", {"type": "red", "selections": [], "stake_units": 10})
+            if placed.get("accepted") is not True:
+                raise BaselineValidationError("the authoritative table refused a legal bet")
+
+            # A rejected bet may not move the balance or the phase.
+            before = table.state()
+            try:
+                table.place_bet("R4-VALIDATOR-BET-02", {"type": "straight", "selections": [37], "stake_units": 1})
+            except TableError:
+                pass
+            else:
+                raise BaselineValidationError("an impossible selection was accepted")
+            after = table.state()
+            if after["balance_units"] != before["balance_units"] or after["round"]["phase"] != before["round"]["phase"]:
+                raise BaselineValidationError("a refused bet changed the balance or the round phase")
+
+            consumed_before_spin = entropy.consumed
+            spun = table.spin("R4-VALIDATOR-SPIN-01")
+            result = spun["result"]
+            if spun.get("replayed") is not False or not isinstance(result["pocket"], int):
+                raise BaselineValidationError("the authoritative spin did not produce an integer pocket")
+            if entropy.consumed == consumed_before_spin:
+                raise BaselineValidationError("the authoritative draw did not read the entropy source")
+            if table.state()["round"]["phase"] != RoundPhase.SETTLED.value:
+                raise BaselineValidationError("a spun round did not reach SETTLED")
+
+            # AC-006: a duplicate spin replays without spending entropy a second time.
+            consumed_after_spin = entropy.consumed
+            replay = table.spin("R4-VALIDATOR-SPIN-01")
+            if replay.get("replayed") is not True or replay["result"]["pocket"] != result["pocket"]:
+                raise BaselineValidationError("a duplicate spin did not replay the original result")
+            if entropy.consumed != consumed_after_spin:
+                raise BaselineValidationError("a duplicate spin consumed entropy again")
+
+            # AC-002: no floating-point currency value exists on any authoritative surface.
+            floats = _r4_floats(spun) + _r4_floats(table.state())
+            if floats:
+                raise BaselineValidationError(f"an authoritative payload carries floating-point values: {floats!r}")
+
+            # AC-008: the recent-result list is the stored commit order.
+            history = [item["round_id"] for item in table.state()["recent_results"]]
+            if history != [item["round_id"] for item in table.reload_history()]:
+                raise BaselineValidationError("the recent-result list is not the stored commit order")
+
+            # AC-007: a request carrying a server-owned value is refused, not filtered.
+            forged = {"request_id": "R4-VALIDATOR-FORGE-1", "bet": {"type": "red", "pocket": 7, "payout_units": 1}}
+            if prohibited_client_fields(forged) != ["payout_units", "pocket"]:
+                raise BaselineValidationError("forged authoritative fields are not detected in a nested payload")
+        finally:
+            store.close()
+
+        if not database.is_file():
+            raise BaselineValidationError("the slice did not create its database at the requested location")
+
+    # AC-011: the server binds loopback only, and refuses anything else before binding.
+    if DEFAULT_HOST not in LOOPBACK_HOSTS or "0.0.0.0" in LOOPBACK_HOSTS:
+        raise BaselineValidationError("the slice default bind address is not loopback")
+    for host in ("0.0.0.0", "::", "example.invalid"):
+        try:
+            create_server(object(), host=host, port=0)  # type: ignore[arg-type]
+        except ValueError:
+            continue
+        raise BaselineValidationError(f"the server accepted the non-loopback host {host!r}")
+
+    # The runtime database is not repository content, and no run may have left one behind.
+    if Path(default_database_path()).is_absolute() and Path(default_database_path()).is_relative_to(ROOT):
+        raise BaselineValidationError("the default runtime database resolves inside the repository")
+    inside = sorted(
+        path.relative_to(ROOT).as_posix()
+        for path in repository_files()
+        if path.suffix.lower() in R4_UI_RUNTIME_STATE_SUFFIXES
+    )
+    if inside:
+        raise BaselineValidationError(f"a runtime database file is present in the repository: {inside!r}")
+
+    # -- the unit's own audit record -----------------------------------------------------------
+    audit_schema = _json("audit/audit-event.schema.json")
+    events_document = _json("audit/events/R4-UI-0006-events.json")
+    unit_events = events_document["events"]
+    for event in unit_events:
+        validate_instance(event, audit_schema)
+        if event["task_id"] != "R4-UI-0006":
+            raise BaselineValidationError("a playable-slice audit event is attached to the wrong task")
+    chain_problems = verify_audit_chain(unit_events)
+    if chain_problems:
+        raise BaselineValidationError(f"the R4-UI-0006 audit chain is broken: {chain_problems!r}")
+    actions = {event["action"] for event in unit_events}
+    if not R4_UI_REQUIRED_AUDIT_ACTIONS <= actions:
+        missing = sorted(R4_UI_REQUIRED_AUDIT_ACTIONS - actions)
+        raise BaselineValidationError(f"the playable-slice audit record is incomplete: missing {missing!r}")
+
+    # -- the artifact's declared component hashes must be canonical and current ----------------
+    # ``content_hash`` covers the primary application file only; these secondary hashes name
+    # every other component the artifact claims to have shipped, which would otherwise be
+    # unverified prose that drifts as the files change. They are flat
+    # ``component_hash:<path>`` keys because ``contracts/artifact.schema.json`` restricts
+    # ``specification`` values to scalars; a nested mapping would fail schema validation.
+    specification = _json("artifacts/R4-UI-0006-artifact.json")["specification"]
+    prefix = "component_hash:"
+    components = {
+        key.removeprefix(prefix): value
+        for key, value in specification.items()
+        if key.startswith(prefix)
+    }
+    if not components:
+        raise BaselineValidationError("the R4 artifact must declare component hashes")
+    for relative, declared_hash in sorted(components.items()):
+        if not isinstance(declared_hash, str) or not declared_hash.startswith("sha256:"):
+            raise BaselineValidationError(f"the artifact component hash for {relative} is not a sha256 digest")
+        if not (base / relative).is_file():
+            raise BaselineValidationError(f"the artifact declares a hash for a missing file: {relative}")
+        actual = hash_file(base / relative, label=relative)
+        if declared_hash != actual:
+            raise BaselineValidationError(
+                f"artifact component hash does not match {relative}: {actual} != {declared_hash}"
+            )
+    for relative in (
+        "apps/roulette_web/table.py",
+        "apps/roulette_web/server.py",
+        "apps/roulette_web/static/index.html",
+        "apps/roulette_web/static/styles.css",
+        "apps/roulette_web/static/app.js",
+        "tests/test_roulette_web_server.py",
+        "tests/test_roulette_web_ui.py",
+        contract_path,
+    ):
+        if relative not in components:
+            raise BaselineValidationError(f"the artifact does not declare a component hash for {relative}")
+
+    # -- nothing may claim an approval, a run or a capability that did not happen --------------
+    for field in (
+        "human_approved",
+        "browser_visual_qa_observed",
+        "hosted_ci_observed",
+        "independent_review_completed",
+        "committed",
+        "pushed",
+        "rng_module_modified",
+        "roulette_rules_module_modified",
+        "durable_state_module_modified",
+        "ledger_module_modified",
+        "network_reconnect_guarantee_implemented",
+        "load_or_performance_characterised",
+        "penetration_tested",
+        "production_ready",
+    ):
+        if specification.get(field) is not False:
+            raise BaselineValidationError(f"the R4 artifact must record {field} as false")
+
+    report = _text("docs/approvals/R4-UI-0006-validation-report.md")
+    approval_section = _r4_human_gate_section(report)
+    if approval_section is None:
+        raise BaselineValidationError("the R4-UI-0006 validation report is missing its human gate section")
+    if "- [x]" in approval_section.lower():
+        raise BaselineValidationError("a human gate item is marked complete without a human sign-off")
+
+    # -- the carried-forward scope must stay named ---------------------------------------------
+    status = _text("docs/status/R2-STATUS.md")
+    follow_ups = _text("docs/operations/R2-followup-units.md")
+    design = _text("docs/games/R4-roulette-playable-slice.md")
+    out_of_scope = " ".join(str(item) for item in contract.get("out_of_scope", []))
+    for unit in R2_DBC_DEFERRED_UNITS:
+        for label, document in (
+            ("docs/status/R2-STATUS.md", status),
+            ("docs/operations/R2-followup-units.md", follow_ups),
+            ("docs/games/R4-roulette-playable-slice.md", design),
+            (contract_path, out_of_scope),
+        ):
+            if unit not in document:
+                raise BaselineValidationError(f"{label} no longer carries {unit} forward")
+
+    for relative in (
+        contract_path,
+        "docs/games/R4-roulette-playable-slice.md",
+        "docs/approvals/R4-UI-0006-validation-report.md",
+        "apps/roulette_web/README.md",
+        "audit/events/R4-UI-0006-events.json",
+    ):
+        if scan_for_plaintext_secrets(_text(relative)):
+            raise BaselineValidationError(f"{relative}: plaintext credential material detected")
+
+    return {"contract": contract, "events": unit_events, "error_codes": sorted(raised)}
+
+
 def _raise_injected(reached: str, target: str) -> None:
     """Raise at exactly one durable-state fault stage. Used only by the validator."""
 
@@ -2024,6 +2628,8 @@ def run_validation() -> list[str]:
     passed.append("R2-RNG-0001 생산용 CSPRNG 추첨 경계·독립 통계·게이트 회수 기록")
     validate_r2_durable_state()
     passed.append("R2-DBC-0002 내구 상태 경계·격리 수준·원자성·동시성·장애 복구")
+    validate_r4_playable_slice()
+    passed.append("R4-UI-0006 로컬 플레이어블 슬라이스 계약·서버 권위·클라이언트 무권위·공개 문구")
     return passed
 
 

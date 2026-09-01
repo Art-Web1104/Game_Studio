@@ -1,0 +1,261 @@
+schema_version: 1.0.0
+contract_id: R4-PLAYABLE-SLICE-001
+task_ref: tasks/R4-UI-0006.json
+status: SUBMITTED_PENDING_REVIEW
+summary: >-
+  R4-UI-0006 내부 로컬 플레이어블 슬라이스의 발행 계약이다. 엔드포인트, 요청·응답 필드,
+  권위 경계, 라운드 전이, 오류 코드, 보안 헤더, 정적 자산 허용 목록을 선언한다.
+  scripts/validate_baseline.py::validate_r4_playable_slice가 이 파일과 구현 상수를
+  대조하므로, 여기 적힌 값과 구현이 어긋나면 기준선 검증이 실패한다.
+
+implementation:
+  package: apps/roulette_web
+  authority_module: apps/roulette_web/table.py
+  transport_module: apps/roulette_web/server.py
+  client_markup: apps/roulette_web/static/index.html
+  client_styles: apps/roulette_web/static/styles.css
+  client_script: apps/roulette_web/static/app.js
+  run_command: python -m apps.roulette_web.server
+  runtime: python3.11+ standard library only
+  build_step: none
+  node_or_npm_required: false
+  external_cdn_assets: none
+
+disclosure:
+  scope: INTERNAL_PROTOTYPE
+  currency: VIRTUAL_CHIP
+  cash_value: NONE
+  text_en: Internal prototype. Virtual chips only. No cash value.
+  text_ko: 내부 프로토타입입니다. 가상 칩만 사용하며 현금 가치가 없습니다.
+  present_in_every_api_response: true
+  present_in_client_markup: true
+
+authority:
+  owner: GAME_SERVER
+  client_authority: denied
+  client_computes_result: false
+  client_computes_payout: false
+  client_computes_balance: false
+  client_source_of_randomness: none
+  draw_boundary: studio_core.rng.RouletteDrawEngine
+  rules_boundary: studio_core.roulette.validate_bet/settle_bet
+  commit_boundary: studio_core.durable_state.DurableRoundStore.submit_round
+  ledger_boundary: studio_core.durable_state single transaction per round
+  baseline_modules_modified: false
+  currency_units: integer_minimum_units_only
+  floating_point_currency: prohibited
+  # Names only the server may produce. A request carrying any of them anywhere in its body
+  # is refused outright rather than filtered, so a silently dropped field cannot become an
+  # honoured field after a later refactor. Compared against
+  # apps.roulette_web.table.CLIENT_AUTHORITY_FIELDS.
+  rejected_client_fields:
+    - balance_units
+    - color
+    - color_label
+    - house_bankroll_units
+    - net_change_units
+    - payout_units
+    - pocket
+    - pocket_label
+    - proof_hash
+    - recent_results
+    - result
+    - total_return_units
+    - won
+
+endpoints:
+  # path -> the single method the transport accepts. Compared against
+  # apps.roulette_web.server.ROUTES.
+  /api/state: GET
+  /api/bets: POST
+  /api/spin: POST
+  /api/new-round: POST
+
+request_fields:
+  /api/state:
+    method: GET
+    body: none
+  /api/bets:
+    method: POST
+    required: [request_id, bet]
+    bet_fields: [type, selections, stake_units]
+    idempotency_key: request_id
+  /api/spin:
+    method: POST
+    required: [request_id]
+    idempotency_key: request_id
+  /api/new-round:
+    method: POST
+    required: [request_id]
+    idempotency_key: request_id
+
+response_fields:
+  notice: every response carries the disclosure block
+  state:
+    - schema_version
+    - task_id
+    - table_id
+    - notice
+    - currency
+    - balance_units
+    - reserved_units
+    - available_units
+    - house_bankroll_units
+    - round
+    - limits
+    - table
+    - recent_results
+  result:
+    - round_id
+    - pocket
+    - color
+    - outcomes
+    - total_stake_units
+    - total_return_units
+    - net_change_units
+    - settlement_transaction_id
+    - proof_hash
+    - audit_event_refs
+    - settled_at
+  error:
+    - error.code
+    - error.message
+    - notice
+
+round_state:
+  source_of_truth: games/roulette/round-state.yaml
+  states: [OPEN, LOCKED, SPINNING, SETTLING, SETTLED, VOIDED]
+  terminal_states: [SETTLED, VOIDED]
+  accept_bets_only_in: OPEN
+  result_generated_only_in: SPINNING
+  ledger_settlement_only_in: SETTLING
+  terminal_state_mutation: denied
+  # Compared field for field against apps.roulette_web.table.TRANSITIONS.
+  transitions:
+    - {from: OPEN, to: LOCKED}
+    - {from: LOCKED, to: SPINNING}
+    - {from: SPINNING, to: SETTLING}
+    - {from: SETTLING, to: SETTLED}
+    - {from: OPEN, to: VOIDED}
+    - {from: LOCKED, to: VOIDED}
+    - {from: SPINNING, to: VOIDED}
+
+idempotency:
+  key_field: request_id
+  duplicate_behavior: RETURN_ORIGINAL_RESULT
+  duplicate_consumes_entropy: false
+  reused_key_different_payload: FAIL_CLOSED
+  fail_closed_code: REQUEST_ID_CONFLICT
+
+error_codes:
+  # Every code the server can put in `error.code`. The validator extracts the codes the
+  # implementation actually raises and requires the two sets to be equal, so an added or
+  # removed refusal has to be declared here before the baseline will pass.
+  authority:
+    - BET_INVALID
+    - BET_LIMIT_REACHED
+    - COMMIT_DENIED
+    - CONFIG_INVALID
+    - DRAW_DENIED
+    - HOUSE_EXPOSURE_EXCEEDED
+    - INSUFFICIENT_CHIPS
+    - NO_BETS
+    - PHASE_DENIED
+    - REQUEST_ID_ALREADY_USED
+    - REQUEST_ID_CONFLICT
+    - REQUEST_ID_INVALID
+    - ROUND_IN_PROGRESS
+    - TERMINAL_STATE
+    - TRANSITION_DENIED
+  transport:
+    - BAD_JSON
+    - BAD_REQUEST
+    - CLIENT_AUTHORITY_DENIED
+    - INTERNAL_ERROR
+    - LENGTH_REQUIRED
+    - METHOD_NOT_ALLOWED
+    - NOT_FOUND
+    - PAYLOAD_TOO_LARGE
+    - REQUEST_REFUSED
+  http_status_name_fallback: >-
+    A protocol error raised inside BaseHTTPRequestHandler before dispatch is answered with
+    the HTTPStatus name as the code, so the response body shape is identical and no HTML
+    error page naming the server or the failing request line is ever produced.
+  body_never_contains: [traceback, filesystem_path, sqlite_message, internal_exception_text]
+
+transport_limits:
+  bind: loopback_only
+  allowed_hosts: [127.0.0.1, "::1", localhost, ip6-localhost]
+  default_host: 127.0.0.1
+  default_port: 8765
+  max_body_bytes: 8192
+  content_length_required: true
+  chunked_transfer_encoding: refused
+  json_floating_point_numbers: refused
+  unknown_top_level_fields: refused
+
+security_headers:
+  # Sent on every response, static and API alike. Compared against
+  # apps.roulette_web.server.SECURITY_HEADERS.
+  Content-Security-Policy: >-
+    default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src
+    'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Cross-Origin-Resource-Policy: same-origin
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), interest-cohort=()
+  Cache-Control: no-store
+
+static_assets:
+  root: apps/roulette_web/static
+  traversal_defence: resolve_then_containment_check
+  directory_listing: denied
+  dotfiles: denied
+  # Extension -> the exact Content-Type it is served as. Compared against
+  # apps.roulette_web.server.ALLOWED_STATIC_SUFFIXES.
+  allowed_suffixes:
+    .html: text/html; charset=utf-8
+    .css: text/css; charset=utf-8
+    .js: text/javascript; charset=utf-8
+    .svg: image/svg+xml
+    .json: application/json; charset=utf-8
+    .webmanifest: application/manifest+json
+
+accessibility:
+  target: mobile_portrait_first
+  keyboard_operable: true
+  visible_focus: true
+  prefers_reduced_motion: respected
+  screen_reader_live_regions: [status, announcer, alert]
+  skip_link: true
+  noscript_fallback: true
+  static_verification_only: true
+  human_screen_reader_pass: NOT_RUN
+  browser_visual_qa: NOT_RUN
+
+privacy:
+  login: none
+  account_registration: none
+  personal_data_collected: none
+  cookies: none
+  client_storage: none
+  telemetry: none
+  outbound_network_calls: none
+  secrets_in_code_or_logs: none
+
+runtime_state:
+  store: sqlite via studio_core.durable_state.DurableRoundStore
+  default_location_outside_repository: true
+  environment_override: ROULETTE_WEB_DB
+  committed_to_repository: false
+
+out_of_scope:
+  - 환전, 현금 인출, 결제, 실물 보상, 수익화 경로는 존재하지 않는다.
+  - 로그인, 계정 등록, 개인정보 수집은 존재하지 않는다.
+  - 운영 배포와 상용 클라이언트 승격은 이 유닛의 범위가 아니다.
+  - R5 승인 전이므로 상용 제작 일정과 출시일을 확정하지 않는다.
+  - 다중 사용자 동시 테이블과 세션 분리는 이 유닛이 닫지 않는다.
+  - R2-NET-0003 네트워크 재접속과 라운드 연속성은 이 유닛이 닫지 않고 열린 채로 이월된다.
+  - R2-LOAD-0004 부하와 성능 특성은 이 유닛이 닫지 않고 열린 채로 이월된다.
+  - R2-SEC-0005 보안 침투 시험은 이 유닛이 닫지 않고 열린 채로 이월된다.

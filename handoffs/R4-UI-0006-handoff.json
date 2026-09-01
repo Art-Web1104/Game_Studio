@@ -1,0 +1,156 @@
+{
+  "schema_version": "1.0.0",
+  "handoff_id": "HO-R4-UI-0006-002",
+  "task_id": "R4-UI-0006",
+  "from_agent_id": "A-02",
+  "to_agent_id": "A-50",
+  "created_at": "2026-09-02T00:00:00Z",
+  "summary": "R4-UI-0006 Phase B 구현 제출 패킷이다. 이 패킷은 착수 전 기록이었던 HO-R4-UI-0006-001(readiness BLOCKED)을 대체한다. 그 선행 패킷은 계약 파일만 존재하고 구현이 없던 시점의 사실을 기록한 것이며, 구현이 완료된 뒤에도 갱신되지 않아 저장소 안에서 유일하게 낡은 기록으로 남아 있었다. 그 상태를 audit/events/R4-UI-0006-events.json의 AE-R4UI-0007(PRE_IMPLEMENTATION_RECORDS_SUPERSEDED)이 이미 기록하고 있다. 현재 사실은 다음과 같다. 구현은 존재한다. apps/roulette_web 아래에 파이썬 표준 라이브러리 HTTP 서버와 빌드 단계 없는 순수 HTML·CSS·JavaScript 클라이언트로 유러피언 싱글제로 룰렛 수직 슬라이스가 구현되어 있고, 추첨·규칙·정산·내구 커밋은 studio_core의 rng, roulette, durable_state, ledger 경계로만 처리하며 이 네 모듈은 수정하지 않았다. 서버가 권위를 전부 보유하고 클라이언트는 권위 결과나 지급액을 계산하지 않는다. 가상 칩은 정수 최소 단위로만 다루고 같은 요청 식별자의 중복 제출은 엔트로피를 다시 소비하지 않고 원본 결과를 반환한다. 검증 결과는 다음과 같다. R4 집중 시험(tests/test_roulette_web_server.py, tests/test_roulette_web_ui.py) 92건 전부 PASS, compileall PASS, 저장소 평문 비밀값 스캔이 165개 파일에서 PASS, scripts/validate_baseline.py의 validate_r4_playable_slice 직접 실행 PASS, validate_content_integrity 직접 실행 PASS이다. 두 표준 명령 python scripts/validate_baseline.py와 python -m unittest discover -s tests -v는 이 패킷을 기록한 직후 실제로 재실행하여 PASS를 확인했다. 그 직전 실행에서는 두 명령이 각각 정확히 하나의 오류를 냈고 그 오류의 원인은 오직 대체 대상인 낡은 BLOCKED 패킷의 readiness 값 하나였다. 이 패킷은 통과하지 않은 검증을 PASS로 주장하지 않는다. 브라우저 시각 QA와 호스트 CI는 실행되지 않았고 NOT_RUN으로 남는다. 인간 승인은 전부 미판정이며 구현자는 자체 승인하지 않는다. 이 슬라이스는 내부 프로토타입이고 운영 준비 상태가 아니다.",
+  "artifact_refs": ["ART-R4-UI-0006-0001"],
+  "assumptions": [
+    "이 패킷은 구현 제출물이며 최종 게이트 판정이 아니다. readiness READY_FOR_REVIEW는 독립 검토를 받을 준비가 되었다는 뜻이지 승인되었다는 뜻이 아니다.",
+    "이 패킷은 HO-R4-UI-0006-001을 대체한다. 선행 패킷의 BLOCKED는 착수 전 시점에는 사실이었고 위조가 아니었으며, 구현 완료 이후에는 더 이상 사실이 아니어서 갱신했다.",
+    "선행 패킷이 기록했던 위임 게이트 차단 사유는 해소되었다. tasks/R4-UI-0006.json의 owner_agent_id는 발주자의 명시 지시로 A-30에서 A-02로 조정되었고, operations/collaboration.yaml의 roles.implementer.acts_for가 [A-02, A-20]이므로 A-02 소유자는 위임 게이트를 통과한다. A-30은 approvers에 그대로 남아 클라이언트·UI 설계 검토자 역할을 유지한다.",
+    "두 표준 명령의 PASS 기록은 이 패킷을 기록한 뒤 같은 작업 트리에서 실제로 명령을 실행해 확인한 결과다. 실행 없이 기입한 값이 아니다.",
+    "이 패킷의 PASS 항목은 전부 로컬 실행 증거다. 호스트 CI가 동일 결과를 재현하기 전까지 잠정으로 취급해야 한다.",
+    "집중 시험 92건은 R4-UI-0006 변경 표면을 대상으로 하며 전체 시험 445건 통과를 대신하지 않는다. 두 수치는 별도 증거로 각각 기록했다.",
+    "브라우저 시각 QA는 Windows 브라우저 제어 샌드박스가 기동 단계에서 실패하여 실행되지 않았다. 어떤 시각 증거도 확보하지 못했으며 정적 검증으로 대체했다고 주장하지 않는다.",
+    "접근성은 정적 검증만 수행했다. 실기기 브라우저와 화면 낭독기를 사용한 사람 검사는 수행되지 않았다.",
+    "studio_core의 rng, roulette, durable_state, ledger 모듈과 R1·R2 승인 기준선 코드는 이 작업에서 수정하지 않았다.",
+    "A-50, A-30, A-02, A-00, USER의 인간 승인 서명은 수행되지 않았고 이 패킷은 그것을 수행된 것으로 주장하지 않는다. docs/approvals/R4-UI-0006-validation-report.md의 승인 체크박스는 전부 미체크 상태 그대로다.",
+    "Claude는 이 작업에서 커밋과 푸시를 수행하지 않았고 작업 트리 변경만 남겼다.",
+    "슬라이스가 만드는 SQLite 파일과 실행 로그는 임시 디렉터리에만 생성되며 저장소에 남지 않는다."
+  ],
+  "verification_evidence": [
+    {
+      "check": "python scripts/validate_baseline.py",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/approvals/R4-UI-0006-validation-report.md"
+    },
+    {
+      "check": "python -m unittest discover -s tests -v",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/approvals/R4-UI-0006-validation-report.md"
+    },
+    {
+      "check": "R4 집중 시험 실행: python -m unittest tests.test_roulette_web_server tests.test_roulette_web_ui (92건)",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_roulette_web_server.py"
+    },
+    {
+      "check": "컴파일·임포트 검사: python -m compileall apps studio_core scripts tests",
+      "result": "PASS",
+      "evidence_uri": "repo://apps/roulette_web/server.py"
+    },
+    {
+      "check": "저장소 평문 비밀값 스캔: python scripts/scan_secrets.py (165개 파일)",
+      "result": "PASS",
+      "evidence_uri": "repo://scripts/scan_secrets.py"
+    },
+    {
+      "check": "R4 슬라이스 검증기 직접 실행: scripts.validate_baseline.validate_r4_playable_slice",
+      "result": "PASS",
+      "evidence_uri": "repo://scripts/validate_baseline.py"
+    },
+    {
+      "check": "콘텐츠 무결성 검증 직접 실행: scripts.validate_baseline.validate_content_integrity (선언된 content_hash와 정규 LF 해시 대조)",
+      "result": "PASS",
+      "evidence_uri": "repo://scripts/validate_baseline.py"
+    },
+    {
+      "check": "contracts/handoff.schema.json 대조: handoffs/R4-UI-0006-handoff.json 구조 검증",
+      "result": "PASS",
+      "evidence_uri": "repo://contracts/handoff.schema.json"
+    },
+    {
+      "check": "교차 참조 검증: task_id·project_id 일치, artifact_id의 handoff 참조, 생성자와 검토자 분리, 발신자와 수신자 분리",
+      "result": "PASS",
+      "evidence_uri": "repo://artifacts/R4-UI-0006-artifact.json"
+    },
+    {
+      "check": "위임 게이트 평가(studio_core.collaboration.evaluate_delegation, actor A-02)",
+      "result": "PASS",
+      "evidence_uri": "repo://operations/collaboration.yaml"
+    },
+    {
+      "check": "독립 검증 가능성 평가(studio_core.collaboration.evaluate_independent_verification, verifier A-50, readiness READY_FOR_REVIEW)",
+      "result": "PASS",
+      "evidence_uri": "repo://operations/collaboration.yaml"
+    },
+    {
+      "check": "브라우저 실기기 시각 QA 관측(Windows 브라우저 제어 샌드박스 기동 실패로 미실행)",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://docs/approvals/R4-UI-0006-validation-report.md"
+    },
+    {
+      "check": "호스트 CI 실행 및 통과 증거",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://docs/approvals/R4-UI-0006-validation-report.md"
+    },
+    {
+      "check": "독립 읽기 전용 코드 검토(code-reviewer, 생성자와 분리된 검토자)",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://handoffs/R4-UI-0006-handoff.json"
+    },
+    {
+      "check": "실기기 브라우저·화면 낭독기 접근성 사람 검사",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://docs/approvals/R4-UI-0006-validation-report.md"
+    },
+    {
+      "check": "A-50·USER 최종 QA 게이트 판정",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://docs/approvals/R4-UI-0006-validation-report.md"
+    }
+  ],
+  "known_risks": [
+    {
+      "severity": "HIGH",
+      "description": "이 유닛은 규칙·RNG·원장 결과를 사용자에게 제시하고 권위 서버 호출 경로를 새로 만든다. policies/risk.yaml 기준 High이며 A-50, A-02, A-00의 독립 검토와 최종 QA 게이트가 필요하다. 구현자는 자체 승인할 수 없고 이 패킷은 자체 승인을 수행하지 않았다. 자동 검증 통과는 게이트 판정이 아니다.",
+      "owner_agent_id": "A-50"
+    },
+    {
+      "severity": "HIGH",
+      "description": "브라우저 시각 QA가 NOT_RUN이다. Windows 브라우저 제어 샌드박스가 기동 단계에서 실패해 상호작용 UI 세션을 한 번도 띄우지 못했고 시각 증거를 확보하지 못했다. 정적 검증은 실제 렌더링·입력·포커스 이동을 관측하지 않으므로 이를 대신하지 못한다. 샌드박스 기동 오류가 없는 환경에서 사람이 직접 확인해야 한다.",
+      "owner_agent_id": "A-50"
+    },
+    {
+      "severity": "HIGH",
+      "description": "호스트 CI가 NOT_RUN이다. 이 패킷의 모든 PASS는 단일 로컬 Windows 환경 실행 결과이며 다른 플랫폼·깨끗한 체크아웃에서 재현되었다는 증거가 없다. 게이트 판정 전에 호스트 CI 재현이 필요하다.",
+      "owner_agent_id": "A-20"
+    },
+    {
+      "severity": "HIGH",
+      "description": "R2-SEC 보안 검토와 위협 커버리지가 열린 상태다. 이 슬라이스는 루프백 바인딩과 평문 비밀값 부재만 확인했을 뿐 침투 시험을 수행하지 않았다. 인증·세션·권한 경계는 이 유닛의 범위 밖이며 닫히지 않았다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "R2-NET 네트워크 계층 강화가 열린 상태다. 네트워크 재접속 보증, 연결 끊김 중 라운드 복구, 다중 사용자 동시 테이블, 세션 분리는 구현되지 않았고 후속 유닛으로 이월된다. 이 슬라이스는 단일 로컬 사용자·단일 프로세스·단일 테이블을 가정한다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "R2-LOAD 부하·동시성 검증이 열린 상태다. 처리량, 지연, 동시 접속 한계는 측정되지 않았고 어떤 성능 특성도 주장하지 않는다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "접근성은 정적 검증만으로는 충분히 증명되지 않는다. 뷰포트 규칙·포커스 스타일·reduced-motion 분기·ARIA 라이브 영역의 존재는 확인했으나 실기기 브라우저와 화면 낭독기를 사용한 사람 검사가 별도로 필요하며 이 유닛의 자동 시험은 그 검사를 대체하지 않는다.",
+      "owner_agent_id": "A-50"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "이 산출물은 내부 프로토타입이며 운영 준비 상태가 아니다. Node.js·npm이 없는 환경 가정 위에서 빌드 단계 없이 구성했고, 이 제약은 프레임워크 기반 상용 클라이언트 결정을 대신하지 않는다. 이 프로토타입 코드를 그대로 상용 클라이언트로 승격해서는 안 되며 운영 배포·수익화·인증 경로는 존재하지 않는다.",
+      "owner_agent_id": "A-30"
+    },
+    {
+      "severity": "LOW",
+      "description": "내부 프로토타입·가상 칩·현금 가치 없음 표시는 문구 검사로 존재를 확인했으나 표현의 적절성은 법무·시장 검토 대상이다. 이 유닛은 그 검토를 수행하지 않는다. R5 승인 전이므로 상용 제작 일정과 출시일은 확정하지 않았다.",
+      "owner_agent_id": "A-00"
+    }
+  ],
+  "next_action": "A-50은 이 패킷을 구현 제출물로 접수하고, 생성자 A-02와 분리된 독립 검토자에게 읽기 전용 코드 검토를 배정한 뒤 호스트 CI 재현과 브라우저 제어 샌드박스 기동 오류가 없는 환경에서의 브라우저 시각 QA·접근성 사람 검사를 확보하고, 그 세 가지 증거가 모두 갖춰진 뒤에만 USER와 함께 최종 게이트 판정을 내려라. 그 전에는 이 작업을 DONE으로 올리지 말고 docs/approvals/R4-UI-0006-validation-report.md의 승인 체크박스에 서명하지 마라.",
+  "readiness": "READY_FOR_REVIEW",
+  "acknowledgement_required": true
+}
