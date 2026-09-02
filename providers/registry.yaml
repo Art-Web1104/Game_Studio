@@ -23,6 +23,19 @@ providers:
     activation_evidence: providers/evidence/SYS-CLD-0011-claude-connection-proof.yaml
     activated_by_task: SYS-CLD-0011
     activated_at: '2026-09-01T00:00:00Z'
+  - provider_id: codex_imagegen
+    display_name: Codex Built-in ImageGen
+    status: ENABLED
+    adapter_type: api_or_managed_connector
+    capabilities: [image]
+    allowed_data_classifications: [PUBLIC, INTERNAL]
+    credential_ref: secret-ref://providers/codex-imagegen
+    credential_source: PROVIDER_NATIVE_AUTH_STORE
+    managed_credential_storage: managed_workspace_auth
+    health_check: configured_connector_and_schema_probe
+    activation_evidence: providers/evidence/SYS-IMG-0013-codex-imagegen-connection-proof.yaml
+    activated_by_task: SYS-IMG-0013
+    activated_at: '2026-09-02T00:00:00Z'
   - provider_id: layer_ai
     display_name: Layer AI
     status: DISABLED_UNTIL_CONFIGURED

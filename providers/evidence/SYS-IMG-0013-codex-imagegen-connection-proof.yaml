@@ -1,0 +1,112 @@
+schema_version: 1.0.0
+proof_id: PROOF-SYS-IMG-0013-001
+provider_id: codex_imagegen
+task_id: SYS-IMG-0013
+recorded_at: '2026-09-02T00:00:00Z'
+recorded_by: A-02
+verified_by: A-20
+environment:
+  client: Codex built-in ImageGen managed connector
+  client_surface: interactive_cli_session
+  workspace: ai-game-studio repository root
+  operating_system: Windows 10 Pro 10.0.19045
+  model: null
+  contains_secret_values: false
+credential_ref: secret-ref://providers/codex-imagegen
+credential_source: PROVIDER_NATIVE_AUTH_STORE
+secret_values_recorded: false
+data_classification: INTERNAL
+user_authorization:
+  granted: true
+  approver: USER
+  scope: >-
+    PUBLIC·INTERNAL 등급 아트 프롬프트를 Codex 내장 ImageGen 관리형 커넥터로 전송해 이미지
+    능력만 사용하는 범위. 사용자는 'Codex ImageGen 아트 전용 공급자 등록 승인하고 사용량이
+    많아지면 레이어ai도 연결하자'로 아트 전용 등록을 명시적으로 승인했고, 이 승인은 코드·추론·
+    평가·오케스트레이션 경로와 codex_primary 활성화에는 적용되지 않는다. CONFIDENTIAL·
+    RESTRICTED 자료와 비밀값 전송은 포함하지 않는다.
+  granted_at: '2026-09-02T00:00:00Z'
+probes:
+  - probe_id: PRB-001
+    name: 관리형 ImageGen 이미지 생성 왕복 A
+    method: >-
+      Codex 내장 ImageGen 관리형 커넥터에 INTERNAL 등급 아트 프롬프트를 보내 이미지 한 장을
+      생성하고, 반환된 PNG의 픽셀 크기·바이트 수·SHA-256을 기록한다.
+    blocking: true
+    result: PASS
+    observed: >-
+      1536x1024 PNG 2,188,345 바이트를 성공적으로 수신했다. SHA-256은
+      b130c05b29a29513dfefb3648c1935fa68f86822c17679c515b64ce45d5ad689 이다. 산출물은 등록
+      이전 연결 확인용 프로브이며 프로덕션 자산이 아니다.
+    evidence_uri: repo://docs/providers/SYS-IMG-0013-codex-imagegen-art-provider.md#probe-a
+  - probe_id: PRB-002
+    name: 관리형 ImageGen 이미지 생성 왕복 B
+    method: >-
+      동일 커넥터에 다른 해상도의 두 번째 아트 프롬프트를 보내 반복 가능성을 확인하고, 반환된
+      PNG의 픽셀 크기·바이트 수·SHA-256을 기록한다.
+    blocking: true
+    result: PASS
+    observed: >-
+      1254x1254 PNG 2,739,931 바이트를 성공적으로 수신했다. SHA-256은
+      920861ca200bb0ed8b273bb78a8acfd235e42cf392ac3c24eadcebc32bad0e62 이다. 산출물은 등록
+      이전 연결 확인용 프로브이며 프로덕션 자산이 아니다.
+    evidence_uri: repo://docs/providers/SYS-IMG-0013-codex-imagegen-art-provider.md#probe-b
+  - probe_id: PRB-003
+    name: 관리형 인증 비노출 확인
+    method: >-
+      두 생성 호출에 별도 API 키·토큰 입력이 필요했는지 확인하고, 저장소에 남는 자격 증명
+      표기가 secret-ref:// 참조뿐인지 검사한다.
+    blocking: true
+    result: PASS
+    observed: >-
+      별도 키 발급이나 값 입력 없이 관리형 작업 공간 인증으로 호출이 성립했다. 저장소에는
+      secret-ref://providers/codex-imagegen 참조와 managed_workspace_auth 저장 위치 표기만
+      남고 비밀값은 어디에도 기록되지 않았다.
+    evidence_uri: repo://providers/registry.yaml
+  - probe_id: PRB-004
+    name: 능력 경계 확인
+    method: >-
+      새 공급자 항목의 capabilities와 라우팅 정책을 읽어 image 외 능력이 부여되지 않았고
+      codex_primary 상태와 코드·추론·평가 라우트가 그대로인지 확인한다.
+    blocking: true
+    result: PASS
+    observed: >-
+      codex_imagegen은 capabilities [image]만 선언하고 code·reasoning·evaluation·
+      orchestration을 갖지 않는다. codex_primary는 DISABLED와
+      user_selected_claude_only_programming 사유를 유지하며 어떤 라우트에도 없고, code·
+      reasoning·evaluation 라우트는 preferred=claude_agent, fallbacks=[] 그대로다.
+    evidence_uri: repo://providers/routing-policy.yaml
+  - probe_id: PRB-005
+    name: 관리형 모델 식별자·과금 사용량 노출 확인
+    method: >-
+      관리형 내장 경로가 모델 이름·버전과 호출별 과금 사용량을 호출자에게 노출하는지 확인하고,
+      노출되지 않으면 확인 불가로 기록한다.
+    blocking: false
+    result: PASS
+    observed: >-
+      관리형 내장 경로는 모델 이름·버전과 과금 사용량을 노출하지 않았다. environment.model을
+      null로, 과금 사용량을 unavailable로 기록했으며 임의의 모델명·버전·금액은 지어내지 않았다.
+    evidence_uri: repo://docs/providers/SYS-IMG-0013-codex-imagegen-art-provider.md#managed-model-disclosure
+overall_result: PASS
+activation_recommendation: ENABLE
+evidence_refs:
+  - providers/registry.yaml
+  - providers/routing-policy.yaml
+  - docs/providers/SYS-IMG-0013-codex-imagegen-art-provider.md
+  - audit/events/SYS-IMG-0013-events.json
+  - tasks/SYS-IMG-0013.json
+  - tests/test_image_provider.py
+notes:
+  - 이 증거는 codex_imagegen의 image 능력 활성화 근거이며 codex_primary 활성화 근거가 아니다.
+  - PRB-001과 PRB-002의 이미지는 Codex 관리형 콘솔에서 실행되어 사용자가 보고한 결과이며,
+    저장소에는 이미지 파일이 아니라 픽셀 크기·바이트 수·SHA-256 지문만 남는다.
+  - 두 산출물은 등록 이전 연결 확인용 프로브 또는 후보 자산이며 Artifact Contract의 정식
+    산출물이나 프로덕션 승인 증거로 승격하지 않는다.
+  - credential_source 열거에는 관리형 앱 전용 값이 없어 스키마가 허용하는
+    PROVIDER_NATIVE_AUTH_STORE로 기록하고, 실제 저장 위치는 registry.yaml의
+    managed_credential_storage=managed_workspace_auth로 남긴다.
+open_decisions:
+  - Layer AI 연결은 아트 사용량이 증가한 시점에 사용자와 A-00이 별도로 판단하며, 이 증거는
+    사용량 임계값·전환 기준·일정을 확정하지 않는다.
+  - 관리형 내장 ImageGen의 모델 이름·버전과 과금 사용량 기록 방식은 후속 작업에서 확정한다.
+  - 프로브 산출 이미지의 후보 자산 보관 위치와 폐기 기준은 A-30과 후속 작업에서 결정한다.
