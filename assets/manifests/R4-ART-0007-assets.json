@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_id": "AM-R4-ART-0007",
+  "task_id": "R4-ART-0007",
+  "policy_version": "BINARY-ASSETS-001/1.0.0",
+  "hash_algorithm": "sha256-raw-bytes",
+  "assets": [
+    {
+      "path": "assets/roulette/table-atmosphere-background.webp",
+      "media_type": "image/webp",
+      "content_hash": "sha256:e1211d1e3418b5fc77b454227ac2a9c93ea6df27a19f56123973e5246347ef27",
+      "byte_size": 27024,
+      "source": {
+        "kind": "AI_GENERATED",
+        "created_by": "A-02",
+        "provider": "codex_imagegen",
+        "model": null
+      },
+      "rights": {
+        "license": "PENDING-HUMAN-DETERMINATION",
+        "commercial_use": false,
+        "training_permission": "UNKNOWN",
+        "provenance_complete": false
+      },
+      "artifact_id": "ART-R4-ART-0007-0001"
+    },
+    {
+      "path": "assets/roulette/felt-tile.png",
+      "media_type": "image/png",
+      "content_hash": "sha256:59208eb18461045d27b86d574d0cbe48fbbd0603a279dda48c02cb73b15b9dc7",
+      "byte_size": 79412,
+      "source": {
+        "kind": "AI_GENERATED",
+        "created_by": "A-02",
+        "provider": "codex_imagegen",
+        "model": null
+      },
+      "rights": {
+        "license": "PENDING-HUMAN-DETERMINATION",
+        "commercial_use": false,
+        "training_permission": "UNKNOWN",
+        "provenance_complete": false
+      },
+      "artifact_id": "ART-R4-ART-0007-0001"
+    }
+  ],
+  "created_at": "2026-09-02T00:00:00Z",
+  "notes": "Gate manifest for the SYS-AST-0014 binary asset integrity gate. The full generation record - verbatim prompts, provider and route, mechanical processing chain, source-render hashes, pixel measurements, integration constraints and outstanding approvals - is docs/art/R4-ART-0007-generation-record.json and is not restated here. Both entries are CANDIDATE assets: no final asset designation exists, and rights, training permission and commercial use remain PENDING human determination by A-30, with A-50 independent review and USER art-direction sign-off outstanding."
+}
