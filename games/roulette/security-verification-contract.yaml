@@ -1,0 +1,439 @@
+schema_version: 1.0.0
+contract_id: R2-SEC-001
+task_ref: tasks/R2-SEC-0005.json
+status: SUBMITTED_PENDING_REVIEW
+summary: >-
+  R2-SEC-0005 유계 로컬 방어적 보안 검증의 발행 계약이다. 이 유닛은 새 HTTP 경로도, 새 오류
+  코드도, 새 런타임 모듈도, 새 의존성도 만들지 않고 발견한 결함을 고치지도 않는다. 검증 대상은
+  저장소에 이미 존재하는 단일 사용자 루프백 룰렛 참조 슬라이스이며, 하네스
+  scripts/verify_r2_security.py는 그 슬라이스를 밖에서 두드리고 필요한 곳에서만 저장소·서비스
+  경계를 직접 호출한다. 이 파일은 실행 안전 경계, 대상 바인딩, 다섯 가지 검증 항목, 잘못된 형식
+  요청의 취급 방식, 정제 규칙, 그리고 발견 사항을 어떻게 다루는지를 선언한다.
+  tests/test_security_verification.py가 이 파일의 선언값과 하네스 상수를 실제로 대조하므로,
+  여기 적힌 값과 구현이 어긋나면 시험이 실패한다.
+
+# ---------------------------------------------------------------------------------------
+# 1. 실행 안전 경계
+# ---------------------------------------------------------------------------------------
+# 아래 네 값은 로컬 방어적 실행이 무한정 늘어나지 않도록 묶는 안전 상한이다. 보안 성숙도 목표가
+# 아니고, 통과·실패 임계값이 아니며, 어떤 사례 수치도 이 값과 비교해 안전을 주장하지 않는다.
+# "64건이 통과했다"는 사실은 표면이 안전하다는 증명이 아니며, 후속 문서가 그렇게 인용하는 것은
+# 이 계약이 명시적으로 거부하는 재해석이다.
+safety_bounds:
+  purpose: bounded_local_execution_only
+  are_security_maturity_targets: false
+  are_pass_fail_thresholds: false
+  compared_against_case_outcomes: false
+  max_cases: 64
+  max_http_requests: 128
+  max_wall_seconds: 60
+  max_payload_bytes: 8192
+  payload_bound_source: apps.roulette_web.server.MAX_BODY_BYTES
+  payload_bound_not_above_transport_limit: true
+  enforcement: >-
+    scripts/verify_r2_security.py의 VerificationConfig.validate()가 상한을 넘는 설정을
+    SecurityVerificationError로 거절한다. 거절은 임시 디렉터리, SQLite 파일, 소켓, 스레드,
+    데이터 사본이 하나도 만들어지기 전에 일어나며 부분 실행을 남기지 않는다.
+  enforcement_point: preflight_before_resource_creation
+  resources_created_before_enforcement: 0
+  enforced_again_during_execution: true
+  execution_time_enforcement: >-
+    상한은 두 번 강제된다. 프리플라이트가 들어맞지 않는 계획을 거절하고, 실행 중에는 _CaseLedger가
+    선을 넘는 사례와 요청 자체를 거절한다. 계획이 코드와 어긋나 커지더라도 상한에서 멈춘다.
+  harness_constants_source: scripts.verify_r2_security
+  harness_constant_names:
+    max_cases: MAX_CASES
+    max_http_requests: MAX_HTTP_REQUESTS
+    max_wall_seconds: MAX_WALL_SECONDS
+    max_payload_bytes: MAX_PAYLOAD_BYTES
+
+# 구현 기본값은 상한보다 낮거나 같다. 낮은 것은 허용되고 넘는 것은 허용되지 않는다.
+defaults:
+  are_not_above_bounds: true
+  may_exceed_bounds: false
+  wall_timeout_seconds: 30
+  host: 127.0.0.1
+  port: 0
+  stake_units: 5
+  opening_player_units: 10000
+  opening_house_units: 1000000
+  harness_constant_names:
+    wall_timeout_seconds: DEFAULT_WALL_SECONDS
+    host: DEFAULT_HOST
+    port: DEFAULT_PORT
+    stake_units: DEFAULT_STAKE_UNITS
+
+# ---------------------------------------------------------------------------------------
+# 2. 실행 계획
+# ---------------------------------------------------------------------------------------
+# 계획된 사례 수와 요청 수는 고정 상수로 선언된다. 프리플라이트가 계획을 설정 상한과 대조하고,
+# 실행이 끝나면 실제 수행 건수를 계획과 대조하므로, 계획이 코드에서 조용히 벗어나면 드러난다.
+execution_plan:
+  planned_cases: 55
+  planned_http_requests: 44
+  plan_checked_before_execution: true
+  plan_compared_with_execution_after_run: true
+  harness_constant_names:
+    planned_cases: PLANNED_CASE_COUNT
+    planned_http_requests: PLANNED_HTTP_REQUEST_COUNT
+  case_composition:
+    - {group: client_authority_forgery_denial, cases: 15, http_requests: 15}
+    - {group: betting_phase_lock_bypass_denial, cases: 8, http_requests: 8}
+    - {group: idempotency_and_settlement_replay_safety, cases: 8, http_requests: 6}
+    - {group: audit_event_tamper_and_delete_detection_on_copy, cases: 5, http_requests: 0}
+    - {group: seed_reference_confidentiality, cases: 6, http_requests: 0}
+    - {group: malformed_request_safety, cases: 13, http_requests: 13}
+  additional_http_requests:
+    - {phase: opening_state_read, requests: 1, method: GET, path: /api/state}
+    - {phase: closing_state_read, requests: 1, method: GET, path: /api/state}
+  direct_boundary_cases: 2
+  direct_boundary_reason: >-
+    HTTP 표면의 멱등성 저널은 중복 요청을 메모리에서 답하므로, 재시작을 견디는 내구 저장소의
+    재생 경로는 저장소 경계를 직접 호출해야만 도달한다. 계약이 허용한 저장소·서비스 경계 호출은
+    이 두 사례로 한정된다.
+
+# ---------------------------------------------------------------------------------------
+# 3. 대상 바인딩
+# ---------------------------------------------------------------------------------------
+target_binding:
+  bind: loopback_literal_only
+  allowed_hosts:
+    - 127.0.0.1
+    - "::1"
+  allowed_hosts_are_ip_literals: true
+  name_strings: rejected
+  allowlist_is_subset_of: apps.roulette_web.server.LOOPBACK_HOSTS
+  allowlist_subset_rationale: >-
+    슬라이스의 허용 목록은 localhost와 ip6-localhost라는 이름 문자열도 포함하지만 하네스는 그
+    둘을 거부한다. 이름을 받아들이는 것이 이름을 해석하는 첫 걸음이기 때문이며, 좁히는 방향의
+    차이는 계약이 선언한 허용 집합을 넘지 않는다.
+  slice_allowed_hosts_source: games/roulette/playable-slice-contract.yaml transport_limits.allowed_hosts
+  non_loopback_ip_literal: rejected_in_preflight
+  name_string_target: rejected_in_preflight
+  name_resolution: not_attempted
+  name_resolution_calls_in_harness: 0
+  dns_lookup: prohibited
+  external_network: prohibited
+  production_target: prohibited
+  port_selection: ephemeral
+  fixed_port: rejected_in_preflight
+  target_slice: apps/roulette_web
+  routes_source: apps.roulette_web.server.ROUTES
+  route_count: 4
+  routes:
+    - GET /api/state
+    - POST /api/bets
+    - POST /api/spin
+    - POST /api/new-round
+  new_http_routes: 0
+  new_error_codes: 0
+  new_runtime_modules: 0
+  new_external_dependencies: 0
+  runtime_instrumentation_added: false
+  server_api_changed: false
+  stdlib_only: true
+  package_installation: none
+  build_step: none
+  service_startup_outside_process: none
+  data_substrate: temporary_sqlite_inside_a_temporary_workspace
+  repository_runtime_database_used: false
+
+# ---------------------------------------------------------------------------------------
+# 4. 검증 항목
+# ---------------------------------------------------------------------------------------
+# 다섯 가지 항목만이 이 유닛의 검증 대상이다. 여섯 번째로 보고되는 잘못된 형식 요청 그룹은
+# 검증 항목이 아니라 그 사례들이 결정론적이고 비파괴적으로 남는지를 보이는 기록이다.
+verification_dimensions:
+  - id: client_authority_forgery_denial
+    statement: >-
+      apps.roulette_web.table.CLIENT_AUTHORITY_FIELDS의 모든 이름이 중첩 위치를 포함해 요청
+      본문에 실려도 CLIENT_AUTHORITY_DENIED로 거부되고, 거부 직후 권위 상태의 변이 스냅숏이
+      요청 이전과 정확히 같다.
+    evidence: 응답 error.code 단언, 요청 직전·직후 변이 스냅숏 동등성, 선언 필드 전수 커버리지
+    severity_if_failed: BLOCKER
+  - id: betting_phase_lock_bypass_denial
+    statement: >-
+      베팅은 games/roulette/round-state.yaml의 guards.accept_bets_only_in과
+      apps.roulette_web.table.BETS_ACCEPTED_IN이 함께 정하는 단계에서만 수락되고, 단계 필드나
+      마감 시각을 본문으로 지정해 단계를 바꾸려는 시도는 거부되며 상태를 움직이지 않는다.
+    evidence: 단계별 응답 코드 단언, 거부 직전·직후 스냅숏 동등성
+    severity_if_failed: BLOCKER
+  - id: idempotency_and_settlement_replay_safety
+    statement: >-
+      같은 request_id의 반복 제출은 두 번째 추첨, 추가 엔트로피 소비, 두 번째 원장 거래, 두 번째
+      지급, 추가 잔액 변동을 만들지 않고 모든 호출자가 같은 커밋을 관측한다. 같은 request_id에
+      다른 본문을 실은 충돌 요청은 커밋을 만들지 않고 선언된 충돌 코드로 거부된다.
+    evidence: 추첨·원장·감사 건수 델타, 엔트로피 소비 계측, 잔액 대 원장 정수 동등성
+    severity_if_failed: BLOCKER
+  - id: audit_event_tamper_and_delete_detection_on_copy
+    statement: >-
+      감사 이벤트의 위조와 삭제는 임시 작업 공간의 폐기 가능한 사본에서만 수행되고,
+      studio_core.rng.verify_audit_chain이 두 경우 모두 문제를 보고한다. 원본은 조작 전후로
+      정규 LF 해시가 동일하며 저장소의 추적 파일은 하나도 변경되지 않는다.
+    evidence: 사본에서의 verify_audit_chain 보고, 원본·저장소 감사 기록 해시 동일성
+    severity_if_failed: HIGH
+  - id: seed_reference_confidentiality
+    statement: >-
+      API 응답, 추첨 기록, 감사 이벤트, 하네스 출력, 이 유닛이 쓰는 문서 어디에도 원시 엔트로피
+      바이트, 시드 값, 거부 횟수, 내부 엔트로피 상태가 나타나지 않고, seed_reference는 엔트로피
+      권위를 가리키는 참조 문자열로만 존재한다.
+    evidence: 금지 필드명 검사, 엔트로피 재료 형태 패턴 부재, seed_reference 형식 단언
+    severity_if_failed: HIGH
+
+# 변이 스냅숏이 비교하는 값. AC-004가 요구하는 목록 그대로이며, 하네스의
+# scripts/verify_r2_security.py::_mutation_snapshot이 정확히 이 키들을 만든다.
+mutation_snapshot:
+  compared_before_and_after_every_denial: true
+  fields:
+    - round_id
+    - phase
+    - balance_units
+    - house_bankroll_units
+    - bets
+    - draw_records
+    - ledger_transactions
+    - audit_events
+  harness_function: _mutation_snapshot
+  read_through: table.state() and DurableRoundStore.count()
+
+# ---------------------------------------------------------------------------------------
+# 5. 잘못된 형식의 요청
+# ---------------------------------------------------------------------------------------
+# 검증 항목이 아니라 취급 방식의 선언이다. 무작위 생성도, 반복 폭주도, 시간 기반 변형도 쓰지
+# 않는다. 사례 집합은 하네스의 MALFORMED_CASES 상수 하나로 고정되어 있다.
+malformed_requests:
+  group_id: malformed_request_safety
+  is_a_verification_dimension: false
+  cases: 13
+  fixed_input_set: true
+  harness_constant_name: MALFORMED_CASES
+  random_generation: false
+  time_based_mutation: false
+  repetition_storm: false
+  fuzzing: false
+  denial_of_service_behaviour: false
+  destructive_on_source_data: false
+  oversize_payload_declared_not_sent: >-
+    페이로드 상한 초과 거부는 Content-Length 헤더로만 선언하고 실제로 보내는 바이트는 설정된
+    상한 안에 머문다. 상한을 넘는 본문을 실제로 전송하지 않고도 초과 거부를 관측할 수 있다.
+  response_body_never_contains:
+    - traceback
+    - filesystem_path
+    - sqlite_message
+    - internal_exception_text
+  normal_request_after_every_case: true
+  severity_if_failed: MEDIUM
+
+# ---------------------------------------------------------------------------------------
+# 6. 정제 규칙
+# ---------------------------------------------------------------------------------------
+confidentiality:
+  seed_reference_form: entropy-ref://<source-id>/<algorithm-id>
+  seed_reference_pattern_constant: SEED_REFERENCE_PATTERN
+  seed_value_recorded: false
+  entropy_bytes_recorded: false
+  rejection_count_recorded: false
+  internal_entropy_state_recorded: false
+  entropy_evidence_is_counts_only: true
+  prohibited_field_names_source: studio_core.rng.PROHIBITED_RECORD_FIELDS
+  response_prohibited_field_names_constant: RESPONSE_PROHIBITED_FIELDS
+  state_key_exception: >-
+    추첨 기록에서 state는 내부 엔트로피 상태를 뜻하므로 금지되지만, 응답 봉투에서 state는
+    playable-slice 계약이 GET /api/state에 요구하는 라운드 스냅숏이다. 이름만으로 두 경우를
+    함께 막으면 필수 필드를 유출로 보고하게 되므로, 응답에 대해서는 state를 금지 목록에서 빼고
+    대신 최상위 봉투 경로 한 곳에만 나타나는지를 단언한다. 더 깊은 위치의 state는 여전히 걸린다.
+  state_envelope_path_constant: RESPONSE_STATE_ENVELOPE_PATH
+  entropy_material_pattern_names:
+    - unlabelled_long_hex_run
+    - byte_escape_sequence_run
+    - entropy_material_assigned_to_a_key
+  entropy_material_pattern_constant: ENTROPY_MATERIAL_PATTERNS
+  scanned_surfaces:
+    - api_responses
+    - committed_draw_records
+    - committed_audit_events
+    - harness_output_record
+    - documents_written_by_this_unit
+  scan_target_constant: SANITIZATION_SCAN_TARGETS
+  real_secret_or_credential_used: false
+  personal_data_used: false
+  synthetic_identifiers_only: true
+
+output_sanitization:
+  absolute_path: excluded
+  hostname: excluded
+  username_or_account_identifier: excluded
+  email_address: excluded
+  credential_or_token_value: excluded
+  entropy_material: excluded
+  raw_seed: excluded
+  weaponizable_payload_transcript: excluded
+  finding_records_reproducible_payload: false
+  temporary_workspace_path_emitted: false
+  manipulated_paths_emitted_relative_to_workspace: true
+
+# ---------------------------------------------------------------------------------------
+# 7. 감사 조작의 경계
+# ---------------------------------------------------------------------------------------
+audit_manipulation:
+  performed_on: disposable_copies_inside_the_temporary_workspace
+  performed_on_original: false
+  performed_on_repository_tracked_files: false
+  copy_source: the run's own temporary SQLite database, after it has been closed
+  copies_made: 3
+  original_hash_compared_before_and_after: true
+  original_hash_function: studio_core.integrity.hash_file
+  repository_audit_records_hashed_before_and_after: true
+  repository_audit_records_scope: audit/audit-event.schema.json and audit/events/*.json
+  append_only_guard_exercised_on_copy: true
+  triggers_dropped_only_on_a_separate_copy: true
+  detection_function: studio_core.rng.verify_audit_chain
+  detection_required_for:
+    - forged_event_body
+    - deleted_event
+  deletion_target: a middle event, so a link breaks rather than the chain being truncated
+
+# ---------------------------------------------------------------------------------------
+# 8. 발견 사항과 개선
+# ---------------------------------------------------------------------------------------
+# 이 유닛은 찾는 것까지만 한다. 발견되었다는 사실이 수정 권한을 주지 않는다.
+findings_policy:
+  remediation_performed_by_this_unit: false
+  production_runtime_modified: false
+  failing_criterion_marked_pass: prohibited
+  evidence_of_a_failure_erased: prohibited
+  each_finding_names_a_separate_task_candidate: true
+  task_candidate_prefix: R2-SECFIX-CANDIDATE
+  task_candidate_prefix_constant: REMEDIATION_TASK_CANDIDATE_PREFIX
+  task_candidate_is_an_authorisation: false
+  finding_severity_by_dimension_constant: FINDING_SEVERITY_BY_DIMENSION
+  finding_record_is_sanitized: true
+  finding_record_contains_real_secret: false
+  finding_record_contains_personal_data: false
+  finding_record_contains_full_attack_payload: false
+
+# ---------------------------------------------------------------------------------------
+# 9. 출력 계약
+# ---------------------------------------------------------------------------------------
+output_contract:
+  format: json
+  machine_readable: true
+  top_level_keys:
+    - schema_version
+    - task_id
+    - contract_ref
+    - notice
+    - environment
+    - config
+    - bounds
+    - counts
+    - dimensions
+    - cases
+    - evidence
+    - findings
+    - remediation
+    - cleanup
+  environment_keys:
+    - python_version
+    - python_implementation
+    - system
+    - release
+    - machine
+  exit_code_meaning: >-
+    0은 선언된 모든 항목이 성립했다는 뜻이고, 1은 하나 이상이 성립하지 않았다는 뜻이며, 2는
+    실행이 프리플라이트나 경계에서 거절되었다는 뜻이다. 소요 시간에 따른 종료 경로는 없다.
+  timing_measurement_emitted: false
+  timing_threshold_declared: false
+  throughput_or_capacity_number_emitted: false
+  contains_pii: false
+  contains_credentials: false
+
+# ---------------------------------------------------------------------------------------
+# 10. 자원 회수
+# ---------------------------------------------------------------------------------------
+cleanup:
+  temporary_workspace: deleted_at_the_end_of_the_run
+  cleanup_errors_suppressed: false
+  cleanup_failure_surfaced_as: WORKSPACE_NOT_RELEASED
+  workspace_absence_asserted_positively: true
+  server_thread_joined: true
+  worker_threads_enrolled_and_joined: true
+  thread_local_sqlite_connection_released_by_its_owning_thread: true
+  release_function: studio_core.durable_state.DurableRoundStore.release_thread_connection
+  store_closed_after_workers_stopped: true
+  temporary_workspace_inside_repository: false
+
+# ---------------------------------------------------------------------------------------
+# 11. 선언하지 않는 것
+# ---------------------------------------------------------------------------------------
+no_targets:
+  security_maturity_level_declared: false
+  penetration_test_of_production_declared: false
+  latency_or_throughput_threshold_declared: false
+  capacity_promise_made: false
+  release_readiness_declared: false
+  production_schedule_declared: false
+  final_qa_gate_decision_declared: false
+  multi_user_identity_or_session_feature: false
+
+# ---------------------------------------------------------------------------------------
+# 12. 범위 밖
+# ---------------------------------------------------------------------------------------
+out_of_scope:
+  - 운영·외부 대상 시험은 수행하지 않는다. 검증은 로컬 프로세스와 루프백에만 한정된다.
+  - 비루프백 네트워킹과 이름 해석은 수행하지 않는다.
+  - 클라우드, GitHub, 계정, 운영체제, 자격증명을 대상으로 하는 행위는 수행하지 않는다.
+  - 사회공학과 피싱은 수행하지 않는다.
+  - 원본 데이터에 대한 파괴적 시험은 수행하지 않는다. 조작은 폐기 가능한 사본에서만 한다.
+  - 지속성 확보, 탐지 회피, 유출은 수행하지 않는다.
+  - 서비스 거부와 퍼즈 폭주는 수행하지 않는다.
+  - 부하·스트레스·성능 시험과 타이밍 임계값은 이 유닛이 다루지 않는다.
+  - 의존성 설치와 새 런타임 모듈 추가는 하지 않는다.
+  - 발견 사항의 개선은 이 유닛에서 수행하지 않고 별도 Task Contract로 넘긴다.
+  - 다중 사용자 신원·세션 분리와 그에 종속된 인증·인가·세션 검증은 이 유닛이 다루지 않는다.
+  - R4 산출물, 자산, 이미지, 아트 경로는 만들지도 수정하지도 검토하지도 않는다.
+  - 일정, 출시일, 용량 약속, 배포, R5 결정은 이 문서가 정하지 않는다.
+
+# ---------------------------------------------------------------------------------------
+# 13. 동결 경로
+# ---------------------------------------------------------------------------------------
+frozen_paths:
+  reason: >-
+    tasks/R2-SEC-0005.json이 아래 경로를 정규 LF 해시로 고정한다. 이 유닛은 저장소에 이미
+    존재하는 어떤 파일도 수정하지 않으며, 특히 검증 대상 런타임과 scripts/validate_baseline.py를
+    건드리지 않는다. 계약과 구현의 대조는 신규 파일 tests/test_security_verification.py 안에서
+    한다.
+  modified_by_this_unit: 0
+  paths:
+    - apps/roulette_web/server.py
+    - apps/roulette_web/table.py
+    - studio_core/durable_state.py
+    - studio_core/rng.py
+    - studio_core/ledger.py
+    - studio_core/integrity.py
+    - games/roulette/playable-slice-contract.yaml
+    - games/roulette/round-state.yaml
+    - games/roulette/rng-contract.yaml
+    - games/roulette/durable-state-contract.yaml
+    - games/roulette/reconnect-contract.yaml
+    - games/roulette/ledger-transaction.schema.json
+    - games/roulette/rng-draw-record.schema.json
+    - audit/audit-event.schema.json
+    - policies/security.yaml
+    - policies/risk.yaml
+    - policies/audit.yaml
+    - tests/test_roulette_web_server.py
+    - tests/test_durable_state.py
+    - tests/test_rng.py
+    - tests/test_reconnect_continuity.py
+  also_unmodified:
+    - scripts/validate_baseline.py
+    - tasks/R4-ART-0007.json
+
+new_files:
+  - games/roulette/security-verification-contract.yaml
+  - scripts/verify_r2_security.py
+  - tests/test_security_verification.py
+  - docs/games/R2-security-verification.md
+  - docs/approvals/R2-SEC-0005-validation-report.md
+  - audit/events/R2-SEC-0005-events.json
