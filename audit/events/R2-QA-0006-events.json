@@ -1,0 +1,302 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "R2-QA-0006",
+  "chain_namespace": "R2QA",
+  "summary": "R2-QA-0006 R2 종결 후보 증거 패킷 유닛의 감사 기록이다. Codex가 issuer 역할로 READY Task Contract를 발주한 사실, 사용자의 착수 허가가 최종 QA 승인이 아니라는 사실, 위임 게이트 판정, 계약 단계 아티팩트와 핸드오프가 REWORK_REQUIRED로 등록된 사실, 교차 검증 시험의 구현, 다섯 유닛 삼중 계약의 교차 검증, 54개 동결 입력 해시의 재계산, 종결 보고서와 종결 후보 상태 문서의 작성, A-50이 GitHub CLI evidence supplied by A-50으로 공급한 외부 CI 증거를 네트워크 접근 없이 그대로 옮긴 사실, 아티팩트를 구현 산출물에 재결속하고 핸드오프를 READY_FOR_REVIEW로 올린 사실, 두 표준 명령의 실행과 기록, 종결 상태가 CLOSED_PENDING_DIRECTOR_AND_USER라는 사실, A-50·A-02·A-00·USER의 최종 QA 게이트와 이 유닛에 대한 호스티드 CI가 여전히 수행되지 않았다는 사실, 그리고 codex 콘솔이 independent_verifier 역할로 A-50을 대행해 발행한 독립 검증 판정 PASS와 종결 후보 권고 ISSUED를 A-20이 그대로 전사하고 그에 맞춰 아티팩트를 2.1.0과 REVIEWED로, 핸드오프를 003과 READY_FOR_QA로 올린 사실을 순서대로 남긴다. AE-R2QA-0012와 AE-R2QA-0013은 BLOCK이다. 종결 후보는 종결이 아니기 때문이다. 마지막 AE-R2QA-0014는 INDEPENDENT_VERIFY 단계의 완료 기록이며 FINAL_GATE 판정도 USER 승인도 아니다. 그 두 게이트는 AE-R2QA-0013의 BLOCK 상태 그대로 남아 있다. 독립 검증 판정은 Claude가 발행하지 않았고 Claude가 독립 검증을 수행하지도 않았다. 그 판정이 관측한 것은 전사 이전 개정이며 전사 개정 자체는 아직 독립 검증되지 않았다. 이 유닛은 기존 파일을 하나도 수정하지 않았고 R4 산출물·자산·이미지·아트를 만들거나 수정하거나 검토하지 않았다.",
+  "events": [
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-03T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "R2-QA-0006",
+      "action": "TASK_CONTRACT_ISSUED_READY_BY_CODEX_ISSUER",
+      "resource_refs": [
+        "repo://tasks/R2-QA-0006.json",
+        "repo://contracts/task.schema.json",
+        "repo://operations/collaboration.yaml"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:707272f5693d4312d9b883888f72ea643088b2bd20c84872d18746de9e982c9c",
+      "contains_secret": false,
+      "event_id": "AE-R2QA-0001",
+      "previous_event_hash": null,
+      "event_hash": "sha256:674dfee87221a52aa880fe3d41de9856929074027bfb9d79e05f2cfd8d04475f"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "APPROVAL",
+      "timestamp": "2026-09-03T00:05:00Z",
+      "actor_type": "USER",
+      "actor_id": "USER",
+      "task_id": "R2-QA-0006",
+      "action": "USER_START_AUTHORIZATION_RECORDED_NOT_FINAL_QA_APPROVAL",
+      "resource_refs": [
+        "repo://tasks/R2-QA-0006.json",
+        "repo://operations/collaboration.yaml",
+        "repo://docs/decisions/ADR-0003-claude-only-programming.md"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:d3260ac27f2f4f86c85c8090e8db0e497afd14b2db1200a39a9328dcf5c986fd",
+      "contains_secret": false,
+      "event_id": "AE-R2QA-0002",
+      "previous_event_hash": "sha256:674dfee87221a52aa880fe3d41de9856929074027bfb9d79e05f2cfd8d04475f",
+      "event_hash": "sha256:41b766e2007c30875ff5b5f574b1b9b403e1f72ce91dbd59f9f225ea371132ac"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-03T00:10:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-20",
+      "task_id": "R2-QA-0006",
+      "action": "DELEGATION_GATE_EVALUATED_DELEGATED",
+      "resource_refs": [
+        "repo://operations/collaboration.yaml",
+        "repo://tasks/R2-QA-0006.json"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:fd91f1de78c13d10a4b8d0d7fa622c515221782baab4951c96d6ddcb22da0662",
+      "contains_secret": false,
+      "event_id": "AE-R2QA-0003",
+      "previous_event_hash": "sha256:41b766e2007c30875ff5b5f574b1b9b403e1f72ce91dbd59f9f225ea371132ac",
+      "event_hash": "sha256:c6ac4c33f5f6ac28dd0561f3bb8c69ad7bed3deb064995f99fbc87de66c8bedc"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "ARTIFACT",
+      "timestamp": "2026-09-03T00:20:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-20",
+      "task_id": "R2-QA-0006",
+      "action": "CONTRACT_PHASE_ARTIFACT_AND_HANDOFF_REGISTERED_REWORK_REQUIRED",
+      "resource_refs": [
+        "repo://artifacts/R2-QA-0006-artifact.json",
+        "repo://handoffs/R2-QA-0006-handoff.json"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:8b59cf1f2f2cbd955808b7fab0f1dd5e8190fbb3513d9624862d46cab32576a7",
+      "contains_secret": false,
+      "event_id": "AE-R2QA-0004",
+      "previous_event_hash": "sha256:c6ac4c33f5f6ac28dd0561f3bb8c69ad7bed3deb064995f99fbc87de66c8bedc",
+      "event_hash": "sha256:423f4065f6eb85257d76248cedf4f40eb22548e504f770aa91b343b646e4afcb"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "ARTIFACT",
+      "timestamp": "2026-09-03T01:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-20",
+      "task_id": "R2-QA-0006",
+      "action": "CLOSURE_EVIDENCE_VALIDATOR_SUITE_IMPLEMENTED",
+      "resource_refs": [
+        "repo://tests/test_r2_qa_closure.py",
+        "repo://contracts/artifact.schema.json",
+        "repo://audit/audit-event.schema.json"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:1724df0cdca9ad2bf3e8fe3f89657ebe0b0cd8be814b81c3d8895eae1d829f1f",
+      "contains_secret": false,
+      "event_id": "AE-R2QA-0005",
+      "previous_event_hash": "sha256:423f4065f6eb85257d76248cedf4f40eb22548e504f770aa91b343b646e4afcb",
+      "event_hash": "sha256:dcf097b0d284abb5801073859d440cad0ea859fa1668785c8c1ce512d583e0f7"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-03T01:20:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-20",
+      "task_id": "R2-QA-0006",
+      "action": "FIVE_SOURCE_UNIT_TRIPLETS_CROSS_VERIFIED_WITHOUT_WEAKENING_EXISTING_ASSERTIONS",
+      "resource_refs": [
+        "repo://tasks/R2-RNG-0001.json",
+        "repo://tasks/R2-DBC-0002.json",
+        "repo://tasks/R2-NET-0003.json",
+        "repo://tasks/R2-LOAD-0004.json",
+        "repo://tasks/R2-SEC-0005.json"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:614c5f81da715d094aede4a570cfc4fc50c4c8eba4afa5b1f343c0e841b9f5ee",
+      "contains_secret": false,
+      "event_id": "AE-R2QA-0006",
+      "previous_event_hash": "sha256:dcf097b0d284abb5801073859d440cad0ea859fa1668785c8c1ce512d583e0f7",
+      "event_hash": "sha256:3e87ccffe79be568f62a7af2054342824d700523d50ada105c642976fb157503"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "SECURITY",
+      "timestamp": "2026-09-03T01:40:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-20",
+      "task_id": "R2-QA-0006",
+      "action": "FIFTY_FOUR_FROZEN_INPUT_HASHES_RECOMPUTED_AND_MATCHED",
+      "resource_refs": [
+        "repo://tasks/R2-QA-0006.json",
+        "repo://studio_core/integrity.py"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:3e4d2ae4556cce1ad37b4c8960affc7afbf29d4beef34d58770bdce9f92a7a9a",
+      "contains_secret": false,
+      "event_id": "AE-R2QA-0007",
+      "previous_event_hash": "sha256:3e87ccffe79be568f62a7af2054342824d700523d50ada105c642976fb157503",
+      "event_hash": "sha256:351e17ffb70d024ceb04af10c32d2497f5a4ae46c37767e270cbcbc9afca0f3b"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "ARTIFACT",
+      "timestamp": "2026-09-03T02:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-20",
+      "task_id": "R2-QA-0006",
+      "action": "CLOSURE_REPORT_AND_CANDIDATE_STATUS_WRITTEN",
+      "resource_refs": [
+        "repo://docs/approvals/R2-QA-0006-closure-report.md",
+        "repo://docs/status/R2-QA-0006-closure-candidate.md",
+        "repo://audit/events/R2-QA-0006-events.json"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:53ae026371172b69d062173852bbe75933475388d9dbd71f662d1e79fe8fc200",
+      "contains_secret": false,
+      "event_id": "AE-R2QA-0008",
+      "previous_event_hash": "sha256:351e17ffb70d024ceb04af10c32d2497f5a4ae46c37767e270cbcbc9afca0f3b",
+      "event_hash": "sha256:cfb5e59c5a894731daf05fa0bef2f86f4863eddba4af19364055270b786d5b06"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "SECURITY",
+      "timestamp": "2026-09-03T02:20:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-20",
+      "task_id": "R2-QA-0006",
+      "action": "SUPPLIED_EXTERNAL_CI_EVIDENCE_TRANSCRIBED_WITHOUT_NETWORK_ACCESS",
+      "resource_refs": [
+        "repo://.github/workflows/ci.yml",
+        "repo://docs/approvals/R2-QA-0006-closure-report.md",
+        "repo://handoffs/R2-QA-0006-handoff.json"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:05adf98f28d7f37ec5d4d39f30c3fa98d95bc4445439f0c5de4296a1aab8acdd",
+      "contains_secret": false,
+      "event_id": "AE-R2QA-0009",
+      "previous_event_hash": "sha256:cfb5e59c5a894731daf05fa0bef2f86f4863eddba4af19364055270b786d5b06",
+      "event_hash": "sha256:7f4c8ba81062274fc91f46ee6536962fa348f677acbbccd57f0402e1cafde97b"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "ARTIFACT",
+      "timestamp": "2026-09-03T02:40:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-20",
+      "task_id": "R2-QA-0006",
+      "action": "ARTIFACT_REBOUND_TO_IMPLEMENTATION_AND_HANDOFF_PROMOTED_READY_FOR_REVIEW",
+      "resource_refs": [
+        "repo://artifacts/R2-QA-0006-artifact.json",
+        "repo://handoffs/R2-QA-0006-handoff.json",
+        "repo://docs/status/R2-QA-0006-closure-candidate.md"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:3037fb272be0332d4dd75472fd9e42fbd011f2dd2ac4c994d6fa784242fcbd9f",
+      "contains_secret": false,
+      "event_id": "AE-R2QA-0010",
+      "previous_event_hash": "sha256:7f4c8ba81062274fc91f46ee6536962fa348f677acbbccd57f0402e1cafde97b",
+      "event_hash": "sha256:c9f3480b9f156906d4a429a16f30121dbd5e064a06b081a00d29bee4762ed788"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-03T03:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-20",
+      "task_id": "R2-QA-0006",
+      "action": "STANDARD_VALIDATION_COMMANDS_EXECUTED_AND_RECORDED",
+      "resource_refs": [
+        "repo://scripts/validate_baseline.py",
+        "repo://handoffs/R2-QA-0006-handoff.json",
+        "repo://scripts/scan_secrets.py"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:c8f5f97f0f9d1c1eeb5fe5193a25f70d287bd67d9c84032acefcbc5f65b38dcb",
+      "contains_secret": false,
+      "event_id": "AE-R2QA-0011",
+      "previous_event_hash": "sha256:c9f3480b9f156906d4a429a16f30121dbd5e064a06b081a00d29bee4762ed788",
+      "event_hash": "sha256:45d847f5828aadaa66ace86282d4a8447670e3b481d232044fb9f11023c332ab"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "RELEASE_GATE",
+      "timestamp": "2026-09-03T03:20:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-20",
+      "task_id": "R2-QA-0006",
+      "action": "CLOSURE_STATUS_RECORDED_CLOSED_PENDING_DIRECTOR_AND_USER",
+      "resource_refs": [
+        "repo://docs/status/R2-QA-0006-closure-candidate.md",
+        "repo://docs/approvals/R2-QA-0006-closure-report.md",
+        "repo://artifacts/R2-QA-0006-artifact.json"
+      ],
+      "decision": "BLOCK",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:7b6e7e7adc92f6563c98bd3377042843d7c59e0c6d416f5364a1ecedf49f4f45",
+      "contains_secret": false,
+      "event_id": "AE-R2QA-0012",
+      "previous_event_hash": "sha256:45d847f5828aadaa66ace86282d4a8447670e3b481d232044fb9f11023c332ab",
+      "event_hash": "sha256:a16d5a147a0155533cf707d83c67201bad11a08339c1a4f0a932c1699e1f62ca"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "RELEASE_GATE",
+      "timestamp": "2026-09-03T03:40:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-20",
+      "task_id": "R2-QA-0006",
+      "action": "FINAL_QA_GATES_AND_HOSTED_CI_NOT_RUN",
+      "resource_refs": [
+        "repo://operations/collaboration.yaml",
+        "repo://handoffs/R2-QA-0006-handoff.json",
+        "repo://.github/workflows/ci.yml"
+      ],
+      "decision": "BLOCK",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:113b213434487d5db32af16b14a3f642194cdb4f2f423b6aef7966c284459649",
+      "contains_secret": false,
+      "event_id": "AE-R2QA-0013",
+      "previous_event_hash": "sha256:a16d5a147a0155533cf707d83c67201bad11a08339c1a4f0a932c1699e1f62ca",
+      "event_hash": "sha256:2ecd15992b8edb6230bf1f377bd384283195a8b6a5fe4814bcfc5ed642e887c8"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "APPROVAL",
+      "timestamp": "2026-09-03T05:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-50",
+      "task_id": "R2-QA-0006",
+      "action": "INDEPENDENT_VERIFICATION_VERDICT_PASS_SUPPLIED_BY_CODEX_FOR_A50_CLOSURE_CANDIDATE_RECOMMENDATION_ISSUED_FINAL_GATE_STILL_NOT_RUN",
+      "resource_refs": [
+        "repo://operations/collaboration.yaml",
+        "repo://artifacts/R2-QA-0006-artifact.json",
+        "repo://handoffs/R2-QA-0006-handoff.json",
+        "repo://docs/approvals/R2-QA-0006-closure-report.md"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:f9b77de19f6807e0118da7058c34df3c7c3e5ea2ebc217c4b591e4bca91f291b",
+      "contains_secret": false,
+      "event_id": "AE-R2QA-0014",
+      "previous_event_hash": "sha256:2ecd15992b8edb6230bf1f377bd384283195a8b6a5fe4814bcfc5ed642e887c8",
+      "event_hash": "sha256:9c1039220da72dbabc7ef00bbb6957556e2a46de9b486f8ab3efa4a61917bfd6"
+    }
+  ]
+}

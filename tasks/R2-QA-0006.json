@@ -1,0 +1,450 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "R2-QA-0006",
+  "project_id": "casino-core",
+  "title": "R2 종결 후보 증거 패킷: 다섯 유닛 교차 검증과 종결 권고 준비",
+  "goal": "R2-RNG-0001, R2-DBC-0002, R2-NET-0003, R2-LOAD-0004, R2-SEC-0005 다섯 유닛의 계약·아티팩트·핸드오프·보고서·감사 기록·시험 증거를 하나의 종결 후보(closure candidate) 증거 패킷으로 묶어 교차 검증하는 Task Contract다. Codex가 operations/collaboration.yaml의 issuer 역할로 발주했고 소유자는 A-20이며 status는 READY다. 사용자의 명시 지시가 이 계약의 착수와 저장소·PR 작업 흐름의 자율 수행을 허가했다. 그 허가는 착수 승인이며 USER 최종 QA 승인이 아니다. A-00 게이트 판정과 USER 최종 QA 서명은 전건 미발행이다. 이 문서 시점까지 선언된 구현 산출물 4종(종결 보고서, 종결 후보 상태 문서, 감사 기록, 종결 시험 스위트)은 한 건도 작성되지 않았고 이 계약 단계에서 만들어지는 파일은 tasks/R2-QA-0006.json, artifacts/R2-QA-0006-artifact.json, handoffs/R2-QA-0006-handoff.json 세 건뿐이다. 이 유닛은 가산적이다. 기존 Task, Artifact, Handoff, 승인 보고서, 상태 문서, 런타임, 시험, 스크립트, 정책, 계약, 아트, 자산, R4 파일을 하나도 다시 쓰지 않고 수정하지 않는다. 무결성 해시 연쇄를 일으키지 않기 위해 신규 파일만 만든다. 검증 방식은 두 갈래다. 첫째는 저장소 안에서 재현 가능한 것으로, 다섯 유닛의 삼중 계약이 스키마에 유효한지, 식별자가 정렬되는지, 생성자와 검토자가 분리되는지, 필수 명령 증거가 PASS로 존재하는지, 선언된 정규 LF 해시가 실제 파일과 일치하는지, 각 유닛이 주장한 하네스·시험 수치가 실제 재실행 또는 교차 대조로 성립하는지를 기존 단언을 약화시키지 않고 확인한다. 둘째는 저장소 밖에서 관측된 것으로, A-50이 GitHub CLI로 취득해 공급한 다섯 PR의 병합 사실과 세 건의 성공 체크를 공급된 외부 증거로 그대로 기록한다. Claude는 그 증거를 다시 조회하지 않고 네트워크에 접근하지 않는다. 종결 상태는 CLOSED_PENDING_DIRECTOR_AND_USER이며 DONE도 CLOSED도 PRODUCTION_READY도 아니다. A-50의 유닛별 독립 QA PASS 권고는 Codex 최종 검증 이후에만 발행될 수 있고 Claude는 그 판정을 발행하지도 자칭하지도 않는다. R4-ART-0007의 아트 권리와 통합은 별개이며 차단 상태이므로 이 유닛이 변경하지도 종결을 주장하지도 않는다. 일정, 출시일, 용량·SLO 약속, 배포, R5 결정은 이 문서가 정하지 않는다.",
+  "owner_agent_id": "A-20",
+  "status": "READY",
+  "risk_class": "HIGH",
+  "inputs": [
+    {
+      "uri": "repo://AGENTS.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:bc5c280f63d33265d919a924651dc3080cab1c2efd4f3c411c0344be0a53a448"
+    },
+    {
+      "uri": "repo://CLAUDE.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:d03d0f4c774146e17994f445ab496a39176b61c2976426cc43e02321c9bbdd39"
+    },
+    {
+      "uri": "repo://docs/constitution/studio-constitution-v1.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:62f8a8cbf6fc70054300de9e90fed8974b9a310d140831d3d6af98292f5b2e9e"
+    },
+    {
+      "uri": "repo://docs/decisions/ADR-0003-claude-only-programming.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:6c1e345ea9555db2ec9f626dbd598845176df129d236fc9d7f64782a5cea0bdb"
+    },
+    {
+      "uri": "repo://operations/collaboration.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:03031cf600fe847737d535c364f183b6f0031464fc3a8fdd076b79826506733a"
+    },
+    {
+      "uri": "repo://operations/workflow.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:1407c75fe1cf4f6cfc422391082c8c0db9a6258b12f57c3faf659bab5591e568"
+    },
+    {
+      "uri": "repo://operations/permissions.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:ebd3b213f016cb9c9a677806439288e949b7be76e80a3ead7043709b08e3c522"
+    },
+    {
+      "uri": "repo://agents/registry.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:5709c5350d2d09ba423112096f0ae89e758c23a246e62159bb6f41399099702b"
+    },
+    {
+      "uri": "repo://policies/risk.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:7f280afbc63fa37d4893ecb0f40e6930189bbd2ddabfd73c638fe808cf0f457e"
+    },
+    {
+      "uri": "repo://policies/security.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:c85fd12606c9d52cfb555b5d9a11b4f83b16a2247cd9dddffb3432a1fb34adac"
+    },
+    {
+      "uri": "repo://policies/audit.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:5b9b87595424162de8b495058cc80aa0ff276024a20b3bf55172ed364e43c1e4"
+    },
+    {
+      "uri": "repo://policies/cost.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:8f1d7ac6ae496fef8567292100ff644a0ed5caa47f1db94af6e00b3f4c94ba82"
+    },
+    {
+      "uri": "repo://contracts/task.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:32158d90825790b90929b5c1464140651c201b603745bc4bafa27e446d723527"
+    },
+    {
+      "uri": "repo://contracts/artifact.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:44d972cb0db8a8b455d9a014207d712fae3ce6e7126590371af76aad79a68195"
+    },
+    {
+      "uri": "repo://contracts/handoff.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:088025147e8cdf3a9addafc46b6c7520b4d9216db4604d0a34ef29ece274faf2"
+    },
+    {
+      "uri": "repo://audit/audit-event.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:7e0f6b22977048dc40c39756293201042870a188c5f64926d7606e4b4da6c1eb"
+    },
+    {
+      "uri": "repo://.github/workflows/ci.yml",
+      "version": "1.0.0",
+      "content_hash": "sha256:69a77867bf26634a20ac73d6f1b782816d9ac4b4a90f1884e7f6b13065c26b4d"
+    },
+    {
+      "uri": "repo://tasks/R2-RNG-0001.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:c9d700d18d144c4a76f7f7c8cb2525829023540d5c280de3863ae77a18155966"
+    },
+    {
+      "uri": "repo://artifacts/R2-RNG-0001-artifact.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:2154cb23b263b738d4f1df419ae88491284e781bef9fd64b27cdf40160fcccad"
+    },
+    {
+      "uri": "repo://handoffs/R2-RNG-0001-handoff.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:fc5e85ba38ce0d834f9fa54067d3fda6e29232145dcc67c386a9914b12a7c446"
+    },
+    {
+      "uri": "repo://tasks/R2-DBC-0002.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:fc2bec02f86d0a84eacb7f5d753b45f5b2aa6e388b7d6105c445d3b0490abe6d"
+    },
+    {
+      "uri": "repo://artifacts/R2-DBC-0002-artifact.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:57c6740ae2cf3d706fc36f764ea98ebaef1cc65cabb3d8fc0951baf09c8111a9"
+    },
+    {
+      "uri": "repo://handoffs/R2-DBC-0002-handoff.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:7dc95fba58ecb269fc37755803f56532a65c5d8adcd0dd9ef1e3632cb4d20208"
+    },
+    {
+      "uri": "repo://tasks/R2-NET-0003.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:209f9ad3bea33e4cc7332a01065258e2aa0345484fcaf9bbcc02df22157fd9b3"
+    },
+    {
+      "uri": "repo://artifacts/R2-NET-0003-artifact.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:b48ceca54e5b3120c3d3a48d643f2fe86749bda67ba073b010c464047f363415"
+    },
+    {
+      "uri": "repo://handoffs/R2-NET-0003-handoff.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:4e2347d3e806c500a058e6bc1c18dda0c5b7f8fd412dcbabb703a70b7ba79433"
+    },
+    {
+      "uri": "repo://tasks/R2-LOAD-0004.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:26b8fc02bc8133610dbd9a219f6cb7f685270e08ff86fa9c460c3f5991f0b0a5"
+    },
+    {
+      "uri": "repo://artifacts/R2-LOAD-0004-artifact.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:4bc860845694fd98a558f6605dc304e8312e652110ef8cd2f7370f6c171fdd11"
+    },
+    {
+      "uri": "repo://handoffs/R2-LOAD-0004-handoff.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:03d811fc78f477d7d4c9c2c4b87773dd985bcd7e2cf6fc0267c83a845c9c3d2a"
+    },
+    {
+      "uri": "repo://tasks/R2-SEC-0005.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:006d2a2f4d654bcce5b3bbb2c01e6b7ba671d8b980d8213b5da12a270adc25c4"
+    },
+    {
+      "uri": "repo://artifacts/R2-SEC-0005-artifact.json",
+      "version": "2.1.0",
+      "content_hash": "sha256:f325c8bf610485f89b794524fac958dc12dfc0489e920cacb7b4565006ba1850"
+    },
+    {
+      "uri": "repo://handoffs/R2-SEC-0005-handoff.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:c4ee1efa0b63da576bc7017c3f87e8e87cb0d9174a868a9d91a28cff97c3dca1"
+    },
+    {
+      "uri": "repo://games/roulette/rng-contract.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:9d8ea76aef04c25d182fc2f25f3c3e0e988aa3e997b82cc918ad3ee86004114b"
+    },
+    {
+      "uri": "repo://games/roulette/durable-state-contract.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:3920a1a87c46871353b936f56252d39dbd5542f628b7e2471c9e35a1d175fdd4"
+    },
+    {
+      "uri": "repo://games/roulette/reconnect-contract.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:777fbae659ce418f4c7428233edce454437d2e00f1ba647b841bda8384881475"
+    },
+    {
+      "uri": "repo://games/roulette/load-observation-contract.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:4e9a4f515c46eab28245a4d205a890f8a35847fb4ec3e6d5436953be3e425fc2"
+    },
+    {
+      "uri": "repo://games/roulette/security-verification-contract.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:e6c9756bbe3de00e4caaa3f3e42dd1838bc09ce9c8608a7d0278d76a37c81d60"
+    },
+    {
+      "uri": "repo://docs/approvals/R2-RNG-0001-validation-report.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:09c3c79620a7c5b0230b2980f5290d773a7addd96bd14d38826f45b94f591353"
+    },
+    {
+      "uri": "repo://docs/approvals/R2-DBC-0002-validation-report.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:390e6ecbaa98af38f33bc405459ba7a9649e8bd897341e4fc6027918ae854879"
+    },
+    {
+      "uri": "repo://docs/approvals/R2-NET-0003-validation-report.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:3e92c7844a6e5c13990dbb496daed2f2c7eb4f93b4b6f3121dfb84d08d3c03d2"
+    },
+    {
+      "uri": "repo://docs/approvals/R2-LOAD-0004-validation-report.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:51bf32c83a6b559b11a43f7806bebe701cadd81548ee66f98388caf9a87d19ef"
+    },
+    {
+      "uri": "repo://docs/approvals/R2-SEC-0005-validation-report.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:c38c355e9b84910bf48e148ba1bf65740f4e6fe4990b8d6a1d876a155a39e0e8"
+    },
+    {
+      "uri": "repo://docs/status/R2-STATUS.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:778cae65b85ebbd1b00b870ee90c0f218d105f85297b849b8930d92e682c6970"
+    },
+    {
+      "uri": "repo://docs/operations/R2-followup-units.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:a1d8dadb8e5532e7b0706e1c2b60f4657c4f4e7daf797c2060387f5ee96df6ba"
+    },
+    {
+      "uri": "repo://audit/events/R2-RNG-0001-events.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:cae1449f389e0ac410e7ebfe6d731441c3294d539846dac2d3501e6ad4fadfc7"
+    },
+    {
+      "uri": "repo://audit/events/R2-DBC-0002-events.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:e8b64b56726098affa8f97d4895668f81c2d05271327d6c6a71b4f3464ef6230"
+    },
+    {
+      "uri": "repo://audit/events/R2-NET-0003-events.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:4f3bd15e9bc18809a89d27d09d22c6d8c780db8efa91cbb00897f663c79d09c3"
+    },
+    {
+      "uri": "repo://audit/events/R2-LOAD-0004-events.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:4f31a4d353a21ed5f55cc06d4cfd2cb85edd216de2f320c6fd5fcb52a2a86293"
+    },
+    {
+      "uri": "repo://audit/events/R2-SEC-0005-events.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:9fe17a767c4317a4dd6feebc8aa6c4fc25e8f7d3913a95680f8996476043b463"
+    },
+    {
+      "uri": "repo://tests/test_rng.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:c95db53b3dc51b8d0d003840e07e980d9dbeeddda983bda67918998f5a81b37a"
+    },
+    {
+      "uri": "repo://tests/test_durable_state.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:8098db3095ec8791ace956d31006b87b7e482705e3fa3501c23ec7c4a7ca1bc0"
+    },
+    {
+      "uri": "repo://tests/test_reconnect_continuity.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:b2366ce46e7193384f5da0f1e6184c68cfc7840f4299a38e61803d219ed926bc"
+    },
+    {
+      "uri": "repo://tests/test_load_observation.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:8008856d31ebeb167159d598d80dad8c3804a22ab4afd225ab9bac9d96ea259d"
+    },
+    {
+      "uri": "repo://tests/test_security_verification.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:8bfdb1b250ed5521c242ef52ec8a16b9707c5da99595639567c480b765a198e6"
+    }
+  ],
+  "deliverables": [
+    {
+      "name": "r2-qa-closure-report",
+      "artifact_type": "TEST_REPORT",
+      "target_uri": "repo://docs/approvals/R2-QA-0006-closure-report.md"
+    },
+    {
+      "name": "r2-qa-closure-candidate-status",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://docs/status/R2-QA-0006-closure-candidate.md"
+    },
+    {
+      "name": "r2-qa-closure-audit-events",
+      "artifact_type": "DATASET",
+      "target_uri": "repo://audit/events/R2-QA-0006-events.json"
+    },
+    {
+      "name": "r2-qa-closure-test-suite",
+      "artifact_type": "CODE",
+      "target_uri": "repo://tests/test_r2_qa_closure.py"
+    },
+    {
+      "name": "r2-qa-closure-artifact-contract",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://artifacts/R2-QA-0006-artifact.json"
+    },
+    {
+      "name": "r2-qa-closure-handoff-packet",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://handoffs/R2-QA-0006-handoff.json"
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "criterion_id": "AC-001",
+      "statement": "다섯 유닛 R2-RNG-0001, R2-DBC-0002, R2-NET-0003, R2-LOAD-0004, R2-SEC-0005의 Task·Artifact·Handoff 삼중 계약 15개 파일이 모두 존재해야 하고, 각각 contracts/task.schema.json, contracts/artifact.schema.json, contracts/handoff.schema.json에 유효해야 한다. 세 문서의 task_id가 서로 일치하고 파일명과도 일치해야 하며, artifact_id가 해당 Handoff의 artifact_refs에 포함되어야 하고, project_id가 Task와 Artifact 사이에서 같아야 한다. 아티팩트 생성자가 자신의 reviewers 목록에 포함되어서는 안 되고 Handoff의 from_agent_id와 to_agent_id가 달라야 한다. operations/collaboration.yaml의 completion_gate.required_checks 두 명령이 각 Handoff에 PASS 기록으로 존재해야 하며, 각 아티팩트가 선언한 uri의 정규 LF 해시가 studio_core.integrity.hash_file 기준으로 content_hash와 일치해야 한다.",
+      "verification": "신규 시험 tests/test_r2_qa_closure.py에서 scripts/validate_baseline.py의 validate_instance로 15개 문서를 스키마 검증하고, 식별자 정렬·생성자 검토자 분리·필수 명령 PASS 기록을 studio_core.collaboration.missing_evidence_commands로 대조하며, 다섯 아티팩트의 uri 해시를 재계산해 단언한다"
+    },
+    {
+      "criterion_id": "AC-002",
+      "statement": "각 유닛이 자기 Handoff와 Artifact에 적어 둔 실제 하네스·시험 수치가 재현되거나 교차 대조되어야 한다. 재현이 가능한 항목은 해당 시험 모듈을 실제로 재실행해 확인하고, 재실행이 불가능하거나 부적절한 항목은 계약·보고서·감사 기록 사이의 값이 서로 어긋나지 않는지 대조로 확인한다. 이 유닛은 기존 단언을 하나도 약화시키거나 건너뛰거나 완화해서는 안 되며, 기존 시험 파일과 스크립트를 수정해서는 안 된다.",
+      "verification": "tests/test_rng.py, tests/test_durable_state.py, tests/test_reconnect_continuity.py, tests/test_load_observation.py, tests/test_security_verification.py 다섯 모듈의 집중 재실행 결과와, 각 유닛 문서에 기록된 수치의 상호 대조. 다섯 시험 파일의 정규 LF 해시가 이 계약의 inputs 선언값과 동일함을 단언해 무변경을 확인한다"
+    },
+    {
+      "criterion_id": "AC-003",
+      "statement": "최종 상태에서 집계 검증이 전부 통과해야 한다. 다섯 R2 시험 모듈의 집중 실행, python scripts/validate_baseline.py, python -m unittest discover -s tests -v, python -m compileall, python scripts/scan_secrets.py가 모두 성공해야 하고, 관측된 시험 건수·건너뛴 수·실패 수·오류 수와 검증기 단계 수를 실제 관측값 그대로 기록해야 한다. 어느 하나라도 실패하면 통과로 적어서는 안 된다.",
+      "verification": "다섯 명령의 실제 실행 로그와 종료 코드, 그리고 그 관측값이 종결 보고서·감사 기록·아티팩트에 동일하게 기록되었는지의 대조"
+    },
+    {
+      "criterion_id": "AC-004",
+      "statement": "다섯 PR의 호스티드 CI 증거가 정확히 그대로 표현되어야 한다. PR 번호 2, 4, 11, 12, 13 각각에 대해 PR URL, 병합 시각, 병합 커밋 해시, 그리고 Python 3.11 baseline, Python 3.12 baseline, Repository secret scan 세 건의 SUCCESS가 기록되어야 한다. 이 증거의 출처는 A-50이 GitHub CLI로 취득해 공급한 외부 증거로 명시되어야 하고, Claude가 재조회했다고 기록해서는 안 되며, 저장소 밖 네트워크 접근이 수행되어서도 안 된다.",
+      "verification": "종결 보고서와 감사 기록의 CI 증거 항목이 공급된 값과 문자 단위로 일치하는지 대조, 출처 표기 필드의 존재 확인, 하네스·시험·스크립트에 네트워크 호출이 0건임을 정적으로 확인"
+    },
+    {
+      "criterion_id": "AC-005",
+      "statement": "A-50의 유닛별 독립 QA PASS 권고는 Codex 최종 검증 이후에만 발행될 수 있다. Claude는 그 권고를 발행하지 않고 자칭하지도 않으며, 이 유닛의 산출물 어디에도 Claude가 QA PASS를 판정했다는 기술이 있어서는 안 된다. 산출물은 A-50 권고의 상태를 미발행 또는 공급된 그대로만 기록한다.",
+      "verification": "산출물 전체에 대한 판정 주체 표기 검토와 자기 판정 문구 부재 단언, studio_core.collaboration.evaluate_role_action(implementer, final_qa_approval)이 거부를 반환함을 시험으로 확인"
+    },
+    {
+      "criterion_id": "AC-006",
+      "statement": "최종 종결 상태 값은 CLOSED_PENDING_DIRECTOR_AND_USER 또는 그와 동등한 표현이어야 하고 DONE, CLOSED, PRODUCTION_READY 중 어느 것도 아니어야 한다. A-00 게이트 판정과 USER 최종 QA 서명이 미발행이라는 사실이 상태 값과 함께 명시되어야 한다.",
+      "verification": "종결 보고서·상태 문서·아티팩트·핸드오프의 상태 값 단언과 금지 상태 문자열 부재 단언"
+    },
+    {
+      "criterion_id": "AC-007",
+      "statement": "종결 보고서는 알려진 한계를 명시적으로 유지해야 한다. 첫째 범위는 단일 사용자 로컬 참조 구현이고, 둘째 운영·외부 환경은 대상이 아니며, 셋째 SLO나 용량 약속을 하지 않고, 넷째 R5 승인 이전 일정 확정 금지가 유효하며, 다섯째 R2-LOAD-0004의 수정 이전 결함이 남긴 임시 작업 공간 20건이 독립적으로 제거되었음이 확인되기 전까지 로컬 정리 부채로 남아 있고, 여섯째 R2-SEC-0005의 현재 실행은 임시 작업 공간 잔여가 0건이라는 사실이다. 이 여섯 항목은 축약되거나 삭제되어서는 안 된다.",
+      "verification": "종결 보고서의 한계 절 항목별 존재 확인 단언과, 20건 정리 부채 서술이 R2-LOAD-0004 아티팩트·핸드오프의 선언값과 어긋나지 않는지의 대조"
+    },
+    {
+      "criterion_id": "AC-008",
+      "statement": "R4-ART-0007은 이 유닛이 변경하지도 종결을 주장하지도 않아야 한다. 아트 권리와 통합은 별개의 차단된 작업이며, 이 계약의 inputs와 deliverables 어디에도 R4 경로, 자산, 이미지, 아트 경로가 나타나지 않아야 하고 무결성 재고정 연쇄가 그 경로에 도달해서도 안 된다.",
+      "verification": "inputs·deliverables 경로 목록의 R4·자산·이미지·아트 부재 확인, 변경 파일 목록 검토, 역방향 해시 참조 폐포 재계산"
+    },
+    {
+      "criterion_id": "AC-009",
+      "statement": "이 유닛은 가산적이어야 한다. 저장소에 이미 존재하는 파일의 수정 건수가 0이어야 하고, 산출물은 전부 신규 파일이어야 하며, 기존 Task·Artifact·Handoff·승인 보고서·상태 문서·런타임·시험·스크립트·정책·계약을 다시 쓰거나 고쳐서는 안 된다. scripts/validate_baseline.py에 단계를 추가하는 방식도 채택하지 않는다.",
+      "verification": "git status 기준 추적 파일 수정 0건 확인과 신규 미추적 파일 집합이 선언된 산출물 집합과 정확히 일치하는지의 확인"
+    },
+    {
+      "criterion_id": "AC-010",
+      "statement": "실제 비밀값과 개인정보가 코드·프롬프트·로그·증거·산출물 어디에도 기록되지 않아야 하고, 절대 호스트 경로, 호스트명, 사용자 계정명, 자격증명이 산출물에 포함되지 않아야 한다. 임시 작업 공간을 언급할 때에도 접두사와 개수만 기록하고 절대 경로는 기록하지 않는다.",
+      "verification": "python scripts/scan_secrets.py 실행 결과와 산출물 전체에 대한 절대 경로·호스트명·계정명 패턴 부재 단언"
+    },
+    {
+      "criterion_id": "AC-011",
+      "statement": "장래에 어느 검증 항목이라도 실패하면 readiness가 REWORK_REQUIRED로 강제되고 종결 권고가 차단되어야 한다. 이 규칙은 문장이 아니라 실행 가능한 경로로 존재해야 하며, 실패한 검증 결과를 담은 입력에 대해 종결 권고가 산출되지 않는다는 것을 시험이 확인해야 한다.",
+      "verification": "실패 결과를 주입한 합성 입력에 대해 종결 권고가 거부되고 REWORK_REQUIRED가 산출됨을 단언하는 신규 시험 사례"
+    },
+    {
+      "criterion_id": "AC-012",
+      "statement": "아티팩트와 핸드오프의 무결성, 그리고 감사 연쇄가 시험되어야 한다. artifacts/R2-QA-0006-artifact.json과 handoffs/R2-QA-0006-handoff.json이 스키마에 유효하고 선언 해시가 실제 파일과 일치하며, audit/events/R2-QA-0006-events.json이 audit/audit-event.schema.json에 유효하고 연쇄가 검증되어야 한다. 다섯 유닛의 기존 감사 기록도 교차 대조 대상이며 조작되지 않아야 한다.",
+      "verification": "신규 시험에서 스키마 검증, 해시 재계산 대조, 감사 연쇄 검증을 수행하고, 다섯 유닛 감사 기록의 정규 LF 해시가 이 계약의 inputs 선언값과 동일함을 단언한다"
+    },
+    {
+      "criterion_id": "AC-013",
+      "statement": "사용자의 착수 지시는 최종 QA 승인이 아니다. 산출물은 사용자 지시를 착수 허가와 저장소·PR 작업 흐름의 자율 수행 허가로만 기록해야 하고, USER 최종 QA 승인과 A-00 게이트 판정을 NOT_RUN 또는 미발행으로 유지해야 한다.",
+      "verification": "산출물의 승인 관련 필드 값 단언과 USER 승인 주장 문구 부재 확인"
+    },
+    {
+      "criterion_id": "AC-014",
+      "statement": "이 계약이 inputs로 고정한 54개 경로 전부가 이 유닛에 의해 수정되지 않아야 하고, 선언 해시와 실제 정규 LF 해시가 studio_core.integrity.hash_file 기준으로 일치해야 한다.",
+      "verification": "선언된 inputs 전체의 정규 LF 해시 재계산 대조와 변경 파일 목록 검토"
+    },
+    {
+      "criterion_id": "AC-015",
+      "statement": "신규 시험은 결정론적이어야 하고 파이썬 표준 라이브러리와 이미 선언된 런타임 의존성만 사용해야 한다. 새 외부 의존성, 패키지 설치, 서비스 기동, 외부 네트워크 접근, 무작위 시드 의존, 고정 대기를 도입해서는 안 되며, 반복 실행에서 모든 단언이 동일하게 통과해야 하고 실행이 남긴 임시 작업 공간은 종료 시점에 모두 회수되어야 한다.",
+      "verification": "import 목록 정적 검사, 네트워크·프로세스 실행·무작위·고정 대기 호출 부재 검사, 반복 실행 결과 동일성 확인, 실행 전후 임시 작업 공간 개수 동일성 단언"
+    },
+    {
+      "criterion_id": "AC-016",
+      "statement": "python scripts/validate_baseline.py와 python -m unittest discover -s tests -v 두 명령이 최종 상태에서 모두 성공해야 하고, 그 실행이 이 유닛의 Handoff Packet이 제안된 readiness로 갱신된 정확한 상태에 대해 수행되었음이 기록되어야 한다. 둘 중 하나라도 실패하면 즉시 REWORK_REQUIRED로 되돌리고 FAIL로 기록해야 한다.",
+      "verification": "두 표준 명령의 실제 실행 로그와 종료 코드, 그리고 실행 시점의 Handoff readiness 값 기록"
+    }
+  ],
+  "dependencies": [
+    "R2-RNG-0001",
+    "R2-DBC-0002",
+    "R2-NET-0003",
+    "R2-LOAD-0004",
+    "R2-SEC-0005"
+  ],
+  "budget": {
+    "max_cost_usd": 20.0,
+    "max_runtime_seconds": 14400,
+    "stop_on_limit": true
+  },
+  "approvers": [
+    "A-50",
+    "A-02",
+    "A-00",
+    "USER"
+  ],
+  "rollback": {
+    "strategy": "롤백 대상 목록. 계약 단계 신규 파일 3개: tasks/R2-QA-0006.json, artifacts/R2-QA-0006-artifact.json, handoffs/R2-QA-0006-handoff.json. 구현 단계 신규 파일 예정 4개: docs/approvals/R2-QA-0006-closure-report.md, docs/status/R2-QA-0006-closure-candidate.md, audit/events/R2-QA-0006-events.json, tests/test_r2_qa_closure.py. 이 유닛은 기존 파일을 수정하지 않으므로 역패치 대상 수정 파일이 없다. 경로 A(해당 변경의 커밋이 이미 존재하는 경우): 그 커밋 해시를 정확히 지정해 git revert <commit>으로 되돌리는 새 커밋을 만든다. 이력 재작성, 강제 푸시, 브랜치 삭제, git reset --hard, git checkout --는 사용하지 않는다. 경로 B(커밋 이전, 작업 트리에만 존재하는 경우): (1) 위 경로 전체를 저장소 밖 임시 디렉터리(%TEMP%/ts-studio-recovery/R2-QA-0006/<UTC-timestamp>/)에 원본 그대로 복사해 격리 사본을 먼저 만든다. 격리 사본은 저장소 안에 두지 않는다. (2) 신규 파일은 삭제 전에 격리 사본이 존재함을 확인한 뒤 해당 경로만 지정해 제거한다. (3) 기존 파일이 의도치 않게 변경된 경우에는 삭제하지 않고 git show f564bce:<경로>로 기준 커밋 내용을 읽어 파일 단위 쓰기로 복원한 뒤 studio_core.integrity.hash_file로 이 계약의 inputs 선언 해시와 일치함을 확인한다. 이 유닛은 런타임을 기동하지 않고 임시 SQLite·소켓·데이터 사본을 만들지 않으므로 저장소 밖 잔여물의 롤백 대상이 없다. 파괴적 Git·파일시스템 명령은 어느 단계에서도 사용하지 않는다. 두 경로 모두 마지막에 python scripts/validate_baseline.py와 python -m unittest discover -s tests -v를 실행해 직전 기준선 상태를 확인한다. Claude는 커밋과 푸시를 수행하지 않는다.",
+    "source_preserved": true,
+    "verification": "복원 후 git status가 R2-QA-0006 신규 산출물을 제외하고 f564bce 기준으로 깨끗해야 하며, 이 계약이 inputs로 고정한 54개 경로의 정규 LF 해시가 선언값과 일치하고, python scripts/validate_baseline.py와 python -m unittest discover -s tests -v를 재실행해 f564bce 시점 기준선이 그대로 통과함을 확인한다."
+  },
+  "security": {
+    "data_classification": "INTERNAL",
+    "contains_pii": false,
+    "workspace_access": "TASK_WRITE",
+    "network_policy": "NONE",
+    "secrets_policy": "NONE"
+  },
+  "assumptions": [
+    "이 계약의 상태는 READY다. operations/collaboration.yaml의 delegation_gate는 READY를 allowed_task_status로 명시하고 owner_agent_id A-20은 implementer 역할의 acts_for에 포함되므로 이 계약은 claude_agent 구현자에게 위임될 수 있다. 승격 시점까지 구현 산출물 4종은 한 건도 작성되지 않았다.",
+    "READY 승격의 근거는 두 가지다. Codex가 operations/collaboration.yaml의 issuer 역할로 이 계약을 발주했고, 사용자의 명시 지시가 착수와 저장소·PR 작업 흐름의 자율 수행을 허가했다. 두 근거는 착수 근거이지 완료 근거가 아니다. 이 문서는 A-50 최종 QA 게이트 판정, A-00 게이트 판정, USER 최종 QA 승인을 하나도 주장하지 않으며 그 판정은 전건 미발행이다.",
+    "위험 등급은 HIGH다. 이 유닛이 평가하는 대상이 RNG, 정산, 리플레이, 원장, 보안, 그리고 릴리스를 막을 수 있는 증거이기 때문이며 policies/risk.yaml의 classes.HIGH 정의와 mandatory_high_risk_reviewers에 따른다. 평가 대상이 HIGH이면 그 평가도 HIGH로 다룬다. 자동 등급 하향은 거부된다.",
+    "network_policy: NONE은 외부·운영 환경으로 나가는 어떤 네트워크 접근도 허가되지 않는다는 뜻이다. 다섯 PR의 호스티드 CI 결과는 A-50이 GitHub CLI로 취득해 공급한 외부 증거이며, Claude는 그 값을 재조회하지 않고 공급된 그대로 기록한다.",
+    "종결 후보라는 말은 종결이 아니다. 이 유닛의 산출물은 승인 주체가 종결 판정을 내리는 데 필요한 증거를 한자리에 모으고 교차 검증한 결과이며, 그 자체가 종결 판정이 아니다.",
+    "이 유닛은 가산적이다. 기존 Task, Artifact, Handoff, 승인 보고서, 상태 문서, 런타임, 시험, 스크립트, 정책, 계약, 아트, 자산, R4 파일을 하나도 수정하지 않으며, 신규 파일만 만들어 무결성 해시 연쇄를 일으키지 않는다.",
+    "다섯 유닛의 기존 단언은 약화되지 않는다. 교차 검증은 기존 시험을 그대로 재실행하거나 문서 간 값을 대조하는 방식으로만 수행하고, 통과시키기 위해 단언을 완화하거나 건너뛰는 경로는 채택하지 않는다.",
+    "R2-LOAD-0004가 남긴 임시 작업 공간 20건은 수정 이전 결함이 만든 것이고 저장소 밖 운영체제 임시 디렉터리에 있다. 독립적으로 제거되었음이 확인되기 전까지 로컬 정리 부채로 유지하며, 그 절대 경로는 어떤 산출물에도 기록하지 않는다. R2-SEC-0005의 현재 실행은 잔여 0건이다.",
+    "R4-ART-0007의 아트 권리와 통합은 별개의 차단된 작업이다. 이 유닛은 그 경로를 만들지도 수정하지도 검토하지도 않고 종결을 주장하지도 않는다.",
+    "실제 비밀값과 개인정보는 코드, 프롬프트, 로그, 증거, 산출물 어디에도 기록하지 않는다. 절대 호스트 경로, 호스트명, 사용자 계정명도 기록하지 않는다.",
+    "Claude는 이 작업에서 커밋, 푸시, 병합, 브랜치 변경, Git·GitHub 설정 변경, 운영·외부 대상 접근, 의존성 설치를 수행하지 않고 작업 트리 변경만 남긴다. 최종 QA 게이트 판정은 A-50과 USER에게 남는다.",
+    "이 계약이 READY로 승격된 뒤에도 scripts/validate_baseline.py의 validate_collaboration 단계는 이 유닛의 Handoff Packet에 READY_FOR_REVIEW 이상의 readiness와 두 표준 명령의 PASS 기록을 요구한다. 구현이 아직 수행되지 않았으므로 그 기록을 정직하게 만들 수 없고, Handoff는 REWORK_REQUIRED와 NOT_RUN을 유지하며 기준선 검증기와 전체 시험은 이 상태를 계속 거부한다. 이 실패는 구현 미완료를 감추지 않은 결과이며, 구현과 자체 점검을 마쳐 Handoff가 READY_FOR_REVIEW로 갱신될 때 해소된다."
+  ],
+  "open_decisions": [
+    "이 계약은 READY다. 남은 판정은 구현과 자체 점검 이후의 독립 검증, A-50 최종 QA 게이트, A-02·A-00 승인자 판정, USER 최종 QA 승인이며 이 문서가 그 판정을 대신하지 않는다.",
+    "A-50의 유닛별 독립 QA PASS 권고를 언제 발행할지는 Codex 최종 검증 이후 A-50의 판단이며 이 문서가 그 시점을 정하지 않는다.",
+    "R2-LOAD-0004가 남긴 임시 작업 공간 20건의 정리를 어느 유닛이 수행할지, 그리고 그 제거를 어떤 증거로 확인할지는 승인 주체의 판정이 필요하다.",
+    "R2 전체의 종결 판정 이후에 R4-ART-0007의 차단을 해제할지, 아트 권리와 통합을 어떤 순서로 다룰지는 이 문서가 정하지 않는다.",
+    "구현 이전 단계의 계약 3종이 기준선 검증기의 완료 게이트와 충돌하는 문제를 검증기 쪽에서 구분해 다룰지는 별도 결정이 필요하며 이 유닛이 정하지 않는다. 이 유닛에서는 구현과 자체 점검을 마쳐 Handoff를 READY_FOR_REVIEW로 갱신하는 경로로 해소한다.",
+    "R5 승인 이전이므로 상용 제작 일정, 기간, 출시일, 용량·SLO 약속, 배포 계획은 확정하지 않는다."
+  ],
+  "created_at": "2026-09-03T00:00:00Z",
+  "updated_at": "2026-09-03T00:00:00Z"
+}
