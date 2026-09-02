@@ -355,6 +355,15 @@ def validate_required_files() -> None:
         "handoffs/R4-UI-0006-handoff.json",
         "docs/games/R4-roulette-playable-slice.md",
         "docs/approvals/R4-UI-0006-validation-report.md",
+        # SYS-AST-0014 binary asset integrity gate. No asset directory appears here on
+        # purpose: the gate replaces a "zero binaries" assertion with an invariant, and an
+        # empty tree is a valid, passing input to it.
+        "policies/binary-assets.yaml",
+        "contracts/asset-manifest.schema.json",
+        "studio_core/binary_assets.py",
+        "tests/test_binary_assets.py",
+        "docs/operations/SYS-AST-0014-binary-asset-integrity-gate.md",
+        "audit/events/SYS-AST-0014-events.json",
     ]
     missing = [path for path in required if not (ROOT / path).is_file()]
     if missing:
@@ -717,12 +726,16 @@ def validate_content_integrity() -> dict[str, Any]:
         raise BaselineValidationError("binary content must be hashed as raw bytes")
 
     kinds: dict[str, int] = {"text": 0, "binary": 0}
+    binaries: list[str] = []
     for path in repository_files():
         relative = path.relative_to(ROOT).as_posix()
         try:
-            kinds[classify(path.read_bytes(), label=relative)] += 1
+            kind = classify(path.read_bytes(), label=relative)
         except IntegrityError as exc:
             raise BaselineValidationError(str(exc)) from exc
+        kinds[kind] += 1
+        if kind == "binary":
+            binaries.append(relative)
 
     verified: list[str] = []
     external: list[str] = []
@@ -738,7 +751,75 @@ def validate_content_integrity() -> dict[str, Any]:
             raise BaselineValidationError(f"{source}: {decision.message}")
         verified.append(f"{source} -> {relative}")
 
-    return {"verified": verified, "external": external, "files": kinds}
+    # SYS-AST-0014: the classification above used to end at a count, and the R2 suite asserted
+    # that count was zero. A count is not an integrity property -- it rejects the first
+    # legitimate, fully traced PNG and would admit anything at all once relaxed. Every binary
+    # the walk found is put through the default-deny gate instead, and the verified paths are
+    # published alongside the existing text counts, reference resolutions and hash checks
+    # rather than in place of them.
+    from studio_core.binary_assets import format_rejections, validate_binary_assets  # noqa: PLC0415
+
+    gate = validate_binary_assets(ROOT, binaries, manifest_validator=validate_instance)
+    if not gate.ok:
+        raise BaselineValidationError(f"binary asset gate rejected {len(gate.rejections)} item(s): {format_rejections(gate.rejections)}")
+
+    return {"verified": verified, "external": external, "files": kinds, "binary_assets": gate.to_dict()}
+
+
+def validate_binary_asset_policy(root: Path | None = None) -> dict[str, Any]:
+    """Validate the SYS-AST-0014 binary asset policy, its manifest schema and its Git pinning.
+
+    Structural only, and deliberately separate from the per-file gate in
+    ``validate_content_integrity``: the policy has to be well formed and default-deny even when
+    the repository holds no binary at all, which is exactly the state it is introduced in.
+
+    ``root`` defaults to the repository. Pointing it at a copy lets the negative tests prove a
+    weakened policy or an unpinned extension is actually rejected without writing to tracked
+    files.
+    """
+
+    from studio_core.binary_assets import (  # noqa: PLC0415
+        BinaryAssetError,
+        load_policy,
+        unpinned_extensions,
+    )
+
+    base = ROOT if root is None else Path(root)
+
+    try:
+        policy = load_policy(base)
+    except BinaryAssetError as exc:
+        raise BaselineValidationError(f"policies/binary-assets.yaml: [{exc.code}] {exc.message}") from exc
+
+    schema_relative = policy.manifest_schema
+    schema_path = base / schema_relative
+    if not schema_path.is_file():
+        raise BaselineValidationError(f"the binary asset policy names a missing manifest schema: {schema_relative}")
+    with schema_path.open("r", encoding="utf-8") as handle:
+        schema = json.load(handle)
+    if not isinstance(schema, dict):
+        raise BaselineValidationError(f"{schema_relative}: root must be an object")
+    validate_schema_structure(schema, schema_relative)
+    entry_schema = schema.get("$defs", {}).get("assetEntry", {})
+    for field in ("path", "content_hash", "byte_size"):
+        if field not in entry_schema.get("required", []):
+            raise BaselineValidationError(f"{schema_relative}: an asset entry must require {field}")
+
+    attributes_path = base / ".gitattributes"
+    if not attributes_path.is_file():
+        raise BaselineValidationError(".gitattributes is required to pin allowed binary extensions")
+    unpinned = unpinned_extensions(policy, attributes_path.read_text(encoding="utf-8"))
+    if unpinned:
+        raise BaselineValidationError(
+            f".gitattributes does not pin these policy-allowed extensions as binary: {list(unpinned)!r}"
+        )
+
+    return {
+        "policy_id": policy.policy_id,
+        "policy_version": policy.policy_version,
+        "allowed_roots": list(policy.allowed_roots),
+        "allowed_extensions": list(policy.allowed_extensions),
+    }
 
 
 def validate_collaboration(agent_definitions: dict[str, dict[str, Any]]) -> dict[str, Any]:
@@ -2620,6 +2701,8 @@ def run_validation() -> list[str]:
     passed.append("SYS-010 R0 사용자 최종 승인")
     validate_r1_roulette()
     passed.append("R1 룰렛 규칙·경제 후보 기준선")
+    validate_binary_asset_policy()
+    passed.append("SYS-AST-0014 바이너리 자산 기본 거부 정책·매니페스트 스키마·.gitattributes 고정")
     validate_content_integrity()
     passed.append("산출물 content_hash 정규 표현 무결성 (LF 정규화 텍스트·원시 바이트 이진)")
     validate_collaboration(agent_definitions)

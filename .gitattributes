@@ -6,6 +6,13 @@
 
 # Binary assets must never be line-ending normalised: studio_core/integrity.py hashes their
 # raw bytes, and Git must store them the same way.
+#
+# SYS-AST-0014: every extension on the policies/binary-assets.yaml allowlist must appear below
+# with `binary` or `-text`. studio_core/binary_assets.py cross-checks the two and fails the
+# baseline if an allowed extension is not pinned here -- an unpinned extension would let Git's
+# `* text=auto` rewrite CRLF inside an asset, so the committed blob and the raw bytes the
+# manifest declares would no longer be the same thing. Extensions listed here but absent from
+# the policy allowlist stay refused by the gate; this file widens nothing on its own.
 *.png binary
 *.jpg binary
 *.jpeg binary

@@ -1,0 +1,187 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "SYS-AST-0014",
+  "chain_namespace": "SYSAST0014",
+  "summary": "Binary asset policy introduction, gate integration, the zero-binary pass verdict, the rejection codes the negative suite exercises, the validation replay, the deferral of the Artifact Contract and Handoff Packet to a second pass, and their submission to A-50 in that second pass, recorded as a hash-linked audit chain.",
+  "events": [
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-02T00:00:00Z",
+      "actor_type": "USER",
+      "actor_id": "USER",
+      "task_id": "SYS-AST-0014",
+      "action": "TASK_CONTRACT_ISSUED_READY",
+      "resource_refs": [
+        "repo://tasks/SYS-AST-0014.json",
+        "repo://contracts/task.schema.json"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "BINARY-ASSETS-001/1.0.0",
+      "request_hash": "sha256:6d162f6a6d5642b1364bed690b1ce4d12279674420677602cfb04423744c1f2b",
+      "contains_secret": false,
+      "event_id": "AE-SYSAST0014-0001",
+      "previous_event_hash": null,
+      "event_hash": "sha256:6a39669b923f3278b999c0142befce17bff996ebf4c6d5d20800ada8b1e5b511"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "SECURITY",
+      "timestamp": "2026-09-02T00:05:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "claude_code:implementer",
+      "task_id": "SYS-AST-0014",
+      "action": "BINARY_ASSET_POLICY_INTRODUCED",
+      "resource_refs": [
+        "repo://policies/binary-assets.yaml",
+        "repo://contracts/asset-manifest.schema.json",
+        "repo://.gitattributes"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "BINARY-ASSETS-001/1.0.0",
+      "request_hash": "sha256:267b320ba6d0cf025488fffb44e2735b31e48aa5571d256533183e1f0f6098d6",
+      "contains_secret": false,
+      "event_id": "AE-SYSAST0014-0002",
+      "previous_event_hash": "sha256:6a39669b923f3278b999c0142befce17bff996ebf4c6d5d20800ada8b1e5b511",
+      "event_hash": "sha256:673fe032bdfa8f536e6c644d8653b5bb7667bd9b2f9bbb5d34faaab255b27d14"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "ARTIFACT",
+      "timestamp": "2026-09-02T00:10:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "claude_code:implementer",
+      "task_id": "SYS-AST-0014",
+      "action": "BINARY_ASSET_GATE_INTEGRATED",
+      "resource_refs": [
+        "repo://studio_core/binary_assets.py",
+        "repo://scripts/validate_baseline.py",
+        "repo://tests/test_binary_assets.py",
+        "repo://tests/test_integrity.py",
+        "repo://docs/operations/SYS-AST-0014-binary-asset-integrity-gate.md"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "BINARY-ASSETS-001/1.0.0",
+      "request_hash": "sha256:0fd2221f14495ac4bd2c7cc8765ec9afc3ca7917a3364b114b2de31ca9df1a94",
+      "contains_secret": false,
+      "event_id": "AE-SYSAST0014-0003",
+      "previous_event_hash": "sha256:673fe032bdfa8f536e6c644d8653b5bb7667bd9b2f9bbb5d34faaab255b27d14",
+      "event_hash": "sha256:4ae45ed560f4dcba62c09054faa912d69b69c31971355e2ddfe6d898aae2af04"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "SECURITY",
+      "timestamp": "2026-09-02T00:15:00Z",
+      "actor_type": "SERVICE",
+      "actor_id": "service:binary-asset-gate",
+      "task_id": "SYS-AST-0014",
+      "action": "BINARY_ASSET_GATE_PASS_RECORDED",
+      "resource_refs": [
+        "repo://policies/binary-assets.yaml",
+        "repo://scripts/validate_baseline.py",
+        "assets://verified-binary-count/0"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "BINARY-ASSETS-001/1.0.0",
+      "request_hash": "sha256:21ce553368e0c22d745e1788cd54c78e3d963ac73d8e3b15328db0478728c25e",
+      "contains_secret": false,
+      "event_id": "AE-SYSAST0014-0004",
+      "previous_event_hash": "sha256:4ae45ed560f4dcba62c09054faa912d69b69c31971355e2ddfe6d898aae2af04",
+      "event_hash": "sha256:db8218c1cb3cedcb78740ca941f684dee28da8bb090dacf939baa10e22baee7b"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "SECURITY",
+      "timestamp": "2026-09-02T00:20:00Z",
+      "actor_type": "SERVICE",
+      "actor_id": "service:binary-asset-gate",
+      "task_id": "SYS-AST-0014",
+      "action": "BINARY_ASSET_GATE_REJECTION_RECORDED",
+      "resource_refs": [
+        "repo://tests/test_binary_assets.py",
+        "gate://rejection-code/ASSET_NOT_ALLOWLISTED",
+        "gate://rejection-code/ASSET_SYMLINK",
+        "gate://rejection-code/ASSET_PATH_ESCAPE",
+        "gate://rejection-code/ASSET_LFS_POINTER",
+        "gate://rejection-code/ASSET_CREDENTIAL_LIKE",
+        "gate://rejection-code/ASSET_UNTRACKED_BY_TASK",
+        "gate://rejection-code/ASSET_HASH_UNDECLARED",
+        "gate://rejection-code/ASSET_HASH_MISMATCH",
+        "gate://rejection-code/MANIFEST_SCHEMA_INVALID",
+        "gate://rejection-code/EXTENSION_NOT_PINNED_BINARY"
+      ],
+      "decision": "DENY",
+      "policy_version": "BINARY-ASSETS-001/1.0.0",
+      "request_hash": "sha256:f27ebd67b3574d83416d280b800c9e44591cc6cc1627a1bbca6b31985d67a0d3",
+      "contains_secret": false,
+      "event_id": "AE-SYSAST0014-0005",
+      "previous_event_hash": "sha256:db8218c1cb3cedcb78740ca941f684dee28da8bb090dacf939baa10e22baee7b",
+      "event_hash": "sha256:aa2ac09b01a1516e7cf0f6e435fd10e92c5914c43f4206a27c8d98f158420ef1"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-02T00:25:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "claude_code:implementer",
+      "task_id": "SYS-AST-0014",
+      "action": "VALIDATION_COMMANDS_REPLAYED",
+      "resource_refs": [
+        "repo://scripts/validate_baseline.py",
+        "repo://tests/test_binary_assets.py",
+        "repo://tests/test_integrity.py"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "BINARY-ASSETS-001/1.0.0",
+      "request_hash": "sha256:2a2900c94208c31c66c3309e9e814e2a575caecbd16260d47ad3b2ba81b0a855",
+      "contains_secret": false,
+      "event_id": "AE-SYSAST0014-0006",
+      "previous_event_hash": "sha256:aa2ac09b01a1516e7cf0f6e435fd10e92c5914c43f4206a27c8d98f158420ef1",
+      "event_hash": "sha256:084fd32012439bade81f8626c247f8e20c3d373eba7200411198504fadd7bc78"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "ARTIFACT",
+      "timestamp": "2026-09-02T00:30:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "claude_code:implementer",
+      "task_id": "SYS-AST-0014",
+      "action": "ARTIFACT_AND_HANDOFF_DEFERRED_TO_SECOND_PASS",
+      "resource_refs": [
+        "repo://tasks/SYS-AST-0014.json",
+        "repo://operations/collaboration.yaml",
+        "pending://artifacts/SYS-AST-0014-artifact.json",
+        "pending://handoffs/SYS-AST-0014-handoff.json"
+      ],
+      "decision": "BLOCK",
+      "policy_version": "BINARY-ASSETS-001/1.0.0",
+      "request_hash": "sha256:e930f8b9233df51c7492ae91b373865c519c7a56d8835d5e6f50fc96ecacb238",
+      "contains_secret": false,
+      "event_id": "AE-SYSAST0014-0007",
+      "previous_event_hash": "sha256:084fd32012439bade81f8626c247f8e20c3d373eba7200411198504fadd7bc78",
+      "event_hash": "sha256:3401a1c4931c71ebb2fda3d60b72b9a26091f6f97af2e75dbac0153f430b8db0"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "ARTIFACT",
+      "timestamp": "2026-09-02T01:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "claude_code:implementer",
+      "task_id": "SYS-AST-0014",
+      "action": "ARTIFACT_AND_HANDOFF_SUBMITTED",
+      "resource_refs": [
+        "repo://artifacts/SYS-AST-0014-artifact.json",
+        "repo://handoffs/SYS-AST-0014-handoff.json",
+        "repo://tasks/SYS-AST-0014.json",
+        "repo://operations/collaboration.yaml"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "BINARY-ASSETS-001/1.0.0",
+      "request_hash": "sha256:8521c2301a7a2d2dbf09c8ca4613435271504ff3aca39af5b6f4ddc83c630365",
+      "contains_secret": false,
+      "event_id": "AE-SYSAST0014-0008",
+      "previous_event_hash": "sha256:3401a1c4931c71ebb2fda3d60b72b9a26091f6f97af2e75dbac0153f430b8db0",
+      "event_hash": "sha256:af30808180a135eb682281fdfe53e9e07f475f4f64a59cea09be501cfe11a9e9"
+    }
+  ]
+}

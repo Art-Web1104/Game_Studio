@@ -194,8 +194,45 @@ class ContentIntegrityValidatorTests(unittest.TestCase):
     def test_the_repository_passes_content_integrity(self) -> None:
         report = validate_content_integrity()
         self.assertTrue(report["verified"])
-        self.assertEqual(report["files"]["binary"], 0)
         self.assertGreater(report["files"]["text"], 0)
+
+    def test_binary_admission_is_an_invariant_rather_than_a_count(self) -> None:
+        # This replaces the equality assertion that pinned the classified binary count to
+        # zero. That assertion was not an integrity property: it would reject the first
+        # legitimate PNG traced through a READY task, an Artifact Contract and a raw-byte
+        # SHA-256, and relaxing it to any other number would admit binaries nobody declared.
+        # The property that actually holds is that every binary the walk classified was
+        # admitted by the default-deny gate. The removed expression is deliberately not
+        # quoted here: ``test_the_hardcoded_zero_binary_assertion_is_gone`` greps this file
+        # for it, so spelling it out in prose would make the guard fail on its own comment.
+        report = validate_content_integrity()
+        gate = report["binary_assets"]
+        self.assertEqual(gate["rejections"], [])
+        self.assertEqual(len(gate["verified"]), gate["count"])
+        # With no rejections, every binary the walk classified was admitted. The gate also
+        # admits files that merely occupy an allowed asset path, so its count is a lower
+        # bound on, not an equal of, the classified binary count.
+        self.assertGreaterEqual(gate["count"], report["files"]["binary"])
+        self.assertEqual(sorted(gate["verified"]), gate["verified"])
+        for relative in gate["verified"]:
+            self.assertTrue((ROOT / relative).is_file(), relative)
+
+    def test_the_report_still_carries_every_pre_existing_field(self) -> None:
+        # AC-013: exposing binary paths must not weaken the checks that were already there.
+        report = validate_content_integrity()
+        self.assertEqual(set(report), {"verified", "external", "files", "binary_assets"})
+        self.assertEqual(set(report["files"]), {"text", "binary"})
+        self.assertGreater(report["files"]["text"], 0)
+        self.assertTrue(all(" -> " in item for item in report["verified"]))
+        self.assertIn("policy_version", report["binary_assets"])
+
+    def test_the_hardcoded_zero_binary_assertion_is_gone(self) -> None:
+        # The needles are assembled at runtime so this check does not match itself.
+        source = (ROOT / "tests/test_integrity.py").read_text(encoding="utf-8")
+        binary_count = '["files"]' + '["binary"]'
+        self.assertNotIn(binary_count + ", 0", source)
+        self.assertNotIn(binary_count + " == 0", source)
+        self.assertIn(binary_count, source)
 
     def test_every_repo_reference_resolves_to_an_existing_file(self) -> None:
         for source, uri, expected in hashed_content_references():

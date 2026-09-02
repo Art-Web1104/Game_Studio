@@ -1,0 +1,265 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "SYS-AST-0014",
+  "project_id": "casino-core",
+  "title": "저장소 바이너리 자산 무결성 게이트 도입",
+  "goal": "tests/test_integrity.py가 report['files']['binary'] == 0을 하드코딩하고 있어 Task·Artifact·매니페스트 해시로 완전히 추적되는 최초의 정당한 PNG/WebP 아트 자산조차 검증에 실패하는 결함을 제거한다. 영(0) 대신 기본 거부(default-deny) 바이너리 자산 정책과 불변식 기반 검증을 도입해, 승인된 경로·확장자에 있고 READY 작업 산출물과 스키마에 유효한 Artifact Contract 또는 자산 매니페스트의 실제 원시 바이트 SHA-256에 추적되는 바이너리만 통과시키고, 그 밖의 모든 경우는 거부하며, 기존 텍스트 LF 정규화 무결성 동작과 바이너리가 하나도 없는 현재 상태의 통과 여부는 그대로 보존한다.",
+  "owner_agent_id": "A-02",
+  "status": "READY",
+  "risk_class": "MEDIUM",
+  "inputs": [
+    {
+      "uri": "repo://docs/constitution/studio-constitution-v1.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:62f8a8cbf6fc70054300de9e90fed8974b9a310d140831d3d6af98292f5b2e9e"
+    },
+    {
+      "uri": "repo://docs/decisions/ADR-0003-claude-only-programming.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:6c1e345ea9555db2ec9f626dbd598845176df129d236fc9d7f64782a5cea0bdb"
+    },
+    {
+      "uri": "repo://operations/collaboration.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:03031cf600fe847737d535c364f183b6f0031464fc3a8fdd076b79826506733a"
+    },
+    {
+      "uri": "repo://docs/operations/SYS-CLD-0011-codex-claude-collaboration.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:7549bb730ff21734572cc075cc570479765e75746a9608146a41954b47ac4172"
+    },
+    {
+      "uri": "repo://contracts/task.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:32158d90825790b90929b5c1464140651c201b603745bc4bafa27e446d723527"
+    },
+    {
+      "uri": "repo://contracts/artifact.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:44d972cb0db8a8b455d9a014207d712fae3ce6e7126590371af76aad79a68195"
+    },
+    {
+      "uri": "repo://contracts/handoff.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:088025147e8cdf3a9addafc46b6c7520b4d9216db4604d0a34ef29ece274faf2"
+    },
+    {
+      "uri": "repo://studio_core/integrity.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:a4288779b224cf49bf0d8756945e44a8a9f2220515e4c32432cbad6a8cee8558"
+    },
+    {
+      "uri": "repo://scripts/validate_baseline.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:08756d3ac6fda7d70401957d19d33b8ba6456a49863e71f15be7179625f90138"
+    },
+    {
+      "uri": "repo://tests/test_integrity.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:aafe1e0bf75709b8698b6083ddfed2a5a15107d430dadd901241aa384fbb4243"
+    },
+    {
+      "uri": "repo://.gitattributes",
+      "version": "1.0.0",
+      "content_hash": "sha256:bb809b1676d2f217ea31ead2b7f3fd7bc9052b17144aba32c20dace88ef8cba8"
+    },
+    {
+      "uri": "repo://policies/security.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:c85fd12606c9d52cfb555b5d9a11b4f83b16a2247cd9dddffb3432a1fb34adac"
+    },
+    {
+      "uri": "repo://policies/audit.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:5b9b87595424162de8b495058cc80aa0ff276024a20b3bf55172ed364e43c1e4"
+    },
+    {
+      "uri": "repo://audit/audit-event.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:7e0f6b22977048dc40c39756293201042870a188c5f64926d7606e4b4da6c1eb"
+    },
+    {
+      "uri": "repo://tasks/SYS-IMG-0013.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:8f8134146cf00581de4c657689c715bd7134eae4f283e6c7762cd6892448eda4"
+    }
+  ],
+  "deliverables": [
+    {
+      "name": "binary-asset-policy",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://policies/binary-assets.yaml"
+    },
+    {
+      "name": "asset-manifest-schema",
+      "artifact_type": "SCHEMA",
+      "target_uri": "repo://contracts/asset-manifest.schema.json"
+    },
+    {
+      "name": "gitattributes-binary-treatment",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://.gitattributes"
+    },
+    {
+      "name": "binary-asset-gate-module",
+      "artifact_type": "CODE",
+      "target_uri": "repo://studio_core/binary_assets.py"
+    },
+    {
+      "name": "baseline-binary-gate-integration",
+      "artifact_type": "CODE",
+      "target_uri": "repo://scripts/validate_baseline.py"
+    },
+    {
+      "name": "integrity-invariant-tests",
+      "artifact_type": "CODE",
+      "target_uri": "repo://tests/test_integrity.py"
+    },
+    {
+      "name": "binary-asset-gate-tests",
+      "artifact_type": "CODE",
+      "target_uri": "repo://tests/test_binary_assets.py"
+    },
+    {
+      "name": "binary-asset-gate-guide",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://docs/operations/SYS-AST-0014-binary-asset-integrity-gate.md"
+    },
+    {
+      "name": "sys-ast-0014-audit-events",
+      "artifact_type": "DATASET",
+      "target_uri": "repo://audit/events/SYS-AST-0014-events.json"
+    },
+    {
+      "name": "sys-ast-0014-artifact-contract",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://artifacts/SYS-AST-0014-artifact.json"
+    },
+    {
+      "name": "sys-ast-0014-handoff-packet",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://handoffs/SYS-AST-0014-handoff.json"
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "criterion_id": "AC-001",
+      "statement": "바이너리 자산 정책은 기본 거부여야 한다. 정책에 명시적으로 허용된 루트와 확장자 조합에 속하지 않는 저장소 내 모든 바이너리 파일은 검증 실패를 일으켜야 하며, 초기 허용 목록은 assets/**/*.png와 assets/**/*.webp만 포함한다.",
+      "verification": "policies/binary-assets.yaml 허용 목록 단정 테스트와, 허용 목록 밖 확장자·경로 픽스처가 거부되는 네거티브 테스트"
+    },
+    {
+      "criterion_id": "AC-002",
+      "statement": "허용된 모든 바이너리 확장자는 .gitattributes에서 binary(또는 -text) 처리로 고정되어 있어야 하며, 정책 허용 목록에 있으나 .gitattributes에 바이너리 지정이 없는 확장자가 존재하면 검증이 실패해야 한다.",
+      "verification": "정책 허용 확장자와 .gitattributes 지시자의 교차 검사 테스트 및 지시자 제거 시 실패하는 네거티브 테스트"
+    },
+    {
+      "criterion_id": "AC-003",
+      "statement": "모든 바이너리 자산은 status가 READY 또는 그 이후 단계인 Task Contract의 deliverable에 추적 가능해야 하며, 어떤 작업 산출물에도 참조되지 않는 바이너리는 거부되어야 한다.",
+      "verification": "작업 deliverable 역참조 해석 테스트와 미참조 바이너리 픽스처 거부 네거티브 테스트"
+    },
+    {
+      "criterion_id": "AC-004",
+      "statement": "각 바이너리 자산은 스키마에 유효한 Artifact Contract의 primary content_hash 또는 component 해시, 혹은 해당 작업의 자산 매니페스트 항목 중 최소 하나에 sha256:<64 hex> 형식으로 선언되어야 하며, 선언된 값은 파일의 실제 원시 바이트 SHA-256과 일치해야 한다.",
+      "verification": "선언 해시와 raw-byte 재계산 값의 동등성 단정 테스트"
+    },
+    {
+      "criterion_id": "AC-005",
+      "statement": "바이너리 자산의 해시는 텍스트 정규화 경로를 거치지 않고 원시 바이트로만 계산되어야 하며, CRLF 시퀀스를 포함한 바이너리가 LF 변형과 동일한 해시를 갖게 되면 검증이 실패해야 한다.",
+      "verification": "CRLF/LF 바이너리 변형이 서로 다른 해시를 갖는 단정 테스트와 정규화 적용 시 실패하는 회귀 테스트"
+    },
+    {
+      "criterion_id": "AC-006",
+      "statement": "매니페스트가 없거나, 해당 자산 항목이 매니페스트에 없거나, 해시 필드가 누락된 경우는 모두 거부되어야 하며 통과로 처리되어서는 안 된다.",
+      "verification": "매니페스트 부재·항목 부재·해시 필드 부재 세 가지 네거티브 픽스처 테스트"
+    },
+    {
+      "criterion_id": "AC-007",
+      "statement": "선언된 해시와 실제 파일 바이트가 불일치하면 자산 경로와 기대·실제 해시를 포함한 명확한 오류로 거부되어야 한다.",
+      "verification": "1바이트 변조 픽스처에 대한 해시 불일치 거부 테스트와 오류 메시지 내용 검사"
+    },
+    {
+      "criterion_id": "AC-008",
+      "statement": "심볼릭 링크, 저장소 루트를 벗어나는 경로, 상위 디렉터리 이스케이프(..), 절대 경로 매니페스트 항목은 대상 파일을 읽기 전에 거부되어야 한다.",
+      "verification": "symlink 및 경로 이스케이프 픽스처의 사전 거부 테스트"
+    },
+    {
+      "criterion_id": "AC-009",
+      "statement": "자격증명처럼 보이는 바이트열을 포함한 바이너리는 확장자와 경로가 허용 목록에 있어도 거부되어야 한다.",
+      "verification": "studio_core 비밀값 스캔 규칙을 바이너리 바이트에 적용한 credential-like 픽스처 거부 테스트"
+    },
+    {
+      "criterion_id": "AC-010",
+      "statement": "Git LFS 포인터 텍스트가 실제 바이너리 자산 자리에 치환된 경우는 거부되어야 하며, 포인터 파일의 해시가 원본 자산 해시를 대신 만족시키는 일이 없어야 한다.",
+      "verification": "LFS 포인터 치환 픽스처 거부 테스트"
+    },
+    {
+      "criterion_id": "AC-011",
+      "statement": "tests/test_integrity.py의 report['files']['binary'] == 0 하드코딩 단정은 제거되고, 바이너리 개수가 아니라 정책 불변식을 검사하는 테스트로 대체되어야 한다. 저장소에 바이너리가 하나도 없는 현재 상태에서도 모든 검증은 통과해야 한다.",
+      "verification": "해당 단정 문자열 부재 검사와, 바이너리 0개 저장소 상태에서의 전체 검증 통과 확인"
+    },
+    {
+      "criterion_id": "AC-012",
+      "statement": "기존 텍스트 LF 정규화 무결성 동작은 그대로 보존되어야 한다. LF/CRLF 동치성, 단독 CR 보존, 스니프 창 밖 NUL 처리, 모호 인코딩 거부, git blob 일치, 변조 거부 테스트는 모두 변경 없이 통과해야 한다.",
+      "verification": "기존 무결성 테스트 클래스의 무수정 통과와 텍스트 경로 diff 검토"
+    },
+    {
+      "criterion_id": "AC-013",
+      "statement": "무결성 리포트는 검증된 바이너리 개수와 경로 목록을 노출해야 하며, 이 노출이 기존 검사(텍스트 개수, verified 플래그, 참조 해석, 해시 드리프트)를 약화시켜서는 안 된다.",
+      "verification": "리포트 필드 계약 테스트와 기존 검사 항목의 존속 단정 테스트"
+    },
+    {
+      "criterion_id": "AC-014",
+      "statement": "이 작업은 어떤 아트·바이너리 자산도 저장소에 추가하지 않는다. 네거티브 픽스처는 임시 디렉터리에서 런타임에 생성되어야 하며 커밋 대상 바이너리로 남아서는 안 된다.",
+      "verification": "작업 전후 저장소 바이너리 파일 목록 동일성 검사와 tests 픽스처 생성 방식 검토"
+    },
+    {
+      "criterion_id": "AC-015",
+      "statement": "이 작업은 providers/registry.yaml, providers/routing-policy.yaml의 라우트, apps/roulette_web 및 games/roulette의 규칙·RNG·정산 코드, 기존 아트 후보 자산의 상태를 변경하지 않아야 한다.",
+      "verification": "해당 경로에 대한 diff 부재 확인과 R1·R2·R4 검증 단계의 무변경 통과"
+    },
+    {
+      "criterion_id": "AC-016",
+      "statement": "정책 도입, 게이트 통과·거부 판정은 audit/audit-event.schema.json에 유효한 감사 이벤트로 기록되고 contains_secret은 false여야 하며, 스키마에 유효한 Artifact Contract와 Handoff Packet이 제출되고 생성자와 독립 검증자는 분리되어야 한다.",
+      "verification": "감사 이벤트 스키마 검증, 비밀값 부재 검사, operations/collaboration.yaml 분리 규칙 대조"
+    },
+    {
+      "criterion_id": "AC-017",
+      "statement": "python scripts/validate_baseline.py와 python -m unittest discover -s tests -v 두 명령이 모두 성공해야 한다.",
+      "verification": "두 표준 검증 명령의 실행 로그"
+    }
+  ],
+  "dependencies": ["SYS-CLD-0011", "SYS-IMG-0013"],
+  "budget": {
+    "max_cost_usd": 10.0,
+    "max_runtime_seconds": 7200,
+    "stop_on_limit": true
+  },
+  "approvers": ["A-20", "A-50", "USER"],
+  "rollback": {
+    "strategy": "policies/binary-assets.yaml, contracts/asset-manifest.schema.json, studio_core/binary_assets.py, tests/test_binary_assets.py, docs/operations/SYS-AST-0014-binary-asset-integrity-gate.md, audit/events/SYS-AST-0014-events.json, artifacts/SYS-AST-0014-artifact.json, handoffs/SYS-AST-0014-handoff.json 신규 파일을 삭제하고, 수정한 scripts/validate_baseline.py, tests/test_integrity.py, .gitattributes를 직전 커밋 상태로 되돌린다. 세 파일의 원본은 이 계약의 inputs에 기록된 content_hash로 복원 여부를 확인한다. 바이너리 자산을 추가하지 않고 커밋·푸시도 하지 않으므로 작업 트리 복원만으로 완전 복구된다.",
+    "source_preserved": true,
+    "verification": "복원 후 inputs의 세 파일 해시 재계산 일치 확인과 python scripts/validate_baseline.py, python -m unittest discover -s tests -v 재실행"
+  },
+  "security": {
+    "data_classification": "INTERNAL",
+    "contains_pii": false,
+    "workspace_access": "DEPARTMENT_WRITE",
+    "network_policy": "NONE",
+    "secrets_policy": "NONE"
+  },
+  "assumptions": [
+    "저장소에는 현재 추적되는 바이너리 파일이 없으며, 이 작업은 게이트만 도입하고 자산은 추가하지 않는다.",
+    "초기 허용 루트와 확장자는 assets/**/*.png와 assets/**/*.webp로 한정하고, 확장은 별도 승인 작업으로 처리한다.",
+    "바이너리 해시는 텍스트 LF 정규화를 적용하지 않은 원시 바이트 SHA-256이며 sha256: 접두사를 사용한다.",
+    "Git LFS는 현재 저장소에서 사용하지 않으며 LFS 포인터의 출현은 치환 공격 신호로 취급한다.",
+    "자산 매니페스트는 작업 단위로 존재하고 경로와 원시 바이트 해시를 함께 선언한다."
+  ],
+  "open_decisions": [
+    "PNG/WebP 이외 확장자(오디오, 폰트, 3D)의 허용 시점과 승인 절차는 실제 자산 수요가 생길 때 A-30과 사용자가 별도로 결정한다.",
+    "자산 매니페스트를 작업별 파일로 둘지 단일 저장소 매니페스트로 통합할지는 Phase B 설계 검토에서 확정한다.",
+    "대용량 자산에 대한 Git LFS 도입 여부는 이 작업 범위 밖이며 후속 결정으로 남긴다.",
+    "R5 이전이므로 상용 제작 일정과 출시일은 확정하지 않는다."
+  ],
+  "created_at": "2026-09-02T00:00:00Z",
+  "updated_at": "2026-09-02T00:00:00Z"
+}
