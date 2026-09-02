@@ -1,0 +1,131 @@
+{
+  "schema_version": "1.0.0",
+  "handoff_id": "HO-SYS-IMG-0013-001",
+  "task_id": "SYS-IMG-0013",
+  "from_agent_id": "A-02",
+  "to_agent_id": "A-50",
+  "created_at": "2026-09-02T00:00:00Z",
+  "summary": "Codex 내장 ImageGen을 capabilities [image] 하나만 갖는 별도 provider_id codex_imagegen으로 providers/registry.yaml에 등록하고, 차단 프로브 4개가 모두 PASS인 스키마 유효 연결 증거가 기록된 뒤에만 image 라우트를 layer_ai에서 codex_imagegen으로 전환했다. claude_agent 항목과 code·reasoning·evaluation 라우트, codex_primary의 DISABLED 상태와 사유, layer_ai의 DISABLED_UNTIL_CONFIGURED 상태는 수정하지 않았고 layer_ai는 어떤 라우트에도 등장하지 않는다. 저장소에는 secret-ref:// 참조와 managed_workspace_auth 표기만 남고 비밀값은 기록하지 않았다. 관리형 경로가 모델 이름·버전과 호출별 과금 사용량을 노출하지 않아 unavailable로 남겼고 임의의 모델명·버전·금액은 지어내지 않았다. 등록 이전에 생성된 이미지는 연결 확인용 프로브 또는 후보 자산으로만 표기했고 정식 산출물이나 프로덕션 승인 증거로 승격하지 않았다. 사람 승인·커밋·푸시·호스티드 CI 실행은 아직 없다.",
+  "artifact_refs": ["ART-SYS-IMG-0013-0001"],
+  "assumptions": [
+    "사용자가 'Codex ImageGen 아트 전용 공급자 등록 승인하고 사용량이 많아지면 레이어ai도 연결하자'로 image 능력 한정 등록을 명시적으로 승인했다.",
+    "Codex 내장 ImageGen은 별도 API 키 발급 없이 관리형 작업 공간 인증으로 접근하므로 저장소에는 secret-ref://providers/codex-imagegen 참조만 남는다.",
+    "이 등록은 image 능력에 한정되며 ADR-0003의 Claude 단독 프로그래밍 공급자 경계와 codex_primary의 DISABLED 상태를 변경하지 않는다.",
+    "관리형 내장 경로가 모델 이름·버전과 호출별 과금 사용량을 노출하지 않으므로 unavailable 및 environment.model=null로 기록하는 것이 정확한 기록이다.",
+    "PRB-001·PRB-002의 이미지는 사용자가 관리형 콘솔에서 확인해 보고한 결과이며 저장소에는 이미지 파일이 아니라 크기·바이트 수·SHA-256 지문만 남는다.",
+    "layer_ai는 사용량 증가 시점에 재판단하는 미래의 비활성 옵션으로만 문서화하며 임계값·전환 기준·일정은 확정하지 않는다.",
+    "생성 이미지는 PUBLIC 또는 INTERNAL 등급 프롬프트만 사용하고 CONFIDENTIAL·RESTRICTED 자료는 전송하지 않는다."
+  ],
+  "verification_evidence": [
+    {
+      "check": "python scripts/validate_baseline.py",
+      "result": "PASS",
+      "evidence_uri": "repo://scripts/validate_baseline.py"
+    },
+    {
+      "check": "python -m unittest discover -s tests -v",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_image_provider.py"
+    },
+    {
+      "check": "python -m unittest discover -s tests -v (이 Windows core.autocrlf=true 작업 복사본에서 실행 시 test_roulette_web_ui의 정적 index 바이트 비교 1건이 CRLF 때문에 실패한다. SYS-IMG-0013과 무관한 기존 R4-UI-0006 검사이며 .gitattributes text=auto가 규정한 정본 LF 형태에서는 467건 전부 통과한다.)",
+      "result": "FAIL",
+      "evidence_uri": "repo://tests/test_roulette_web_ui.py"
+    },
+    {
+      "check": "python -m unittest tests.test_image_provider -v (공급자 게이트 집중 테스트)",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_image_provider.py"
+    },
+    {
+      "check": "정본 LF 형태 사본에서 두 표준 명령 재실행 (validate_baseline exit 0, unittest 467건 OK, skipped=1)",
+      "result": "PASS",
+      "evidence_uri": "repo://.gitattributes"
+    },
+    {
+      "check": "Artifact content_hash와 docs/providers/SYS-IMG-0013-codex-imagegen-art-provider.md 실제 sha256 일치 확인",
+      "result": "PASS",
+      "evidence_uri": "repo://artifacts/SYS-IMG-0013-artifact.json"
+    },
+    {
+      "check": "연결 증거의 providers/connection-proof.schema.json 스키마 검증과 차단 프로브 전수 PASS 확인",
+      "result": "PASS",
+      "evidence_uri": "repo://providers/evidence/SYS-IMG-0013-codex-imagegen-connection-proof.yaml"
+    },
+    {
+      "check": "capabilities == [image] 및 code·reasoning·evaluation·orchestration 미부여 확인",
+      "result": "PASS",
+      "evidence_uri": "repo://providers/registry.yaml"
+    },
+    {
+      "check": "claude_agent 항목과 code·reasoning·evaluation 라우트 무변경, codex_primary DISABLED 유지 확인",
+      "result": "PASS",
+      "evidence_uri": "repo://providers/routing-policy.yaml"
+    },
+    {
+      "check": "layer_ai DISABLED_UNTIL_CONFIGURED 유지 및 어떤 라우트에도 부재 확인",
+      "result": "PASS",
+      "evidence_uri": "repo://providers/registry.yaml"
+    },
+    {
+      "check": "credential_ref secret-ref:// 접두사 검사와 studio_core.secret_scan 평문 비밀값 스캔",
+      "result": "PASS",
+      "evidence_uri": "repo://providers/evidence/SYS-IMG-0013-codex-imagegen-connection-proof.yaml"
+    },
+    {
+      "check": "audit/audit-event.schema.json 스키마 검증과 contains_secret == false 확인",
+      "result": "PASS",
+      "evidence_uri": "repo://audit/events/SYS-IMG-0013-events.json"
+    },
+    {
+      "check": "사람 최종 승인(A-50 또는 USER) 게이트 판정",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://handoffs/SYS-IMG-0013-handoff.json"
+    },
+    {
+      "check": "커밋·원격 푸시 및 GitHub 호스티드 Actions 실행 결과 관측",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://docs/providers/SYS-IMG-0013-codex-imagegen-art-provider.md"
+    }
+  ],
+  "known_risks": [
+    {
+      "severity": "MEDIUM",
+      "description": "관리형 내장 ImageGen은 모델 이름·버전과 호출별 과금 사용량을 노출하지 않아 model과 비용을 unavailable로 남겼다. 공급자가 뒤에서 모델을 교체해도 저장소 기록으로는 감지할 수 없으므로, 아트 스타일 일관성과 예산 대조는 산출물 지문과 관리형 콘솔 사용량 화면에 의존한다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "연결 증거의 PRB-001·PRB-002는 사용자가 관리형 콘솔에서 실행해 보고한 결과를 기록한 것으로 저장소 안에서 재현할 수 없다. 독립 검증자는 이미지 왕복 자체를 재실행할 수 없고 기록된 지문과 절차만 검토할 수 있다.",
+      "owner_agent_id": "A-20"
+    },
+    {
+      "severity": "LOW",
+      "description": "python -m unittest discover -s tests -v를 이 Windows core.autocrlf=true 작업 복사본에서 그대로 실행하면 test_roulette_web_ui의 정적 index 바이트 비교 1건이 CRLF 때문에 실패한다. SYS-IMG-0013이 만들거나 건드린 파일과 무관한 기존 R4-UI-0006 검사이고 정본 LF 형태에서는 467건 전부 통과하지만, 이 작업은 기존 파일을 수정하지 않으므로 해결하지 않고 남겨 둔다. 후속 작업에서 해당 테스트를 줄바꿈에 무관하게 만들지 판단해야 한다.",
+      "owner_agent_id": "A-20"
+    },
+    {
+      "severity": "LOW",
+      "description": "connection-proof 스키마의 credential_source 열거에 관리형 앱 전용 값이 없어 PROVIDER_NATIVE_AUTH_STORE로 기록하고 실제 저장 위치는 registry.yaml의 managed_credential_storage=managed_workspace_auth로 남겼다. 열거 확장은 후속 스키마 작업이 필요하다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "LOW",
+      "description": "image 라우트에 fallback이 없어 codex_imagegen 장애 시 이미지 능력은 즉시 중단된다. layer_ai는 미구성 상태라 fallback으로 넣지 않았으므로 복구 경로는 롤백 절차에 따른 수동 되돌리기뿐이다.",
+      "owner_agent_id": "A-20"
+    },
+    {
+      "severity": "LOW",
+      "description": "등록 이전에 생성된 프로브 이미지의 보관 위치와 폐기 기준이 아직 없다. 후보 자산이 승인 증거로 오인되지 않도록 A-30과의 후속 결정 전까지 저장소 밖에 두고 참조만 유지해야 한다.",
+      "owner_agent_id": "A-30"
+    },
+    {
+      "severity": "LOW",
+      "description": "사람 승인·커밋·푸시·호스티드 CI 실행이 모두 미수행이므로 현재 상태는 작업 트리에만 존재한다. 게이트 판정 전 되돌림은 신규 파일 삭제와 두 공급자 파일 복원만으로 완결된다.",
+      "owner_agent_id": "A-02"
+    }
+  ],
+  "next_action": "A-50은 Codex 콘솔에서 두 표준 검증 명령을 재실행하고 codex_imagegen의 image 단일 능력, 증거 기반 라우트 전환, claude_agent·codex_primary·layer_ai 무변경, secret-ref 전용 자격 증명 표기, 모델·비용 unavailable 기록의 정직성, 사전 생성 이미지 비승격을 독립 검증한 뒤 최종 QA 게이트 결정을 발행하고 커밋·푸시 여부에 대한 사용자 승인을 요청한다.",
+  "readiness": "READY_FOR_REVIEW",
+  "acknowledgement_required": true
+}

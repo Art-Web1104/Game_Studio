@@ -1,0 +1,269 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "SYS-IMG-0013",
+  "chain_namespace": "SYSIMG",
+  "summary": "SYS-IMG-0013 Codex 내장 ImageGen 아트 전용 관리형 공급자의 발주·승인·연결 증거·등록·라우트 전환·예산·사용량·프로브 취급 기록. 인간 최종 QA 게이트 판정과 커밋·푸시는 포함되지 않는다.",
+  "request_hash_rule": "sha256 of json.dumps({action, actor_id, resource_refs, task_id, timestamp}, ensure_ascii=False, sort_keys=True, separators=(\",\", \":\")) encoded as UTF-8",
+  "events": [
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-02T00:00:00Z",
+      "actor_type": "USER",
+      "actor_id": "USER",
+      "task_id": "SYS-IMG-0013",
+      "action": "TASK_CONTRACT_ISSUED_READY",
+      "resource_refs": [
+        "repo://tasks/SYS-IMG-0013.json",
+        "repo://contracts/task.schema.json"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "contains_secret": false,
+      "request_hash": "sha256:ac26989f5f8318179cd93b3881778ca25dc221570ba07b54dfac85785a43137c",
+      "event_id": "AE-SYSIMG-0001",
+      "previous_event_hash": null,
+      "event_hash": "sha256:2ec043ef8a39e4889866a93f08fd3b572af56411a1f08e9975aef412b9b379a8"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "APPROVAL",
+      "timestamp": "2026-09-02T00:00:00Z",
+      "actor_type": "USER",
+      "actor_id": "USER",
+      "task_id": "SYS-IMG-0013",
+      "action": "USER_APPROVED_ART_ONLY_IMAGE_PROVIDER",
+      "resource_refs": [
+        "repo://tasks/SYS-IMG-0013.json",
+        "repo://providers/evidence/SYS-IMG-0013-codex-imagegen-connection-proof.yaml"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "contains_secret": false,
+      "request_hash": "sha256:9c1a2f28a896b9f0124116a10e3ceed8f9de351d7ebf4e45a2286af8b87369fa",
+      "event_id": "AE-SYSIMG-0002",
+      "previous_event_hash": "sha256:2ec043ef8a39e4889866a93f08fd3b572af56411a1f08e9975aef412b9b379a8",
+      "event_hash": "sha256:1642b462f110f76927580b7be0f44504490cd69ba1b3992a194c447c7883a460"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "PROVIDER_CALL",
+      "timestamp": "2026-09-02T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "SYS-IMG-0013",
+      "action": "MANAGED_IMAGEGEN_CONNECTIVITY_PROBE_RECORDED",
+      "resource_refs": [
+        "repo://providers/evidence/SYS-IMG-0013-codex-imagegen-connection-proof.yaml",
+        "repo://docs/providers/SYS-IMG-0013-codex-imagegen-art-provider.md"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "contains_secret": false,
+      "request_hash": "sha256:8a2be0bab8507358a047627d82d5a6971582da56a4a42281ff38c0af984906a3",
+      "event_id": "AE-SYSIMG-0003",
+      "previous_event_hash": "sha256:1642b462f110f76927580b7be0f44504490cd69ba1b3992a194c447c7883a460",
+      "event_hash": "sha256:de6d8f58e827310d5e39ce7ea3cfe76026cd2076083a46cb434afc5d253dac4a"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "SECURITY",
+      "timestamp": "2026-09-02T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "SYS-IMG-0013",
+      "action": "MANAGED_CREDENTIAL_REFERENCE_ONLY_CONFIRMED",
+      "resource_refs": [
+        "repo://providers/registry.yaml",
+        "repo://policies/security.yaml"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "contains_secret": false,
+      "request_hash": "sha256:608f64a5580b0a9d92e7a3b1d0e01a4c49f9cd23b0284ee4ccf698f3f18f699f",
+      "event_id": "AE-SYSIMG-0004",
+      "previous_event_hash": "sha256:de6d8f58e827310d5e39ce7ea3cfe76026cd2076083a46cb434afc5d253dac4a",
+      "event_hash": "sha256:7a5613c92432b405ec07111bd78ad5bd273c433ae104e0809101eb43f91d9b05"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "COST",
+      "timestamp": "2026-09-02T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "SYS-IMG-0013",
+      "action": "PROVIDER_BUDGET_RESERVED",
+      "resource_refs": [
+        "repo://tasks/SYS-IMG-0013.json",
+        "repo://policies/cost.yaml"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "contains_secret": false,
+      "request_hash": "sha256:270d2ba25a99b633ddbb5d6492706a80995022c6aa5802933afd2d5fab3cc302",
+      "event_id": "AE-SYSIMG-0005",
+      "previous_event_hash": "sha256:7a5613c92432b405ec07111bd78ad5bd273c433ae104e0809101eb43f91d9b05",
+      "event_hash": "sha256:383c9cd67a9e1ec98f937c2a5fcf4ef5e938aa7a4819f9d74442c919a4c7cbee"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "PROVIDER_CALL",
+      "timestamp": "2026-09-02T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "SYS-IMG-0013",
+      "action": "IMAGE_PROVIDER_REGISTERED_ENABLED",
+      "resource_refs": [
+        "repo://providers/registry.yaml",
+        "repo://providers/evidence/SYS-IMG-0013-codex-imagegen-connection-proof.yaml"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "contains_secret": false,
+      "request_hash": "sha256:a3a5f7afa6ee916266dae185aaa71478f0001f07b2430630fa3718df43a0e0d3",
+      "event_id": "AE-SYSIMG-0006",
+      "previous_event_hash": "sha256:383c9cd67a9e1ec98f937c2a5fcf4ef5e938aa7a4819f9d74442c919a4c7cbee",
+      "event_hash": "sha256:8d616702717613179b2a594c1bbcd88790523a330369cf9f2c762df9c29a7086"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "PROVIDER_CALL",
+      "timestamp": "2026-09-02T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "SYS-IMG-0013",
+      "action": "IMAGE_ROUTE_SWITCHED_TO_MANAGED_PROVIDER",
+      "resource_refs": [
+        "repo://providers/routing-policy.yaml",
+        "repo://providers/registry.yaml"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "contains_secret": false,
+      "request_hash": "sha256:f96cdfd8ed433b612adf144f85a412117f67e0e738e40b2f841197160833e98a",
+      "event_id": "AE-SYSIMG-0007",
+      "previous_event_hash": "sha256:8d616702717613179b2a594c1bbcd88790523a330369cf9f2c762df9c29a7086",
+      "event_hash": "sha256:c675a24f367e1e2e393cf0cdb4f207c16209c89a6627d029b6264994167053de"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "PROVIDER_CALL",
+      "timestamp": "2026-09-02T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "SYS-IMG-0013",
+      "action": "LAYER_AI_KEPT_DISABLED_UNTIL_CONFIGURED",
+      "resource_refs": [
+        "repo://providers/registry.yaml",
+        "repo://providers/routing-policy.yaml"
+      ],
+      "decision": "DENY",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "contains_secret": false,
+      "request_hash": "sha256:69c322f7212dfdf690892b3788188f52854294611f752ac715928753320d4dfd",
+      "event_id": "AE-SYSIMG-0008",
+      "previous_event_hash": "sha256:c675a24f367e1e2e393cf0cdb4f207c16209c89a6627d029b6264994167053de",
+      "event_hash": "sha256:787b18f8dbcfd171687740e36bbfdc42933a444cde47e0992942c1add4c3298e"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "PROVIDER_CALL",
+      "timestamp": "2026-09-02T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "SYS-IMG-0013",
+      "action": "CODEX_CODE_PROVIDER_PROMOTION_REFUSED",
+      "resource_refs": [
+        "repo://docs/decisions/ADR-0003-claude-only-programming.md",
+        "repo://providers/registry.yaml"
+      ],
+      "decision": "DENY",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "contains_secret": false,
+      "request_hash": "sha256:b3d0e31c8b32a7d359a254b36806b8864b8c01dfac82e57513604bdda17c094d",
+      "event_id": "AE-SYSIMG-0009",
+      "previous_event_hash": "sha256:787b18f8dbcfd171687740e36bbfdc42933a444cde47e0992942c1add4c3298e",
+      "event_hash": "sha256:9f83194ae8460e409686a15719992c63fa8212deab823db281c88c9f3f8ce303"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "COST",
+      "timestamp": "2026-09-02T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "SYS-IMG-0013",
+      "action": "MANAGED_BILLING_USAGE_RECORDED_UNAVAILABLE",
+      "resource_refs": [
+        "repo://docs/providers/SYS-IMG-0013-codex-imagegen-art-provider.md",
+        "repo://policies/cost.yaml"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "contains_secret": false,
+      "request_hash": "sha256:6a23133a42aed751dfe9627e284d6f0038f352a6f6dd2b3c29e80c9f39e1a090",
+      "event_id": "AE-SYSIMG-0010",
+      "previous_event_hash": "sha256:9f83194ae8460e409686a15719992c63fa8212deab823db281c88c9f3f8ce303",
+      "event_hash": "sha256:5a02dfee415654b01d5479b38e22f93745b6dcaeacea0ab4584f8f24e8b9e2b1"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "ARTIFACT",
+      "timestamp": "2026-09-02T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "SYS-IMG-0013",
+      "action": "PROBE_OUTPUTS_HELD_AS_CANDIDATES_NOT_ARTIFACTS",
+      "resource_refs": [
+        "repo://docs/providers/SYS-IMG-0013-codex-imagegen-art-provider.md",
+        "repo://artifacts/SYS-IMG-0013-artifact.json"
+      ],
+      "decision": "BLOCK",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "contains_secret": false,
+      "request_hash": "sha256:6ad8f6067831a7e498d74df90ed6f818d49fcfa737e1a0228782ad0d37d1ef0c",
+      "event_id": "AE-SYSIMG-0011",
+      "previous_event_hash": "sha256:5a02dfee415654b01d5479b38e22f93745b6dcaeacea0ab4584f8f24e8b9e2b1",
+      "event_hash": "sha256:cb87bf842dd925383afdfe5917d8bad241c26909179224edb4d8f2a091dcd603"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "ARTIFACT",
+      "timestamp": "2026-09-02T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "SYS-IMG-0013",
+      "action": "ARTIFACT_AND_HANDOFF_SUBMITTED",
+      "resource_refs": [
+        "repo://artifacts/SYS-IMG-0013-artifact.json",
+        "repo://handoffs/SYS-IMG-0013-handoff.json"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "contains_secret": false,
+      "request_hash": "sha256:2c855c6ee28c1e37b217d97c57c9a27c957039a6dedc84faa9e442cf4a405b9e",
+      "event_id": "AE-SYSIMG-0012",
+      "previous_event_hash": "sha256:cb87bf842dd925383afdfe5917d8bad241c26909179224edb4d8f2a091dcd603",
+      "event_hash": "sha256:fe196f7da27904a81185e4cc812b950b0a5827126afef7c171647bd62ca2861d"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-02T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "SYS-IMG-0013",
+      "action": "VALIDATION_COMMANDS_REPLAYED",
+      "resource_refs": [
+        "repo://scripts/validate_baseline.py",
+        "repo://tests/test_image_provider.py"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "contains_secret": false,
+      "request_hash": "sha256:fcc3d62195f8d9a981543ee1ea364d500c054e5ba6410b78efc6b396caf32860",
+      "event_id": "AE-SYSIMG-0013",
+      "previous_event_hash": "sha256:fe196f7da27904a81185e4cc812b950b0a5827126afef7c171647bd62ca2861d",
+      "event_hash": "sha256:882fbafd236b6a83797e75ab6ecb2da630e2d0422095074f4385e39300767aaf"
+    }
+  ]
+}

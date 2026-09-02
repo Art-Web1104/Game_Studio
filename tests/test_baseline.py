@@ -181,13 +181,41 @@ class BaselineTests(unittest.TestCase):
         self.assertFalse(decision.allowed)
         self.assertEqual(decision.code, "POLICY_DENIED")
 
-    def test_unconfigured_art_provider_is_not_selected(self) -> None:
+    def test_configured_art_provider_is_selected_and_bounded(self) -> None:
+        # SYS-IMG-0013 registered ``codex_imagegen`` as an image-only managed provider, so the
+        # image route now resolves instead of being denied. The assertions below pin the exact
+        # boundary the registration was allowed to move and nothing else.
         values = validate_providers(validate_agent_registry())
+        providers = {item["provider_id"]: item for item in values["registry"]["providers"]}
+        routes = values["routing"]["routes"]
+
         request = copy.deepcopy(values["request"])
         request["capability"] = "image"
         decision = select_provider(request, values["registry"], values["routing"])
-        self.assertFalse(decision.allowed)
-        self.assertEqual(decision.code, "PROVIDER_UNAVAILABLE")
+        self.assertTrue(decision.allowed)
+        self.assertEqual(decision.code, "ROUTED")
+        self.assertEqual(decision.provider_id, "codex_imagegen")
+
+        self.assertEqual(providers["codex_imagegen"]["status"], "ENABLED")
+        self.assertEqual(providers["codex_imagegen"]["capabilities"], ["image"])
+        self.assertEqual(routes["image"], {"preferred": "codex_imagegen", "fallbacks": []})
+
+        # layer_ai stays unconfigured: never selected, never a fallback, absent from every route.
+        self.assertEqual(providers["layer_ai"]["status"], "DISABLED_UNTIL_CONFIGURED")
+        self.assertNotEqual(decision.provider_id, "layer_ai")
+        routed = {
+            provider_id
+            for route in routes.values()
+            for provider_id in [route["preferred"], *route.get("fallbacks", [])]
+        }
+        self.assertNotIn("layer_ai", routed)
+
+        # The image registration must not have re-opened the Codex code path.
+        self.assertEqual(providers["codex_primary"]["status"], "DISABLED")
+        self.assertEqual(providers["codex_primary"]["disabled_reason"], "user_selected_claude_only_programming")
+        self.assertNotIn("codex_primary", routed)
+        for capability in ("code", "reasoning", "evaluation"):
+            self.assertEqual(routes[capability], {"preferred": "claude_agent", "fallbacks": []})
 
     def test_all_nine_eval_sets_are_valid(self) -> None:
         datasets = validate_evals(validate_agent_registry())

@@ -1,0 +1,219 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "SYS-IMG-0013",
+  "project_id": "casino-core",
+  "title": "Codex 내장 ImageGen 아트 전용 관리형 이미지 공급자 등록",
+  "goal": "Codex 내장 ImageGen을 image 능력만 갖는 별도 provider_id로 공급자 레지스트리에 등록하고, 스키마에 유효한 관리형 연결 증거가 존재할 때에만 image 라우트를 이 공급자로 전환하며, 코드·추론·평가 경로와 claude_agent, codex_primary, layer_ai의 현재 상태는 그대로 보존한 채 예산·사용량·출처·권리·감사 기록과 롤백 절차를 계약으로 고정한다.",
+  "owner_agent_id": "A-02",
+  "status": "READY",
+  "risk_class": "MEDIUM",
+  "inputs": [
+    {
+      "uri": "repo://docs/constitution/studio-constitution-v1.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:62f8a8cbf6fc70054300de9e90fed8974b9a310d140831d3d6af98292f5b2e9e"
+    },
+    {
+      "uri": "repo://docs/decisions/ADR-0003-claude-only-programming.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:6c1e345ea9555db2ec9f626dbd598845176df129d236fc9d7f64782a5cea0bdb"
+    },
+    {
+      "uri": "repo://operations/collaboration.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:03031cf600fe847737d535c364f183b6f0031464fc3a8fdd076b79826506733a"
+    },
+    {
+      "uri": "repo://providers/registry.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:f6bc6f8826fe83586c5a52a8e99949d5350ec76c5d4abf35fdd3288cd1c3f98a"
+    },
+    {
+      "uri": "repo://providers/routing-policy.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:f970a037540ad2cfd1496a919e32cf4cbd9c5bb37a899b79b98ee6f24c6b3b2b"
+    },
+    {
+      "uri": "repo://providers/connection-proof.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:40ecb60d5b1f600396325fa4fa2e0e3f1e8192c3dc09fb2bd5f38f2ae6176be4"
+    },
+    {
+      "uri": "repo://docs/providers/SYS-006-provider-adapters.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:9ff5003975aad05f89ce57a09f8af914fa092c886b22817b8e01bd0155807b3b"
+    },
+    {
+      "uri": "repo://policies/security.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:c85fd12606c9d52cfb555b5d9a11b4f83b16a2247cd9dddffb3432a1fb34adac"
+    },
+    {
+      "uri": "repo://policies/cost.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:8f1d7ac6ae496fef8567292100ff644a0ed5caa47f1db94af6e00b3f4c94ba82"
+    },
+    {
+      "uri": "repo://policies/audit.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:5b9b87595424162de8b495058cc80aa0ff276024a20b3bf55172ed364e43c1e4"
+    },
+    {
+      "uri": "repo://audit/audit-event.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:7e0f6b22977048dc40c39756293201042870a188c5f64926d7606e4b4da6c1eb"
+    },
+    {
+      "uri": "repo://contracts/task.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:32158d90825790b90929b5c1464140651c201b603745bc4bafa27e446d723527"
+    }
+  ],
+  "deliverables": [
+    {
+      "name": "codex-imagegen-provider-registry-entry",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://providers/registry.yaml"
+    },
+    {
+      "name": "image-route-policy-update",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://providers/routing-policy.yaml"
+    },
+    {
+      "name": "codex-imagegen-connection-proof",
+      "artifact_type": "TEST_REPORT",
+      "target_uri": "repo://providers/evidence/SYS-IMG-0013-codex-imagegen-connection-proof.yaml"
+    },
+    {
+      "name": "codex-imagegen-art-provider-guide",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://docs/providers/SYS-IMG-0013-codex-imagegen-art-provider.md"
+    },
+    {
+      "name": "codex-imagegen-provider-gate-tests",
+      "artifact_type": "CODE",
+      "target_uri": "repo://tests/test_image_provider.py"
+    },
+    {
+      "name": "codex-imagegen-audit-events",
+      "artifact_type": "DATASET",
+      "target_uri": "repo://audit/events/SYS-IMG-0013-events.json"
+    },
+    {
+      "name": "sys-img-0013-artifact-contract",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://artifacts/SYS-IMG-0013-artifact.json"
+    },
+    {
+      "name": "sys-img-0013-handoff-packet",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://handoffs/SYS-IMG-0013-handoff.json"
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "criterion_id": "AC-001",
+      "statement": "Codex 내장 ImageGen은 기존 항목을 재사용하지 않고 고유한 provider_id(예: codex_imagegen)로 providers/registry.yaml에 추가되어야 하며, capabilities는 image 하나만 선언해야 한다.",
+      "verification": "레지스트리 스키마·중복 provider_id 검사와 capabilities == [image] 단정 테스트"
+    },
+    {
+      "criterion_id": "AC-002",
+      "statement": "새 공급자에는 code, reasoning, evaluation, orchestration 능력을 어떤 경우에도 부여하지 않으며, 이 능력이 추가되면 검증이 실패해야 한다.",
+      "verification": "금지 능력 부여 시 실패하는 네거티브 테스트와 ADR-0003 경계 검사"
+    },
+    {
+      "criterion_id": "AC-003",
+      "statement": "claude_agent 항목과 code, reasoning, evaluation 라우트는 이 작업으로 변경되지 않아야 하고, code 라우트는 preferred=claude_agent, fallbacks=[]를 유지해야 한다.",
+      "verification": "작업 전후 diff 검사와 기존 라우팅 단정 테스트"
+    },
+    {
+      "criterion_id": "AC-004",
+      "statement": "codex_primary는 DISABLED 상태와 disabled_reason을 그대로 유지해야 하며, 이 작업이 Codex 코드 경로 활성화 근거로 사용되어서는 안 된다.",
+      "verification": "codex_primary 상태 고정 검사와 코드 공급자 승격 거부 네거티브 테스트"
+    },
+    {
+      "criterion_id": "AC-005",
+      "statement": "image 라우트는 providers/connection-proof.schema.json에 유효하고 차단 프로브가 모두 PASS인 관리형 연결 증거가 기록된 뒤에만 새 공급자로 전환할 수 있고, 증거가 없거나 INCOMPLETE이면 공급자는 DISABLED_UNTIL_CONFIGURED로 남고 라우트는 전환되지 않아야 한다.",
+      "verification": "증거 없는 ENABLED 승격과 증거 없는 라우트 전환을 모두 거부하는 네거티브 테스트"
+    },
+    {
+      "criterion_id": "AC-006",
+      "statement": "연결 증거와 저장소 어디에도 API 키, 토큰, 비밀값을 붙여넣지 않고 secret-ref:// 참조와 관리형 인증 출처만 기록해야 한다.",
+      "verification": "credential_ref 접두사 검사와 studio_core.secret_scan 평문 비밀값 스캔"
+    },
+    {
+      "criterion_id": "AC-007",
+      "statement": "layer_ai는 DISABLED_UNTIL_CONFIGURED로 유지되어야 하며 image 라우트의 fallback으로 등록되어서는 안 된다. 별도 작업으로 연결이 구성되기 전까지 어떤 라우트에도 나타나지 않아야 한다.",
+      "verification": "layer_ai 상태 고정 검사와 fallbacks 비어 있음 단정 테스트"
+    },
+    {
+      "criterion_id": "AC-008",
+      "statement": "Layer AI 연결은 사용량 증가 시점에 다시 판단하는 후속 결정으로 문서에 기록해야 하며, 승인되지 않은 사용량 임계값이나 일정을 만들어 넣어서는 안 된다.",
+      "verification": "open_decisions 및 공급자 가이드 문서 검토와 임계값 문자열 부재 확인"
+    },
+    {
+      "criterion_id": "AC-009",
+      "statement": "관리형 내장 ImageGen의 모델 이름과 버전이 노출되지 않을 수 있으므로, 확인 불가한 경우 model 값을 null 또는 unavailable로 기록하고 임의의 모델명·버전을 지어내지 않아야 한다.",
+      "verification": "연결 증거 environment.model 값 검토와 모델명 조작 금지 리뷰 체크"
+    },
+    {
+      "criterion_id": "AC-010",
+      "statement": "등록 이전에 생성된 이미지는 연결 확인용 프로브 또는 후보 자산으로만 취급하고, 프로덕션 승인 증거나 Artifact Contract의 정식 산출물 근거로 승격해서는 안 된다.",
+      "verification": "사전 생성 이미지의 상태·용도 표기 검토와 승격 시도 거부 네거티브 테스트"
+    },
+    {
+      "criterion_id": "AC-011",
+      "statement": "이 공급자의 모든 호출은 예산 예약과 실제 사용량 기록을 남기고 stop_on_limit를 준수해야 하며, 산출 이미지에는 출처와 권리 정보(license, commercial_use, training_permission, provenance_complete)가 완결되어야 한다.",
+      "verification": "policies/cost.yaml 대조 검사와 Artifact Contract rights 필드 완결성 검증"
+    },
+    {
+      "criterion_id": "AC-012",
+      "statement": "공급자 등록, 라우트 전환, 연결 증거 기록, 비용 사용량은 audit/audit-event.schema.json에 유효한 감사 이벤트로 남고 contains_secret은 false여야 한다.",
+      "verification": "감사 이벤트 스키마 검증과 해시 체인·비밀값 부재 검사"
+    },
+    {
+      "criterion_id": "AC-013",
+      "statement": "생성자와 독립 검증자는 분리되어야 하며 구현자가 최종 QA 게이트를 판정할 수 없고, 스키마에 유효한 Artifact Contract와 Handoff Packet이 제출되어야 한다.",
+      "verification": "operations/collaboration.yaml 분리 규칙 검사와 계약 교차 참조 검증"
+    },
+    {
+      "criterion_id": "AC-014",
+      "statement": "python scripts/validate_baseline.py와 python -m unittest discover -s tests -v 두 명령이 모두 성공해야 한다.",
+      "verification": "두 표준 검증 명령의 실행 로그"
+    }
+  ],
+  "dependencies": ["SYS-CLD-0011"],
+  "budget": {
+    "max_cost_usd": 10.0,
+    "max_runtime_seconds": 7200,
+    "stop_on_limit": true
+  },
+  "approvers": ["A-00", "A-50", "USER"],
+  "rollback": {
+    "strategy": "providers/registry.yaml에서 새 ImageGen 공급자 항목을 제거하고 providers/routing-policy.yaml의 image 라우트를 직전 커밋 상태(preferred: layer_ai, fallbacks: [])로 되돌린다. providers/evidence/SYS-IMG-0013-*, docs/providers/SYS-IMG-0013-*, tests/test_image_provider.py, audit/events/SYS-IMG-0013-events.json, artifacts/SYS-IMG-0013-artifact.json, handoffs/SYS-IMG-0013-handoff.json 신규 파일을 삭제한다. claude_agent, codex_primary, layer_ai 항목과 code·reasoning·evaluation 라우트는 애초에 수정 대상이 아니므로 복원이 필요 없고, 커밋·푸시를 하지 않으므로 작업 트리 복원만으로 완전 복구된다.",
+    "source_preserved": true,
+    "verification": "복원 후 python scripts/validate_baseline.py와 python -m unittest discover -s tests -v 재실행"
+  },
+  "security": {
+    "data_classification": "INTERNAL",
+    "contains_pii": false,
+    "workspace_access": "DEPARTMENT_WRITE",
+    "network_policy": "ALLOWLISTED_PROVIDER",
+    "secrets_policy": "REFERENCE_ONLY"
+  },
+  "assumptions": [
+    "사용자가 'Codex ImageGen 아트 전용 공급자 등록 승인하고 사용량이 많아지면 레이어ai도 연결하자'로 아트 전용 등록을 명시적으로 승인했다.",
+    "Codex 내장 ImageGen은 별도 API 키 발급 없이 관리형 작업 공간 인증으로 접근하며 저장소에는 secret-ref:// 참조만 남는다.",
+    "이 등록은 이미지 능력에 한정되며 ADR-0003의 Claude 단독 프로그래밍 공급자 경계를 변경하지 않는다.",
+    "생성 이미지는 PUBLIC 또는 INTERNAL 등급 프롬프트만 사용하고 CONFIDENTIAL·RESTRICTED 자료는 전송하지 않는다."
+  ],
+  "open_decisions": [
+    "Layer AI 연결은 아트 사용량이 증가한 시점에 사용자와 A-00이 별도 결정하며, 이 작업에서는 사용량 임계값·전환 기준·일정을 확정하지 않는다.",
+    "관리형 내장 ImageGen의 모델 이름과 버전이 확인 불가한 경우의 장기 기록 방식은 후속 작업에서 확정한다.",
+    "등록 이전에 생성된 이미지의 후보 자산 보관 위치와 폐기 기준은 A-30과 후속 작업에서 결정한다.",
+    "R5 이전이므로 상용 제작 일정과 출시일은 확정하지 않는다."
+  ],
+  "created_at": "2026-09-02T00:00:00Z",
+  "updated_at": "2026-09-02T00:00:00Z"
+}

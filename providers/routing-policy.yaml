@@ -8,7 +8,7 @@ routes:
   code: {preferred: claude_agent, fallbacks: []}
   reasoning: {preferred: claude_agent, fallbacks: []}
   evaluation: {preferred: claude_agent, fallbacks: []}
-  image: {preferred: layer_ai, fallbacks: []}
+  image: {preferred: codex_imagegen, fallbacks: []}
   audio: {preferred: audio_external, fallbacks: []}
   3d: {preferred: three_d_external, fallbacks: []}
 preflight:
