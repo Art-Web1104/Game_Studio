@@ -1,0 +1,234 @@
+{
+  "schema_version": "1.0.0",
+  "handoff_id": "HO-R2-SEC-0005-003",
+  "task_id": "R2-SEC-0005",
+  "from_agent_id": "A-02",
+  "to_agent_id": "A-20",
+  "created_at": "2026-09-02T11:00:00Z",
+  "summary": "R2-SEC-0005의 구현 제출 패킷이다. 이전 판은 구현이 한 줄도 존재하지 않는 PHASE A 계약 전달이었고 readiness가 REWORK_REQUIRED였다. 이번 판은 선언된 산출물 6종이 실제로 작성된 뒤의 제출이다. 저장소에 추가된 것은 신규 파일 9건이고 기존 파일 수정은 0건이며 scripts/validate_baseline.py는 무변경이다. 구현한 것은 유계 로컬 방어적 보안 검증 계약(games/roulette/security-verification-contract.yaml), 하네스(scripts/verify_r2_security.py), 시험(tests/test_security_verification.py), 설계 문서, 검증 보고서, 감사 기록이다. 하네스는 파이썬 표준 라이브러리만 쓰고, 대상은 루프백 IP 리터럴 두 개와 임시 포트로 한정되며, 이름 문자열은 슬라이스 자신의 허용 목록에 있는 localhost와 ip6-localhost까지 포함해 전부 프리플라이트에서 거부한다. 이름 해석 호출은 하네스에 0건이고, 해석 함수를 전부 예외로 바꾼 상태에서도 같은 거부가 나온다는 것을 시험이 확인한다. 실행 상한은 사례 64건, HTTP 요청 128건, 벽시계 60초, 페이로드 8192바이트이며 프리플라이트에서 자원 생성 이전에 강제되고 실행 중에 다시 강제된다. 자원 생성 이전이라는 주장은 문장이 아니라 덫으로 확인한다. 하네스 모듈의 tempfile, threading, os, shutil, sqlite3, http, hash_file, open_table, create_server, serve_in_background를 전부 건드리면 터지는 객체로 바꾼 상태에서 상한 초과 설정 네 종류, 계획 초과 설정, 비정수 설정, 비루프백 IP 리터럴 6종, 이름 문자열 5종, 고정 포트를 각각 거절시키고 거절 전후 임시 작업 공간 집합이 동일함을 단언한다. 실행 결과는 계획과 정확히 일치했다. 사례 55건, HTTP 요청 44건, 다섯 검증 항목 전부 성립, 잘못된 형식 요청 13건 전부 성립, 발견 사항 0건, 임시 작업 공간 잔여 0건, 종료 코드 0이다. 클라이언트 권위 위조는 선언된 13개 필드 전수와 최상위·리스트 중첩 위치를 포함해 15건 모두 CLIENT_AUTHORITY_DENIED로 거부되었고 거부 직전·직후의 변이 스냅숏이 정확히 같았다. 단계·마감 우회 8건도 같은 방식으로 거부되었고 정상 베팅 1건은 수락되어 전부 거부하는 표면이 아님을 보였다. 같은 request_id로 세 번 제출한 spin은 신규 커밋 1건과 재생 2건을 냈고 재생 중 엔트로피 소비는 0이었으며 세 응답의 커밋 동일성이 하나로 모였다. 충돌 식별자 2건은 아무것도 커밋하지 않고 거부되었다. 감사 위조·삭제는 임시 작업 공간의 사본 3개에서만 수행했고, append-only 트리거가 사본에 대한 UPDATE와 DELETE를 막았으며, 트리거를 제거한 별도 사본에서는 verify_audit_chain이 위조와 삭제를 모두 보고했다. 원본과 저장소 감사 기록의 정규 LF 해시는 조작 전후로 동일했다. 시드 참조 비공개성은 응답·추첨 기록·감사 이벤트·하네스 출력·이 유닛이 쓴 문서 8개 전부에서 확인되었고 엔트로피 재료는 0건이었다. 가장 정직하게 남겨야 할 사실은 교정 이전 첫 하네스 실행이 종료 코드 1로 끝났다는 것이다. SEC-SEED-01이 성립하지 않았고 HIGH 심각도 발견 1건이 기록되었다. 조사 결과 원인은 관측 대상 런타임이 아니라 하네스 탐지기의 설계였다. PROHIBITED_RECORD_FIELDS의 일반 명사 state를 이름만으로 응답에도 적용한 탓에 playable-slice 계약이 GET /api/state에 요구하는 라운드 스냅숏 봉투를 유출로 보고한 것이다. 운영 런타임 코드는 한 줄도 바꾸지 않았고, 대신 응답 검사에서 state를 이름 기반 금지 목록에서 빼고 최상위 봉투 경로 한 곳에만 나타나는지를 경로 기반으로 단언하도록 탐지기를 교정했다. 더 깊은 위치의 state는 여전히 탐지된다. 그 실패는 감사 기록 AE-R2SEC-0005에 FAIL로 남아 있고 지우지 않았다. 완료 게이트의 자기 참조 문제는 다음 절차로 다뤘다. 게이트와 무관한 모든 시험을 먼저 통과시키고, 그 상태에서 이 패킷을 제안된 READY_FOR_REVIEW로 갱신한 뒤, 그 정확한 상태에 대해 두 표준 명령을 실제로 실행했다. 둘 중 하나라도 실패했다면 즉시 REWORK_REQUIRED로 되돌리고 FAIL로 기록할 절차였다. 둘 다 통과했으므로 READY_FOR_REVIEW를 유지하고 관측된 건수를 그대로 적었다. 이 판(003)에서 달라진 것은 A-20의 독립 구현 검증이 수행되어 그 증거가 기록되었다는 점이다. A-20은 Codex 콘솔에서 프리플라이트-자원 생성 순서, 루프백 리터럴 멤버십과 이름 해석 부재, HTTP 응답과 연결 종료, 작업 스레드 등록·합류와 스레드별 SQLite 자원 반환, 감사 사본 한정 조작과 원본 해시 보존, 멱등성의 정확히 한 번 단언, 정리 이후 임시 작업 공간 부재의 긍정적 확인을 소스 수준에서 검토해 조치가 필요한 문제를 찾지 못했고, 하네스·집중 시험·기준선 검증기·전체 시험·컴파일 점검·비밀 스캔을 직접 재실행해 각각 종료 코드 0과 이 패킷이 적어 둔 것과 같은 건수를 관측했으며, 구성 요소 해시 6종과 동결 입력 해시 31개의 일치, 신규 미추적 파일 9건과 추적 파일 수정 0건을 확인했다. 이 유계 로컬 범위에서 A-20이 발견한 런타임 보안 문제는 0건이다. 그 판정은 구현에 대한 독립 검증이며 최종 QA 게이트가 아니다. A-50·A-02·A-00 승인자 판정, USER 최종 QA 승인, 호스티드 CI 관측, 운영 준비 판정, 커밋·푸시·병합은 여전히 하나도 수행되지 않았다. A-20의 검증은 이 기록이 추가되기 이전의 증거 문서 상태에 대해 이루어졌고, 기록으로 바뀐 검증 보고서·감사 기록의 해시는 A-02가 재계산해 아티팩트를 2.1.0으로 갱신한 뒤 같은 명령들을 다시 실행해 확인했다. 그 재실행은 A-02의 자체 점검이다.",
+  "artifact_refs": [
+    "ART-R2-SEC-0005-0001"
+  ],
+  "assumptions": [
+    "이 패킷은 구현 제출이다. 선언된 산출물 6종이 실제로 존재하며, 아티팩트의 바인딩 대상을 Task Contract 자체에서 대표 구현 산출물인 games/roulette/security-verification-contract.yaml로 옮기고 나머지 다섯 구성 요소의 정규 LF 해시를 함께 고정했다.",
+    "계약의 status는 READY이고 owner_agent_id는 A-02, risk_class는 HIGH다. evaluate_delegation이 console claude_code와 actor A-02에 대해 allowed true, code DELEGATED을 반환한다. 그 위임은 착수 자격이며 완료 승인이 아니다.",
+    "이 유닛은 취약점을 찾는 것까지만 했다. 발견 사항이 있었더라도 이 유닛에서 고치지 않는다는 규칙은 그대로이며, 이번 실행에서는 발견 사항이 0건이라 넘길 개선 Task Contract 후보도 없다. 발견 기록의 형식과 후보 식별자 체계는 계약과 코드에 이미 고정되어 있고 시험이 그 경로를 실제로 실행해 확인한다.",
+    "교정 이전 첫 하네스 실행의 실패는 하네스 탐지기의 설계 결함이었고 관측 대상 런타임의 결함이 아니었다. 그 판정 근거는 playable-slice 계약이 GET /api/state의 state 봉투를 필수로 요구한다는 사실이다. 운영 런타임 코드는 한 줄도 변경하지 않았다.",
+    "실행 상한 네 값은 안전 경계이며 보안 성숙도 목표도 통과 임계값도 아니다. 55건이 성립했다는 사실은 표면이 안전하다는 증명이 아니고, 이 패킷은 그런 주장을 하지 않는다.",
+    "감사 이벤트의 위조와 삭제는 임시 작업 공간의 폐기 가능한 사본에서만 수행했다. 원본과 저장소의 추적 파일은 조작 대상이 아니었고 정규 LF 해시 동일성으로 그 사실을 확인했다.",
+    "하네스는 타이밍을 재지 않고 지연·처리량·용량 수치를 출력하지 않는다. 종료 코드에 시간 기반 경로가 없다.",
+    "계약이 inputs로 고정한 31개 경로는 읽기만 했고 선언 해시와 일치한다. 기존 파일 수정은 0건이며 scripts/validate_baseline.py에 단계를 추가하지 않았다.",
+    "실제 비밀값, 개인정보, 호스트명, 사용자 계정명, 절대 경로, 엔트로피 재료, 재현 가능한 공격 페이로드 전문은 어떤 산출물에도 기록하지 않았다. 시험이 쓰는 식별자와 값은 합성된 비민감 값이다.",
+    "R4 산출물, 자산, 이미지, 아트 경로는 열지도 만들지도 수정하지도 검토하지도 않았다. 무결성 재고정 연쇄가 tasks/R4-ART-0007.json에 도달하지 않으며 그 경로는 이 유닛의 inputs에도 deliverables에도 없다.",
+    "Claude는 이 세션에서 커밋, 푸시, 병합, 브랜치 변경, Git·GitHub 설정 변경을 수행하지 않았고 저장소 밖 어떤 자원에도 접근하지 않았다. 작업 트리에 미추적 신규 파일 9건만 남겼다.",
+    "이 패킷은 A-50 최종 QA 게이트, A-00 게이트, USER 최종 QA 승인, 호스티드 CI 관측, 운영 준비 완료, R5 일정 확정을 하나도 주장하지 않는다. A-20의 독립 구현 검증은 수행되어 기록되었으나 그것은 구현에 대한 독립 검증이며 위 게이트 중 어느 것도 대신하지 않는다.",
+    "A-20의 검증 결과는 A-20이 제출한 것이고 A-02는 그 검증을 수행하지 않았다. A-02의 역할은 공급된 증거를 정확히 기록하는 것에 한정되며, 이 패킷의 어떤 항목도 A-02가 자기 작업을 독립 검토했다는 주장을 담지 않는다."
+  ],
+  "verification_evidence": [
+    {
+      "check": "python scripts/validate_baseline.py",
+      "result": "PASS",
+      "evidence_uri": "repo://scripts/validate_baseline.py"
+    },
+    {
+      "check": "python -m unittest discover -s tests -v",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_security_verification.py"
+    },
+    {
+      "check": "위 두 명령은 이 패킷이 제안된 READY_FOR_REVIEW 상태로 갱신된 뒤 그 정확한 상태에 대해 실행되었다. 관측 결과는 792건 실행, 4건 건너뜀, 실패 0건, 오류 0건이다. 하나라도 실패했다면 즉시 REWORK_REQUIRED로 되돌리고 FAIL로 기록할 절차였다.",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/approvals/R2-SEC-0005-validation-report.md"
+    },
+    {
+      "check": "python -m unittest tests.test_security_verification (집중 시험 86건). 계약과 하네스 상수의 대조, 프리플라이트 거절, 범위 거부, 탐지기 발화, 실행 1회의 전 항목 단언, 반복 실행 동일성, 동결 해시, 아티팩트·핸드오프 무결성, 아트·기존 파일 경계를 포함한다.",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_security_verification.py"
+    },
+    {
+      "check": "python scripts/verify_r2_security.py 실제 실행: 사례 55건(계획 55), HTTP 요청 44건(계획 44), 다섯 검증 항목 전부 성립, 잘못된 형식 요청 13건 전부 성립, 발견 사항 0건, 종료 코드 0",
+      "result": "PASS",
+      "evidence_uri": "repo://scripts/verify_r2_security.py"
+    },
+    {
+      "check": "교정 이전 첫 하네스 실행 관측: 종료 코드 1, SEC-SEED-01 불성립, HIGH 심각도 발견 1건. 원인은 관측 대상 런타임이 아니라 하네스 탐지기의 설계였고, 운영 런타임 코드는 변경하지 않은 채 탐지기를 경로 기반으로 교정해 해소했다. 이 실패 기록은 지우지 않았다.",
+      "result": "FAIL",
+      "evidence_uri": "repo://audit/events/R2-SEC-0005-events.json"
+    },
+    {
+      "check": "AC-002 프리플라이트 거절: 하네스의 자원 표면 10종을 덫으로 대체한 상태에서 상한 초과 4종, 계획 초과 2종, 비정수 2종을 거절시키고 거절 전후 임시 작업 공간 집합이 동일함을 단언",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_security_verification.py"
+    },
+    {
+      "check": "AC-003 대상 경계: 비루프백 IP 리터럴 6종과 이름 문자열 5종(슬라이스 허용 목록의 localhost, ip6-localhost 포함)과 고정 포트를 거절. 이름 해석 호출은 정적으로 0건이고, 해석 함수 4종을 예외로 대체한 상태에서도 같은 거절이 나옴",
+      "result": "PASS",
+      "evidence_uri": "repo://games/roulette/security-verification-contract.yaml"
+    },
+    {
+      "check": "AC-004 클라이언트 권위 위조: CLIENT_AUTHORITY_FIELDS 13개 전수를 중첩 위치에 실은 사례와 최상위·리스트 중첩 사례까지 15건이 CLIENT_AUTHORITY_DENIED로 거부되고 변이 스냅숏 8개 항목이 요청 직전·직후 동일",
+      "result": "PASS",
+      "evidence_uri": "repo://apps/roulette_web/table.py"
+    },
+    {
+      "check": "AC-005 단계·마감 우회: 정상 단계의 베팅 1건 수락, 단계 필드·마감 시각 지정 3건과 진행 중 새 라운드·뒤늦은 베팅·두 번째 추첨 3건이 선언된 코드로 거부되고 스냅숏 무변화",
+      "result": "PASS",
+      "evidence_uri": "repo://games/roulette/round-state.yaml"
+    },
+    {
+      "check": "AC-006 멱등성과 정산 재요청: 같은 request_id 제출 3건에서 신규 커밋 1건과 재생 2건, 재생 중 엔트로피 읽기 0회·바이트 0, 추첨·원장·감사·잔액 델타 0, 커밋 동일성 1개, 충돌 식별자 2건 거부, 잔액 델타와 원장 합의 정수 동등성, 통화 부동소수 0건",
+      "result": "PASS",
+      "evidence_uri": "repo://studio_core/durable_state.py"
+    },
+    {
+      "check": "AC-007 감사 위조·삭제: 사본 3개에서만 조작, append-only 트리거가 UPDATE와 DELETE를 거부, 트리거 제거 사본에서 verify_audit_chain이 위조와 삭제를 모두 보고, 원본과 저장소 감사 기록의 정규 LF 해시가 조작 전후 동일",
+      "result": "PASS",
+      "evidence_uri": "repo://studio_core/rng.py"
+    },
+    {
+      "check": "AC-008 시드 참조 비공개성: 응답·추첨 기록·감사 이벤트·하네스 출력·문서 8개에서 금지 필드 0건과 엔트로피 재료 0건, seed_reference는 entropy-ref://<source-id>/<algorithm-id> 형식이며 시드 값·거부 횟수·엔트로피 바이트는 어디에도 없음",
+      "result": "PASS",
+      "evidence_uri": "repo://games/roulette/rng-contract.yaml"
+    },
+    {
+      "check": "AC-009 잘못된 형식의 요청: 고정 상수 13건, 무작위·시간 기반·반복 폭주 없음, 응답 본문에 트레이스백·경로·SQLite 메시지·내부 예외 문구 0건, 마지막 정상 읽기 요청 200",
+      "result": "PASS",
+      "evidence_uri": "repo://apps/roulette_web/server.py"
+    },
+    {
+      "check": "AC-010/AC-011 범위와 개선 금지: 하네스와 시험의 구문 트리에 이름 해석·프로세스 실행·외부 네트워크·무작위·고정 대기 호출 0건, 새 경로·오류 코드·런타임 모듈·의존성 0건, 운영 런타임 코드 변경 0건",
+      "result": "PASS",
+      "evidence_uri": "repo://games/roulette/security-verification-contract.yaml"
+    },
+    {
+      "check": "AC-012 동결 경로: 계약이 inputs로 고정한 31개 경로 전부의 정규 LF 해시를 studio_core.integrity.hash_file로 재계산해 선언값과 일치함을 확인",
+      "result": "PASS",
+      "evidence_uri": "repo://tasks/R2-SEC-0005.json"
+    },
+    {
+      "check": "AC-013/AC-014 파일 경계: git status 기준으로 추적 중인 기존 파일의 수정이 0건이고 이 유닛의 신규 미추적 파일 9건만 존재하며, scripts/validate_baseline.py는 무변경이고 R4·자산·이미지·아트 경로는 만들지도 수정하지도 검토하지도 않음",
+      "result": "PASS",
+      "evidence_uri": "repo://artifacts/R2-SEC-0005-artifact.json"
+    },
+    {
+      "check": "AC-015 결정론과 자원 회수: 하네스를 반복 실행해 사례 식별자·기대·성립 여부가 완전히 동일함을 확인하고, 실행 전후 임시 작업 공간 집합이 동일하며 정리 오류를 억제하지 않음을 확인",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_security_verification.py"
+    },
+    {
+      "check": "python -m compileall -q scripts tests studio_core apps",
+      "result": "PASS",
+      "evidence_uri": "repo://scripts/verify_r2_security.py"
+    },
+    {
+      "check": "python scripts/scan_secrets.py 실행 결과 216개 파일에서 평문 자격증명 0건",
+      "result": "PASS",
+      "evidence_uri": "repo://scripts/scan_secrets.py"
+    },
+    {
+      "check": "아티팩트 무결성: artifacts/R2-SEC-0005-artifact.json이 contracts/artifact.schema.json에 유효하고 uri가 repo://games/roulette/security-verification-contract.yaml, content_hash가 그 파일의 실제 정규 LF 해시와 일치하며, 구현 구성 요소 6종의 해시가 전부 현재 값과 일치하고, 생성자 A-02가 reviewers(A-20, A-50)에 포함되지 않음",
+      "result": "PASS",
+      "evidence_uri": "repo://artifacts/R2-SEC-0005-artifact.json"
+    },
+    {
+      "check": "A-20 구현 독립 검증: Codex 콘솔에서 A-20이 소스 수준 검토와 명령 재실행을 수행했고 조치가 필요한 문제와 런타임 보안 발견 사항이 각각 0건이었다. 이 결과는 A-20이 제출한 것이며 A-02는 검증자가 아니라 기록자다. 구현에 대한 독립 검증이고 최종 QA 게이트가 아니다.",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/approvals/R2-SEC-0005-validation-report.md"
+    },
+    {
+      "check": "A-20 소스 수준 검토: 프리플라이트가 자원 생성보다 앞선다는 성질, 루프백 리터럴 멤버십과 이름 해석 부재, HTTP 응답과 연결 종료, 작업 스레드 등록·합류와 스레드별 SQLite 자원 반환, 감사 사본 한정 조작과 원본 해시 보존, 멱등성의 정확히 한 번 단언, 정리 이후 임시 작업 공간 부재의 긍정적 확인. 조치가 필요한 문제 0건",
+      "result": "PASS",
+      "evidence_uri": "repo://scripts/verify_r2_security.py"
+    },
+    {
+      "check": "A-20 재실행: python scripts/verify_r2_security.py 종료 코드 0, 사례 55/55, HTTP 요청 44/44, 다섯 항목 성립, 잘못된 형식 13건 성립, 발견 0건, 임시 작업 공간 ts-studio-r2-sec-* 실행 전 0개·실행 후 0개",
+      "result": "PASS",
+      "evidence_uri": "repo://audit/events/R2-SEC-0005-events.json"
+    },
+    {
+      "check": "A-20 재실행: python -m unittest tests.test_security_verification -v 종료 코드 0으로 86건 실패 0·오류 0·건너뜀 0, python scripts/validate_baseline.py 종료 코드 0으로 20단계 PASS·0단계 FAIL, python -m unittest discover -s tests -v 종료 코드 0으로 792건·4건 건너뜀·실패 0·오류 0, python -m compileall -q scripts tests studio_core apps 종료 코드 0, python scripts/scan_secrets.py 종료 코드 0으로 216개 파일 0건",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_security_verification.py"
+    },
+    {
+      "check": "A-20 무결성 대조: 아티팩트가 선언한 구현 구성 요소 6종의 해시를 직접 재계산해 전부 일치, 계약이 고정한 31개 입력 해시가 통과한 집중 시험의 대조 경로로 전부 확인되어 일치, git status 기준 신규 미추적 파일 9건과 추적 파일 수정 0건",
+      "result": "PASS",
+      "evidence_uri": "repo://artifacts/R2-SEC-0005-artifact.json"
+    },
+    {
+      "check": "evaluate_independent_verification(handoff, console=codex, verifier_agent_id=A-20)이 allowed=True와 VERIFIABLE을 반환",
+      "result": "PASS",
+      "evidence_uri": "repo://operations/collaboration.yaml"
+    },
+    {
+      "check": "A-20 검증 증거를 기록한 뒤 A-02가 수행한 재실행 자체 점검: 검증 보고서와 감사 기록의 변경으로 정규 LF 해시가 바뀌었으므로 아티팩트의 구성 요소 해시를 재계산해 2.1.0으로 갱신하고 하네스·집중 시험·기준선 검증기·전체 시험·컴파일 점검·비밀 스캔을 다시 실행해 같은 결과를 확인했다. 이것은 A-02의 자체 점검이며 독립 검증이 아니다.",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/approvals/R2-SEC-0005-validation-report.md"
+    },
+    {
+      "check": "A-50·A-02·A-00 HIGH 위험 승인자 판정",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://policies/risk.yaml"
+    },
+    {
+      "check": "USER 최종 QA 승인 (착수 지시는 최종 QA 승인이 아니며 최종 승인은 발행되지 않음)",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://operations/collaboration.yaml"
+    },
+    {
+      "check": "GitHub Actions 호스티드 CI 실행 결과 관측",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://.github/workflows/ci.yml"
+    },
+    {
+      "check": "커밋·푸시·병합 (USER 명시 승인 이전에는 수행하지 않음)",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://operations/collaboration.yaml"
+    }
+  ],
+  "known_risks": [
+    {
+      "severity": "HIGH",
+      "description": "이 유닛의 결과는 단일 사용자 루프백 참조 구현에 대한 것이다. 다중 사용자 신원·세션 분리가 도입되면 인증·인가·세션 계열 공격 표면이 새로 생기고 이 유닛의 결과는 그 표면에 대해 아무것도 말해 주지 않는다. 그 시점에는 새 검증 유닛이 필요하다.",
+      "owner_agent_id": "A-50"
+    },
+    {
+      "severity": "HIGH",
+      "description": "유계 실행은 정의상 전수가 아니다. 55건의 결정론적 사례는 계약이 선언한 다섯 항목만을 겨냥하며, 선언되지 않은 공격 표면은 검증되지 않았다. 이 패킷의 결과를 표면 전체의 안전 근거로 인용해서는 안 된다.",
+      "owner_agent_id": "A-20"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "감사 조작의 사본 경계는 코드로 강제된다. 이후 변경으로 그 경계가 느슨해지면 원본 감사 기록이 위험해지고 감사 불변성은 되돌리기 어렵다. 원본 해시 불변 단언과 조작 경로가 임시 작업 공간 하위임을 확인하는 단언은 앞으로도 유지되어야 한다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "발견과 개선 사이의 시간 간격은 이 유닛이 만드는 구조적 성질이다. 이번에는 발견 사항이 0건이라 간격이 열리지 않았지만, 이후 실행에서 발견이 생기면 개선 Task Contract의 발행 책임은 승인 주체에 있고 발행되지 않으면 발견 기록만 쌓인다.",
+      "owner_agent_id": "A-50"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "하네스의 기밀성 탐지기는 응답에 대해 state를 이름 기반 금지 목록에서 제외한다. 그 예외는 최상위 봉투 경로 한 곳으로 좁혀져 있고 시험이 봉투와 중첩 상태를 구분하는지 확인하지만, 예외가 넓어지면 실제 유출을 놓치는 경로가 된다. 이 예외의 범위는 검토 대상이다.",
+      "owner_agent_id": "A-20"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "계약이 31개 경로를 해시로 고정하므로, 다른 유닛이 그중 하나라도 변경하면 이 계약의 inputs 해시를 재고정해야 하고 이 아티팩트의 구성 요소 해시도 함께 확인해야 한다. 재고정 범위가 tasks/R4-ART-0007.json이나 그 자산 산출물에 도달해서는 안 된다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "LOW",
+      "description": "실행 상한 네 값은 안전 경계일 뿐 보안 충분성 기준이 아니다. 승인 주체가 더 낮은 값을 지정할 수 있고, 이 값들이 나중에 보안 검증의 충분성 근거로 인용되어서는 안 된다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "LOW",
+      "description": "추첨 결과는 OS CSPRNG에서 나오므로 실행마다 다르다. 단언 대상은 결과값이 아니라 불변식이지만, 이후 누군가 결과값에 의존하는 단언을 추가하면 이 시험은 간헐적으로 실패하게 된다.",
+      "owner_agent_id": "A-20"
+    }
+  ],
+  "next_action": "A-20은 이 판(003)에 기록된 자신의 독립 검증 결과가 제출한 그대로인지 확인하고, 이 기록으로 바뀐 검증 보고서·감사 기록과 아티팩트 2.1.0의 구성 요소 해시가 현재 작업 트리와 일치하는지만 다시 대조한 뒤, 최종 QA 게이트 판정을 위해 A-50과 USER에게 회부하라. 남은 판정은 A-50·A-02·A-00 승인자 판정, USER 최종 QA 승인, 호스티드 CI 관측이며 그중 어느 것도 A-20의 독립 검증으로 대체되지 않는다. 커밋·푸시·병합은 USER의 명시 승인 이후에만 진행하라. 아래는 002 판에 적혀 있던 검증 절차이며 A-20이 이미 수행한 항목의 기록으로 남긴다. A-20은 이 패킷을 구현 제출로 접수해, 읽기 전용으로 (1) 신규 파일 9건과 기존 파일 수정 0건을 git status로 확인하고 scripts/validate_baseline.py의 무변경을 확인하며, (2) 아티팩트의 uri·content_hash와 구현 구성 요소 6종의 해시를 studio_core.integrity.hash_file로 재계산해 대조하고, (3) 계약이 inputs로 고정한 31개 경로의 무변경을 확인하며, (4) python -m unittest tests.test_security_verification과 python scripts/verify_r2_security.py를 직접 실행해 사례 55건·요청 44건·다섯 항목 성립·발견 0건·임시 작업 공간 잔여 0건을 재현하고, (5) 교정 이전 첫 실행의 실패 기록이 감사 기록과 보고서에 그대로 남아 있는지와 그 원인이 하네스 탐지기였다는 판정이 타당한지를 독립적으로 판단하며, (6) 하네스가 선언된 상한과 루프백 경계를 넘는 실행을 어떤 경로로도 허용하지 않는지를 확인하라. 선언된 상한을 넘는 실행과 로컬 폐기 가능 경계 밖의 실행은 어느 시점에도 금지된다. 최종 QA 게이트 판정은 A-50과 USER에 남고, 커밋·푸시·병합은 USER의 명시 승인 이후에만 진행하라.",
+  "readiness": "READY_FOR_REVIEW",
+  "acknowledgement_required": true
+}

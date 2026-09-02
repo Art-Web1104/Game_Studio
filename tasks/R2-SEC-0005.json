@@ -1,0 +1,346 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "R2-SEC-0005",
+  "project_id": "casino-core",
+  "title": "R2 유닛 5: 유계 로컬 방어적 보안 검증 계약",
+  "goal": "R1 검증 보고서가 R2로 이월하고 docs/operations/R2-followup-units.md 3절이 R2-SEC-0005 후보로 적어 둔 '보안 침투 시험' 위험을 여는 Task Contract다. status는 READY다. A-20의 독립 계약 검토가 여기 선언된 유계 로컬 방어적 범위를 수용했고, 사용자의 명시 지시가 이 계약의 착수를 허가했다. 그 허가는 착수 승인이며 USER 최종 QA 승인도 A-50 최종 QA 게이트 판정도 아니고 두 판정은 전건 미발행이다. 이 문서 시점까지 구현·시험·도구 코드는 한 줄도 작성되지 않았고 선언된 산출물 6종도 아직 존재하지 않는다. 승인된 범위는 이 저장소에 이미 존재하는 룰렛 참조 구현만을 대상으로 하는 유계 로컬 방어적 보안 검증이다. 대상은 로컬 프로세스와 127.0.0.1 루프백, 임시 포트, 임시 SQLite 또는 인메모리·복제 데이터로 한정되고, 표면은 기존 GET /api/state, POST /api/bets, POST /api/spin, POST /api/new-round 네 경로와 필요한 경우에 한해 저장소·서비스 경계다. 검증 항목은 다섯 가지다. 첫째 클라이언트 권위 위조가 거부되는지, 둘째 베팅 단계·마감 우회가 거부되는지, 셋째 멱등성과 정산 재요청이 정확히 한 번만 커밋되는지, 넷째 감사 이벤트의 위조·삭제가 폐기 가능한 사본에서 탐지되는지, 다섯째 시드 참조가 비공개로 유지되어 엔트로피 재료가 어떤 출력에도 나타나지 않는지다. 잘못된 형식의 요청은 결정론적이고 비파괴적인 경우에만 다룬다. 실행 경계는 자원 생성 이전에 강제되어야 하며 상한은 최대 사례 64건, 최대 HTTP 요청 128건, 최대 60초, 최대 페이로드는 기존 서버 한계인 8192바이트 이하다. 파이썬 표준 라이브러리만 쓰고 단언은 결정론적이며 증거는 정제되고 실제 비밀값과 개인정보는 기록하지 않는다. 운영·외부 대상, 비루프백 네트워킹, 이름 해석, 클라우드·GitHub·계정·운영체제·자격증명, 사회공학, 피싱, 원본 데이터 파괴 시험, 지속성 확보, 탐지 회피, 유출, 서비스 거부, 퍼즈 폭주, 부하·스트레스·성능 시험, 의존성 설치는 범위 밖이다. 발견된 취약점은 이 유닛에서 고치지 않고 별도 개선 Task Contract로 넘긴다. R4 산출물, 자산, 이미지, 아트는 만들지도 수정하지도 검토하지도 않는다. 일정, 출시·용량 약속, 배포, R5 결정은 이 문서가 정하지 않는다.",
+  "owner_agent_id": "A-02",
+  "status": "READY",
+  "risk_class": "HIGH",
+  "inputs": [
+    {
+      "uri": "repo://AGENTS.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:bc5c280f63d33265d919a924651dc3080cab1c2efd4f3c411c0344be0a53a448"
+    },
+    {
+      "uri": "repo://docs/constitution/studio-constitution-v1.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:62f8a8cbf6fc70054300de9e90fed8974b9a310d140831d3d6af98292f5b2e9e"
+    },
+    {
+      "uri": "repo://operations/collaboration.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:03031cf600fe847737d535c364f183b6f0031464fc3a8fdd076b79826506733a"
+    },
+    {
+      "uri": "repo://contracts/task.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:32158d90825790b90929b5c1464140651c201b603745bc4bafa27e446d723527"
+    },
+    {
+      "uri": "repo://contracts/artifact.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:44d972cb0db8a8b455d9a014207d712fae3ce6e7126590371af76aad79a68195"
+    },
+    {
+      "uri": "repo://contracts/handoff.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:088025147e8cdf3a9addafc46b6c7520b4d9216db4604d0a34ef29ece274faf2"
+    },
+    {
+      "uri": "repo://docs/operations/R2-followup-units.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:a1d8dadb8e5532e7b0706e1c2b60f4657c4f4e7daf797c2060387f5ee96df6ba"
+    },
+    {
+      "uri": "repo://policies/security.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:c85fd12606c9d52cfb555b5d9a11b4f83b16a2247cd9dddffb3432a1fb34adac"
+    },
+    {
+      "uri": "repo://policies/risk.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:7f280afbc63fa37d4893ecb0f40e6930189bbd2ddabfd73c638fe808cf0f457e"
+    },
+    {
+      "uri": "repo://policies/audit.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:5b9b87595424162de8b495058cc80aa0ff276024a20b3bf55172ed364e43c1e4"
+    },
+    {
+      "uri": "repo://audit/audit-event.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:7e0f6b22977048dc40c39756293201042870a188c5f64926d7606e4b4da6c1eb"
+    },
+    {
+      "uri": "repo://apps/roulette_web/server.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:2574ff8d355cc5df0708e57ca0846b4f7c03f531046b957d2926fd6dcd67dda8"
+    },
+    {
+      "uri": "repo://apps/roulette_web/table.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:22397b7dd4406647f4038b43b7b977405c56f1d04fae913e23c2dee578af41ae"
+    },
+    {
+      "uri": "repo://studio_core/durable_state.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:5b24d3e265a5e3ac2f6b21adcdefb21356393089e905fe1df93cf583e56cb8ed"
+    },
+    {
+      "uri": "repo://studio_core/rng.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:0ceea3c08a4c526a1d203f54fcbb31b35fff088450477f95270526d9f38e1d1e"
+    },
+    {
+      "uri": "repo://studio_core/ledger.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:07acd9aeac4dbfe6d2d9394e3cb0ccf335685e529fa07ce6af56d33e699ce71b"
+    },
+    {
+      "uri": "repo://studio_core/integrity.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:a4288779b224cf49bf0d8756945e44a8a9f2220515e4c32432cbad6a8cee8558"
+    },
+    {
+      "uri": "repo://games/roulette/playable-slice-contract.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:be2d91b4c30f5432a949dea91afa06c3ae73def94c443659b8085a3e13a44eff"
+    },
+    {
+      "uri": "repo://games/roulette/round-state.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:194b874aac8872fa23f0142577b04ba17dfd8d10ce4d64fd0a30ed69980d1921"
+    },
+    {
+      "uri": "repo://games/roulette/rng-contract.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:9d8ea76aef04c25d182fc2f25f3c3e0e988aa3e997b82cc918ad3ee86004114b"
+    },
+    {
+      "uri": "repo://games/roulette/durable-state-contract.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:3920a1a87c46871353b936f56252d39dbd5542f628b7e2471c9e35a1d175fdd4"
+    },
+    {
+      "uri": "repo://games/roulette/reconnect-contract.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:777fbae659ce418f4c7428233edce454437d2e00f1ba647b841bda8384881475"
+    },
+    {
+      "uri": "repo://games/roulette/ledger-transaction.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:fd37bb2e051c1dc5455953ea4c8525490e445d00b093027ff8802fe02f5f1eb3"
+    },
+    {
+      "uri": "repo://games/roulette/rng-draw-record.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:4cde6ce3e3ff47715badb7f90166aec1720c4f3e3ff6a69a71ef7ea67d8dda5b"
+    },
+    {
+      "uri": "repo://tests/test_roulette_web_server.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:4f8941b211fc987a65ed0b13b7971ca9619738d53ed821f9dc5fe2962e8bf77d"
+    },
+    {
+      "uri": "repo://tests/test_durable_state.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:8098db3095ec8791ace956d31006b87b7e482705e3fa3501c23ec7c4a7ca1bc0"
+    },
+    {
+      "uri": "repo://tests/test_rng.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:c95db53b3dc51b8d0d003840e07e980d9dbeeddda983bda67918998f5a81b37a"
+    },
+    {
+      "uri": "repo://tests/test_reconnect_continuity.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:b2366ce46e7193384f5da0f1e6184c68cfc7840f4299a38e61803d219ed926bc"
+    },
+    {
+      "uri": "repo://tasks/R2-DBC-0002.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:fc2bec02f86d0a84eacb7f5d753b45f5b2aa6e388b7d6105c445d3b0490abe6d"
+    },
+    {
+      "uri": "repo://tasks/R2-NET-0003.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:209f9ad3bea33e4cc7332a01065258e2aa0345484fcaf9bbcc02df22157fd9b3"
+    },
+    {
+      "uri": "repo://tasks/R2-LOAD-0004.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:26b8fc02bc8133610dbd9a219f6cb7f685270e08ff86fa9c460c3f5991f0b0a5"
+    }
+  ],
+  "deliverables": [
+    {
+      "name": "r2-security-verification-contract",
+      "artifact_type": "SCHEMA",
+      "target_uri": "repo://games/roulette/security-verification-contract.yaml"
+    },
+    {
+      "name": "r2-security-verification-harness",
+      "artifact_type": "CODE",
+      "target_uri": "repo://scripts/verify_r2_security.py"
+    },
+    {
+      "name": "r2-security-verification-test-suite",
+      "artifact_type": "CODE",
+      "target_uri": "repo://tests/test_security_verification.py"
+    },
+    {
+      "name": "r2-security-verification-design-document",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://docs/games/R2-security-verification.md"
+    },
+    {
+      "name": "r2-security-validation-report",
+      "artifact_type": "TEST_REPORT",
+      "target_uri": "repo://docs/approvals/R2-SEC-0005-validation-report.md"
+    },
+    {
+      "name": "r2-security-audit-events",
+      "artifact_type": "DATASET",
+      "target_uri": "repo://audit/events/R2-SEC-0005-events.json"
+    },
+    {
+      "name": "r2-security-artifact-contract",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://artifacts/R2-SEC-0005-artifact.json"
+    },
+    {
+      "name": "r2-security-handoff-packet",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://handoffs/R2-SEC-0005-handoff.json"
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "criterion_id": "AC-001",
+      "statement": "검증 하네스와 그 시험은 파이썬 표준 라이브러리만 사용해야 하고 새 외부 의존성, 패키지 설치, 빌드 단계, 서비스 기동을 도입해서는 안 된다. 대상은 이 저장소에 이미 존재하는 루프백 룰렛 참조 구현이며 새 런타임 모듈, 새 HTTP 경로, 새 오류 코드를 만들지 않아야 한다. apps.roulette_web.server.ROUTES는 정확히 GET /api/state, POST /api/bets, POST /api/spin, POST /api/new-round 네 항목으로 유지되어야 한다.",
+      "verification": "import 목록 정적 검사, requirements 계열 파일 부재 확인, apps/roulette_web 모듈 목록과 server.ROUTES 집합 단언, games/roulette/playable-slice-contract.yaml error_codes 집합과의 대조"
+    },
+    {
+      "criterion_id": "AC-002",
+      "statement": "실행 경계는 유한해야 하고 자원 생성 이전에 강제되어야 한다. 승인된 하드 상한은 검증 사례 최대 64건, HTTP 요청 최대 128건, 전체 벽시계 최대 60초, 단일 요청 페이로드 최대 8192바이트(apps.roulette_web.server.MAX_BODY_BYTES 이하)다. 이 네 값과 대상 바인딩은 games/roulette/security-verification-contract.yaml에 상한으로 선언되어야 하고 하네스가 상한을 넘는 실행을 거부해야 한다. 거부는 프리플라이트에서 일어나야 하며, 그 시점까지 임시 디렉터리, SQLite 파일, 소켓, 스레드, 데이터 사본이 하나도 만들어지지 않아야 한다.",
+      "verification": "계약 선언값과 하네스 상수가 승인 상한 이하인지 대조, 페이로드 상한이 server.MAX_BODY_BYTES 이하인지 단언, 상한 초과 인자 네 종류 각각에 대한 거부 시험, 거부 직후 임시 작업 공간·소켓·스레드 생성 건수가 0임을 단언"
+    },
+    {
+      "criterion_id": "AC-003",
+      "statement": "대상은 루프백으로만 한정되어야 한다. 하네스는 127.0.0.1, ::1과 games/roulette/playable-slice-contract.yaml의 transport_limits.allowed_hosts에 선언된 호스트만 허용하고, 그 밖의 IP 리터럴과 모든 이름 문자열은 프리플라이트에서 거부해야 한다. 이름 해석(DNS 조회)을 시도해서는 안 되며, 포트는 임시 포트 범위에서 할당되어야 한다.",
+      "verification": "비루프백 IP 리터럴과 이름 문자열 입력에 대한 거부 시험, 이름 해석 호출 경로 부재의 정적 검사와 해석 함수를 실패하도록 대체한 상태에서의 거부 시험, 바인딩 주소·포트 할당 방식 단언"
+    },
+    {
+      "criterion_id": "AC-004",
+      "statement": "클라이언트 권위 위조가 거부되어야 한다. apps.roulette_web.table.CLIENT_AUTHORITY_FIELDS의 모든 이름을 중첩 위치를 포함해 요청 본문에 실은 사례가 CLIENT_AUTHORITY_DENIED로 거부되어야 하고, 거부 직후 서버 권위 상태의 변이 스냅숏이 요청 이전과 정확히 동일해야 한다. 비교 대상은 라운드 식별자와 단계, 정수 잔액, 하우스 뱅크롤, 베팅 목록, 추첨 기록 건수, 원장 거래 건수, 감사 이벤트 건수다.",
+      "verification": "요청 직전·직후 스냅숏의 정확한 동등성 단언과 응답 error.code 단언, CLIENT_AUTHORITY_FIELDS 전 항목을 개별 사례로 순회했음의 커버리지 단언"
+    },
+    {
+      "criterion_id": "AC-005",
+      "statement": "베팅 단계·마감 우회가 거부되어야 한다. 베팅은 games/roulette/round-state.yaml의 guards.accept_bets_only_in과 apps.roulette_web.table.BETS_ACCEPTED_IN이 함께 정하는 단계에서만 수락되어야 하고, 그 밖의 단계에서 제출된 베팅은 선언된 오류 코드로 거부되어야 하며, 거부 직후 변이 스냅숏이 요청 이전과 동일해야 한다. 단계 필드나 마감 시각을 요청 본문으로 지정해 단계를 바꾸려는 사례도 같은 방식으로 거부되어야 한다.",
+      "verification": "단계별 베팅 제출 사례의 응답 코드 단언, 거부 직전·직후 스냅숏 동등성 단언, 단계 지정 필드를 실은 사례의 거부 단언"
+    },
+    {
+      "criterion_id": "AC-006",
+      "statement": "멱등성과 정산 재요청이 정확히 한 번만 커밋되어야 한다. 같은 request_id로 반복 제출한 /api/spin은 두 번째 추첨, 추가 엔트로피 소비, 두 번째 원장 거래, 두 번째 지급, 추가 잔액 변동을 어느 것도 만들지 않고 모든 호출자가 같은 커밋 결과를 관측해야 한다. 같은 request_id에 다른 본문을 실은 충돌 요청은 커밋을 만들지 않고 선언된 충돌 코드로 거부되어야 한다. 종료 시점의 잔액 델타 합이 원장 거래 합과 정수 최소 단위로 정확히 일치해야 하고 통화 값에 부동소수가 쓰여서는 안 된다.",
+      "verification": "반복·충돌 request_id 사례 실행 후 draw_record·ledger_transaction 건수와 엔트로피 소비 계측 단언, 잔액 델타 대 원장 합의 정수 동등성 단언, 통화 필드 정수 타입 검사"
+    },
+    {
+      "criterion_id": "AC-007",
+      "statement": "감사 이벤트의 위조와 삭제가 탐지되어야 하고 그 조작은 폐기 가능한 사본에서만 수행되어야 한다. 하네스는 감사 기록을 임시 작업 공간의 사본으로 복제한 뒤 그 사본에서만 이벤트 변조와 삭제를 수행하고, studio_core.rng.verify_audit_chain이 두 경우 모두 문제를 보고해야 한다. 원본 감사 기록과 저장소의 어떤 추적 파일도 변경되어서는 안 되며, 조작 전후로 원본의 정규 LF 해시가 동일해야 한다.",
+      "verification": "사본에서의 변조·삭제 각각에 대한 verify_audit_chain 보고 단언, 원본 경로의 studio_core.integrity.hash_file 값이 조작 전후 동일함을 단언, 조작 대상 경로가 임시 작업 공간 하위임을 단언"
+    },
+    {
+      "criterion_id": "AC-008",
+      "statement": "시드 참조의 비공개성이 유지되어야 한다. API 응답, 추첨 기록, 감사 이벤트, 하네스 출력, 검증 보고서, 로그 어디에도 원시 엔트로피 바이트, 시드 값, 거부 횟수, 내부 엔트로피 상태가 나타나지 않아야 한다. seed_reference는 엔트로피 권위를 가리키는 참조 문자열로만 존재해야 하고, 그 값으로부터 추첨 결과를 재현하거나 역추적할 수 있는 재료가 함께 노출되어서는 안 된다.",
+      "verification": "응답·기록·출력·보고서 전체에 대한 필드 목록 검사와 엔트로피 재료 패턴 부재 단언, seed_reference 형식 단언, 하네스 출력이 엔트로피 소비 횟수와 바이트 수만 남기고 재료를 남기지 않음을 확인"
+    },
+    {
+      "criterion_id": "AC-009",
+      "statement": "잘못된 형식의 요청은 결정론적이고 비파괴적인 경우에만 다루어야 한다. 각 사례는 고정된 유한 입력 집합에서 나와야 하고 무작위 생성, 반복 폭주, 시간 기반 변형을 쓰지 않아야 하며, 응답 본문에 트레이스백, 파일시스템 경로, SQLite 메시지, 내부 예외 문구가 포함되지 않아야 한다. 잘못된 형식 사례 이후에도 서버 권위 상태가 일관되게 유지되고 정상 요청이 계속 처리되어야 한다.",
+      "verification": "사례 집합이 고정 상수로 선언되었는지 확인과 난수·시간 의존 부재 검사, 응답 본문의 금지 문구 부재 단언, 사례 이후 정상 요청의 성공 단언"
+    },
+    {
+      "criterion_id": "AC-010",
+      "statement": "범위 밖 행위가 수행되지 않아야 한다. 운영·외부 대상 시험, 비루프백 네트워킹, 이름 해석, 클라우드·GitHub·계정·운영체제·자격증명 대상 행위, 사회공학, 피싱, 원본 데이터에 대한 파괴적 시험, 지속성 확보, 탐지 회피, 유출, 서비스 거부, 퍼즈 폭주, 부하·스트레스·성능 시험, 의존성 설치가 하네스와 시험 어디에도 존재하지 않아야 한다.",
+      "verification": "하네스·시험의 호출 표면 정적 검사와 계약 파일 out_of_scope 항목 대조, 네트워크·프로세스·설치 관련 표준 라이브러리 호출 목록 검토"
+    },
+    {
+      "criterion_id": "AC-011",
+      "statement": "이 유닛은 개선을 수행하지 않아야 한다. 발견된 취약점이나 결함은 이 유닛에서 수정되지 않고, 운영 런타임 코드가 변경되지 않으며, 각 발견 사항은 별도의 개선 Task Contract 후보로 기록되어야 한다. 발견 기록에는 실제 비밀값, 개인정보, 재현 가능한 공격 페이로드 전문이 포함되지 않고 정제된 형태로만 남아야 한다.",
+      "verification": "변경 파일 목록에 런타임 코드 부재 확인, 발견 사항마다 후속 Task Contract 후보 식별자와 범위가 기록되었는지 확인, 발견 기록의 정제 여부 검토"
+    },
+    {
+      "criterion_id": "AC-012",
+      "statement": "동결 경로가 무변경이어야 한다. 이 계약이 inputs로 고정한 31개 경로 전부가 이 유닛에 의해 수정되지 않아야 하고 선언 해시와 실제 정규 LF 해시가 studio_core.integrity.hash_file 기준으로 일치해야 한다.",
+      "verification": "선언된 inputs 전체의 정규 LF 해시 재계산 대조와 변경 파일 목록 검토"
+    },
+    {
+      "criterion_id": "AC-013",
+      "statement": "이 유닛은 기존 파일을 수정하지 않아야 한다. scripts/validate_baseline.py를 포함해 저장소에 이미 존재하는 어떤 파일도 변경 대상이 아니며, 산출물은 전부 신규 파일이어야 한다. 계약과 구현의 대조는 신규 파일 tests/test_security_verification.py 안에서 수행한다.",
+      "verification": "변경 파일 목록이 선언된 신규 산출물 집합과 정확히 일치하는지 확인"
+    },
+    {
+      "criterion_id": "AC-014",
+      "statement": "R4에 속한 어떤 산출물도, 자산·이미지·아트 경로도 이 유닛이 만들거나 수정하거나 검토하지 않아야 한다. Claude는 이 유닛에서 아트를 생성하지 않고 아트를 검토하지도 않는다. 무결성 재고정 연쇄가 tasks/R4-ART-0007.json이나 그 자산 산출물에 도달해서는 안 된다.",
+      "verification": "변경 파일 목록의 R4·자산·이미지·아트 경로 부재 확인과 역방향 해시 참조 폐포 재계산"
+    },
+    {
+      "criterion_id": "AC-015",
+      "statement": "시험은 결정론적이어야 한다. 반복 실행에서 모든 단언이 동일하게 통과해야 하고, 통과 여부가 벽시계 시간, 임의의 고정 대기, 기계 성능, 외부 네트워크, 무작위 시드에 의존해서는 안 된다. 대기가 필요한 지점은 고정 시간이 아니라 조건과 마감 시한으로 기다려야 하며, 실행이 남긴 임시 작업 공간은 종료 시점에 모두 회수되어야 하고 회수 실패는 억제되지 않고 드러나야 한다.",
+      "verification": "시험 스위트의 반복 실행 결과 동일성 확인, 고정 대기·외부 네트워크·무작위 시드 의존 부재 검토, 실행 전후 임시 작업 공간 개수 동일성 단언"
+    },
+    {
+      "criterion_id": "AC-016",
+      "statement": "python scripts/validate_baseline.py와 python -m unittest discover -s tests -v 두 명령이 모두 성공해야 하고, 실제 비밀값과 개인정보가 코드·프롬프트·로그·증거·커밋 어디에도 기록되지 않아야 하며, 하네스 출력과 검증 보고서에 호스트명, 사용자 계정명, 절대 경로, 자격증명, 엔트로피 재료가 포함되지 않아야 한다.",
+      "verification": "두 표준 명령의 실제 실행 로그와 python scripts/scan_secrets.py 실행 결과, 하네스 출력·보고서 필드 목록 검토"
+    }
+  ],
+  "dependencies": [
+    "R2-DBC-0002",
+    "R2-NET-0003",
+    "R2-LOAD-0004"
+  ],
+  "budget": {
+    "max_cost_usd": 20.0,
+    "max_runtime_seconds": 14400,
+    "stop_on_limit": true
+  },
+  "approvers": [
+    "USER",
+    "A-50",
+    "A-02",
+    "A-00"
+  ],
+  "rollback": {
+    "strategy": "롤백 대상 목록. 계약 단계 신규 파일 3개: tasks/R2-SEC-0005.json, artifacts/R2-SEC-0005-artifact.json, handoffs/R2-SEC-0005-handoff.json. 구현 단계 신규 파일 예정 6개: games/roulette/security-verification-contract.yaml, scripts/verify_r2_security.py, tests/test_security_verification.py, docs/games/R2-security-verification.md, docs/approvals/R2-SEC-0005-validation-report.md, audit/events/R2-SEC-0005-events.json. 이 유닛은 기존 파일을 수정하지 않으므로 역패치 대상 수정 파일이 없다. 경로 A(해당 변경의 커밋이 이미 존재하는 경우): 그 커밋 해시를 정확히 지정해 git revert <commit>으로 되돌리는 새 커밋을 만든다. 이력 재작성, 강제 푸시, 브랜치 삭제, git reset --hard, git checkout --는 사용하지 않는다. 경로 B(커밋 이전, 작업 트리에만 존재하는 경우): (1) 위 경로 전체를 저장소 밖 임시 디렉터리(%TEMP%/ts-studio-recovery/R2-SEC-0005/<UTC-timestamp>/)에 원본 그대로 복사해 격리 사본을 먼저 만든다. 격리 사본은 저장소 안에 두지 않는다. (2) 신규 파일은 삭제 전에 격리 사본이 존재함을 확인한 뒤 해당 경로만 지정해 제거한다. (3) 기존 파일이 의도치 않게 변경된 경우에는 삭제하지 않고 git show 70bcd9d:<경로>로 기준 커밋 내용을 읽어 파일 단위 쓰기로 복원한 뒤 studio_core.integrity.hash_file로 이 계약의 inputs 선언 해시와 일치함을 확인한다. 검증 하네스가 만드는 임시 SQLite 파일, 데이터 사본, 소켓은 저장소 밖 임시 디렉터리와 루프백에만 존재하므로 롤백 대상 저장소 파일이 없다. 감사 기록 조작은 사본에서만 수행되므로 원본 복원 대상이 없으며, 원본의 정규 LF 해시 동일성으로 그 사실을 확인한다. 파괴적 Git·파일시스템 명령은 어느 단계에서도 사용하지 않는다. 두 경로 모두 마지막에 python scripts/validate_baseline.py와 python -m unittest discover -s tests -v를 실행해 직전 기준선 상태를 확인한다. Claude는 커밋과 푸시를 수행하지 않는다.",
+    "source_preserved": true,
+    "verification": "복원 후 git status가 R2-SEC-0005 신규 산출물을 제외하고 70bcd9d 기준으로 깨끗해야 하며, 이 계약이 inputs로 고정한 31개 경로의 정규 LF 해시가 선언값과 일치하고, python scripts/validate_baseline.py와 python -m unittest discover -s tests -v를 재실행해 70bcd9d 시점 기준선이 그대로 통과함을 확인한다."
+  },
+  "security": {
+    "data_classification": "INTERNAL",
+    "contains_pii": false,
+    "workspace_access": "TASK_WRITE",
+    "network_policy": "NONE",
+    "secrets_policy": "NONE"
+  },
+  "assumptions": [
+    "이 계약의 상태는 READY다. operations/collaboration.yaml의 delegation_gate는 READY를 allowed_task_status로 명시하므로 이 계약은 claude_agent 구현자에게 위임될 수 있다. 승격 시점까지 구현·시험·도구 코드는 한 줄도 작성되지 않았고 선언된 산출물 6종도 존재하지 않는다.",
+    "READY 승격의 근거는 두 가지다. A-20의 독립 계약 검토가 여기 선언된 유계 로컬 방어적 범위를 수용했고, 사용자의 명시 지시가 이 계약의 착수를 허가했다. 두 근거는 착수 근거이지 완료 근거가 아니다. 이 문서는 A-20의 구현 검증, A-50의 최종 QA 게이트 판정, USER의 최종 QA 승인, 호스티드 CI 관측, 운영 준비 판정을 하나도 주장하지 않으며 그 판정은 전건 미발행이다.",
+    "위험 등급은 HIGH다. 규칙, RNG, 정산, 리플레이, 보안 경로에 닿기 때문이며 policies/risk.yaml의 classes.HIGH 정의와 mandatory_high_risk_reviewers에 따른다. 자동 등급 하향은 거부된다.",
+    "network_policy: NONE은 외부·운영 환경으로 나가는 어떤 네트워크 접근도 허가되지 않는다는 뜻이다. 검증은 기존 시험이 이미 사용하는 방식과 동일하게 로컬 프로세스 내부와 루프백 주소에만 한정되며 이름 해석을 시도하지 않는다.",
+    "검증 대상은 이 저장소에 이미 존재하는 단일 사용자 루프백 룰렛 참조 구현이다. 다중 사용자 신원·세션 분리는 아직 없고 이 유닛이 도입하지도 않으므로 세션 탈취와 권한 상승 계열 항목은 대상 표면에 존재하지 않는다.",
+    "감사 이벤트의 위조·삭제 검증은 임시 작업 공간의 폐기 가능한 사본에서만 수행한다. 원본 감사 기록과 저장소의 추적 파일은 어떤 경우에도 조작 대상이 아니다.",
+    "AC-002가 선언하는 사례 64건, HTTP 요청 128건, 벽시계 60초, 페이로드 8192바이트는 실행이 유계로 끝나도록 강제하는 안전 경계이지 보안 성숙도 목표나 통과 임계값이 아니다. 페이로드 상한은 apps.roulette_web.server.MAX_BODY_BYTES를 넘지 않는다.",
+    "이 유닛은 취약점을 찾는 것까지만 한다. 발견 사항의 개선은 별도 Task Contract에서 수행하며, 발견되었다는 사실이 이 유닛에 수정 권한을 주지 않는다.",
+    "잘못된 형식의 요청은 결정론적이고 비파괴적인 사례로만 다룬다. 무작위 생성, 반복 폭주, 서비스 거부 성격의 부하는 채택하지 않으며 그 구분은 계약 파일에 명시된다.",
+    "이 유닛은 저장소에 이미 존재하는 파일을 수정하지 않는다. scripts/validate_baseline.py에 검증 단계를 추가하는 방식은 채택하지 않는다.",
+    "R4 산출물, 자산, 이미지, 아트는 이 유닛의 범위 밖이다. Claude는 아트를 생성하지 않고 검토하지도 않는다.",
+    "실제 비밀값과 개인정보는 코드, 프롬프트, 로그, 증거, 커밋 어디에도 기록하지 않는다. 시험이 쓰는 식별자와 값은 합성된 비민감 값이다.",
+    "Claude는 이 작업에서 커밋, 푸시, 병합, 브랜치 변경, Git·GitHub 설정 변경을 수행하지 않고 작업 트리 변경만 남긴다. 최종 검증은 A-20이 수행하고 최종 QA 게이트 판정은 A-50과 USER에게 남는다.",
+    "이 계약이 READY로 승격된 뒤에도 scripts/validate_baseline.py의 validate_collaboration 단계는 이 유닛의 Handoff Packet에 READY_FOR_REVIEW 이상의 readiness와 두 표준 명령의 PASS 기록을 요구한다. 구현이 아직 수행되지 않았으므로 그 기록을 정직하게 만들 수 없고, Handoff는 REWORK_REQUIRED와 NOT_RUN을 유지하며 기준선 검증기는 이 상태를 계속 거부한다. 이 실패는 구현 미완료를 감추지 않은 결과이며, 구현과 자체 점검을 마쳐 Handoff가 READY_FOR_REVIEW로 갱신될 때 해소된다."
+  ],
+  "open_decisions": [
+    "이 계약은 READY다. 남은 판정은 구현과 자체 점검 이후의 A-20 구현 검증, A-50 최종 QA 게이트, USER 최종 QA 승인이며 이 문서가 그 판정을 대신하지 않는다.",
+    "검증 사례 64건, HTTP 요청 128건, 벽시계 60초, 페이로드 8192바이트라는 상한은 이 계약이 고정한 상한이다. 승인 주체가 더 낮은 값을 지정할 수 있으며 어떤 실행도 이 값을 초과할 수 없다.",
+    "저장소·서비스 경계를 직접 호출하는 사례를 어디까지 허용할지, 즉 HTTP 표면만으로 부족한 항목을 어느 범위까지 내부 경계로 내려가 검증할지는 승인 주체의 판정이 필요하다.",
+    "발견 사항의 심각도 분류 기준과 공개 범위, 그리고 개선 Task Contract의 발행 순서는 이 문서가 정하지 않는다.",
+    "구현 이전 단계의 계약 3종이 기준선 검증기의 완료 게이트와 충돌하는 문제를 검증기 쪽에서 구분해 다룰지는 별도 결정이 필요하며 이 유닛이 정하지 않는다. 이 유닛에서는 구현과 자체 점검을 마쳐 Handoff를 READY_FOR_REVIEW로 갱신하는 경로로 해소한다.",
+    "다중 사용자 신원·세션 분리가 도입된 이후의 인증·인가·세션 계열 검증은 그 결정에 종속되어 이 유닛에서 다루지 않는다.",
+    "R5 승인 이전이므로 상용 제작 일정, 기간, 출시일, 배포 계획은 확정하지 않는다."
+  ],
+  "created_at": "2026-09-02T00:00:00Z",
+  "updated_at": "2026-09-02T12:00:00Z"
+}
