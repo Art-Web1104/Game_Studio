@@ -1,0 +1,163 @@
+{
+  "schema_version": "1.0.0",
+  "handoff_id": "HO-R4-ART-0007-001",
+  "task_id": "R4-ART-0007",
+  "from_agent_id": "A-02",
+  "to_agent_id": "A-50",
+  "created_at": "2026-09-02T00:00:00Z",
+  "summary": "R4-ART-0007 produced two candidate bitmaps (2560x1440 opaque WebP table-atmosphere background, 512x512 opaque PNG-24 seamless felt tile), the canonical gate manifest assets/manifests/R4-ART-0007-assets.json, the detailed generation record docs/art/R4-ART-0007-generation-record.json, and an art-direction brief. Objective machine checks pass: header geometry, format, alpha and frame counts match the manifest declarations; pixel statistics satisfy the measurable parts of AC-002 through AC-006 and AC-008; and every SHA-256 declared in the manifest recomputes to the file on disk under the studio_core.integrity canonical form. The SYS-AST binary asset integrity gate now supports these two assets: with all eight R4-ART-0007 files staged, Codex observed python -m unittest tests.test_binary_assets run 109 tests OK with 4 skipped, and python -m unittest tests.test_binary_assets tests.test_integrity tests.test_baseline run 181 tests OK with 4 skipped. No zero-binary blocker remains and no prior binary-count failure claim stands. Standard validation is complete: Codex replayed both collaboration-required commands on an isolated LF-normalised canonical tree, where python scripts/validate_baseline.py passed with exit code 0 and python -m unittest discover -s tests -v reported Ran 579 tests, OK, 6 skipped, exit code 0. The Windows physical CRLF checkout replay has now actually been run on this machine and is no longer pending: python -m unittest discover -s tests -v reported Ran 579 tests, FAILED (failures=1), 4 skipped, with the sole failure being tests.test_roulette_web_ui.StaticDeliveryTests.test_the_served_index_is_the_file_on_disk_and_links_only_local_assets, caused by the known CRLF raw-byte versus read_text LF-normalisation mismatch under Windows core.autocrlf. That failure is pre-existing, unrelated to the R4-ART-0007 assets, lies in a file this task did not touch, and does not reproduce on the LF-normalised canonical form. The GitHub hosted CI run on the canonical form has still not been observed. The USER has now inspected the final processed WebP and PNG and recorded, on 2026-09-02, a PASS on human visual QA and an APPROVED art-direction sign-off. That approval is scoped to visual quality and art direction only: it is not a rights, training-permission or commercial-use determination, and it is not the AC-010 prohibited-content determination. The Windows view-image sandbox failure remains a Codex helper limitation and the helper still cannot re-display the processed files, but USER inspection of those files succeeded outside that path, so the assets are no longer unseen by a human. No further USER sign-off is requested. What is still NOT established is everything reserved to the independent reviewers: the AC-010 prohibited-content determination by A-30 and its independent re-determination by A-50, the AC-011 tone determination, the AC-007 contrast composites, accessibility and render integration, and the rights, training-permission and commercial-use determinations all remain PENDING or NOT_RUN. A-30 art-direction approval and A-50 independent review are PENDING, so no output is designated a final asset: both bitmaps are candidates. The candidate payload and the initial artifact, manifest, art-direction, generation-record and handoff contracts were committed as f73296c and pushed on the feat/r4-roulette-art-main branch; the USER approval-record revision recorded here is the current follow-up and is to be committed and pushed on that same branch before PR creation. Nothing is merged to main, nothing is integrated into the application, no output is designated a final asset, and nothing is hosted-CI-verified or production ready.",
+  "artifact_refs": ["ART-R4-ART-0007-0001"],
+  "assumptions": [
+    "R4-ART-0007 status is READY and owner_agent_id is A-02, so implementation by A-02 on the claude_code console passes the delegation gate while A-30 remains the art-direction approver and A-50 the independent verifier.",
+    "assets/manifests/R4-ART-0007-assets.json is the canonical gate manifest consumed by the SYS-AST binary asset integrity gate; docs/art/R4-ART-0007-generation-record.json is the detailed record holding prompts, provider route, processing chain, source-render hashes and pixel measurements. Any earlier reference to an assets/roulette/ manifest path is superseded.",
+    "studio_core.integrity canonical form governs every hash recorded here: .webp and .png classify as binary and hash over raw bytes, text hashes over the LF-normalised UTF-8 form.",
+    "The managed codex_imagegen path does not expose a model name, model version or per-call cost, so model is recorded as null and cost as unavailable rather than invented.",
+    "Objective pixel statistics and header reads can bound but never settle AC-002, AC-003, AC-004, AC-005, AC-006, AC-010 and AC-011; the human determinations named in those criteria remain the deciding evidence.",
+    "Codex's statement that the source images were displayed and showed no prohibited content covers the provider renders at generation time only, and is not evidence about the processed files staged under assets/roulette/.",
+    "The binary-suite results recorded here are the results Codex observed with all eight R4-ART-0007 files staged; they are reported as observed and are not re-executed or re-derived by this handoff.",
+    "The assets are not served today because ALLOWED_STATIC_SUFFIXES in apps/roulette_web/server.py lists neither .webp nor .png; amending it belongs to a separate follow-up integration unit.",
+    "Claude performs no commit and no push in this task; the change set exists only in the working tree."
+  ],
+  "verification_evidence": [
+    {
+      "check": "python scripts/validate_baseline.py",
+      "result": "PASS",
+      "evidence_uri": "repo://operations/collaboration.yaml"
+    },
+    {
+      "check": "python -m unittest discover -s tests -v",
+      "result": "PASS",
+      "evidence_uri": "repo://operations/collaboration.yaml"
+    },
+    {
+      "check": "Both collaboration-required completion-gate commands were replayed by Codex on an isolated LF-normalised canonical tree with all eight R4-ART-0007 files present: python scripts/validate_baseline.py completed PASS with exit code 0, and python -m unittest discover -s tests -v reported Ran 579 tests, OK, 6 skipped, exit code 0. These are the results Codex observed on that isolated LF copy; they are reported as observed and were not re-executed by this handoff. Standard validation is therefore complete. The Windows physical CRLF checkout replay has since been run and is recorded as a separate contextual evidence entry below; the GitHub hosted CI run on the canonical form remains outstanding.",
+      "result": "PASS",
+      "evidence_uri": "repo://operations/collaboration.yaml"
+    },
+    {
+      "check": "Contextual, non-gating: python -m unittest discover -s tests -v executed physically on this Windows core.autocrlf checkout with all eight R4-ART-0007 files present. Observed: Ran 579 tests, FAILED (failures=1), 4 skipped. The single failure is tests.test_roulette_web_ui.StaticDeliveryTests.test_the_served_index_is_the_file_on_disk_and_links_only_local_assets, which compares the served index raw bytes against a read_text load of the same file; under Windows CRLF checkout the raw bytes carry CRLF while read_text normalises to LF, so the comparison fails on line endings alone. The failure is pre-existing, is unrelated to the R4-ART-0007 assets, lies in a file this task did not modify, and does not reproduce on the LF-normalised canonical form, where the same command reported Ran 579 tests, OK, 6 skipped, exit code 0. This entry records the Windows environment result and does not supersede the canonical LF replay PASS recorded above.",
+      "result": "FAIL",
+      "evidence_uri": "repo://tests/test_roulette_web_ui.py"
+    },
+    {
+      "check": "python -m unittest tests.test_binary_assets executed by Codex with all eight R4-ART-0007 files staged: Ran 109 tests, OK, 4 skipped. The SYS-AST binary asset integrity gate accepts both bitmaps against assets/manifests/R4-ART-0007-assets.json.",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_binary_assets.py"
+    },
+    {
+      "check": "python -m unittest tests.test_binary_assets tests.test_integrity tests.test_baseline executed by Codex with all eight R4-ART-0007 files staged: Ran 181 tests, OK, 4 skipped. Content integrity and baseline validation accept the staged binary assets.",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_integrity.py"
+    },
+    {
+      "check": "Objective image checks: WebP and PNG headers read directly for format, 2560x1440 and 512x512 geometry, colour model, alpha channel, frame count and interlace, compared against the manifest declarations (AC-001)",
+      "result": "PASS",
+      "evidence_uri": "repo://assets/manifests/R4-ART-0007-assets.json"
+    },
+    {
+      "check": "Objective pixel statistics recomputed and matched to the generation record: central-to-gutter edge ratio 0.142016618, max relative luminance 0.236868665, mean relative luminance 0.004392710, seam ratio 0.0, low-frequency variation 0.757519 percent, max local luma std 1.9678, gold area 0.360867 percent, red area 0.031603 percent",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/art/R4-ART-0007-generation-record.json"
+    },
+    {
+      "check": "Manifest hash verification: every declared SHA-256 recomputed under studio_core.integrity canonical form and matched (background sha256:e1211d1e...47ef27 at 27024 bytes, felt tile sha256:59208eb1...b9dc7 at 79412 bytes)",
+      "result": "PASS",
+      "evidence_uri": "repo://assets/manifests/R4-ART-0007-assets.json"
+    },
+    {
+      "check": "Artifact content_hash matched against assets/roulette/table-atmosphere-background.webp, and the artifact specification component hashes matched against the felt tile, the canonical manifest and the art-direction brief on disk",
+      "result": "PASS",
+      "evidence_uri": "repo://artifacts/R4-ART-0007-artifact.json"
+    },
+    {
+      "check": "Binary budget measured: background 27024 bytes, felt tile 79412 bytes, total 106436 bytes, all within the AC-008 limits of 400KB, 120KB and 512KB",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/art/R4-ART-0007-generation-record.json"
+    },
+    {
+      "check": "Change-set scope check (AC-012): the staged change set is the eight R4-ART-0007 files only - the two bitmaps, assets/manifests/R4-ART-0007-assets.json, docs/art/R4-ART-0007-art-direction.md, docs/art/R4-ART-0007-generation-record.json, tasks/R4-ART-0007.json, artifacts/R4-ART-0007-artifact.json and handoffs/R4-ART-0007-handoff.json; apps, studio_core, tests, scripts and games were left byte-identical",
+      "result": "PASS",
+      "evidence_uri": "repo://tasks/R4-ART-0007.json"
+    },
+    {
+      "check": "Human visual QA of the final processed WebP and PNG, performed by the USER on 2026-09-02. The USER opened the processed files and recorded a PASS on visual quality and art direction. Scope is visual and art direction only: this is not the AC-010 prohibited-content determination and carries no rights, training-permission or commercial-use finding. The Windows view-image sandbox failure persists as a Codex helper limitation, and Codex's earlier source-render observation remains a limited source observation; neither affects this USER result.",
+      "result": "PASS",
+      "evidence_uri": "repo://artifacts/R4-ART-0007-artifact.json"
+    },
+    {
+      "check": "Explicit USER art-direction sign-off recorded 2026-09-02: user_art_direction_signoff APPROVED in artifacts/R4-ART-0007-artifact.json, with human_visual_qa_of_processed_files PASS_USER. The sign-off approves the look of the two candidate bitmaps against docs/art/R4-ART-0007-art-direction.md and is scoped to visual and art direction only. It confers no rights, training-permission or commercial-use determination, is not an AC-010 prohibited-content determination, and does not substitute for A-30 art-direction approval or A-50 independent review. No further USER sign-off is required for this task.",
+      "result": "PASS",
+      "evidence_uri": "repo://artifacts/R4-ART-0007-artifact.json"
+    },
+    {
+      "check": "AC-010 prohibited-content checklist determination on the processed assets by A-30, independently re-determined by A-50",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://tasks/R4-ART-0007.json"
+    },
+    {
+      "check": "AC-011 tone determination against the art-direction brief (premium modern stylized, not photorealistic gambling advertising)",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://docs/art/R4-ART-0007-art-direction.md"
+    },
+    {
+      "check": "AC-007 accessibility and render integration: contrast composites of the assets under the existing surface opacities, including the alpha 82 percent control bar and the transparent ghost button, against the 4.5:1 and 3:1 thresholds",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://apps/roulette_web/static/styles.css"
+    },
+    {
+      "check": "AC-009 rights, training-permission and commercial-use determination by A-30; all three remain PENDING_HUMAN_REVIEW and provenance_complete is false",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://assets/manifests/R4-ART-0007-assets.json"
+    },
+    {
+      "check": "AC-014 approvals: the USER art-direction sign-off is recorded APPROVED as of 2026-09-02 and is no longer outstanding. A-30 art-direction approval and A-50 independent review remain NOT RUN, and no output may be designated a final asset until both are recorded.",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://handoffs/R4-ART-0007-handoff.json"
+    },
+    {
+      "check": "GitHub hosted CI run observed on the canonical LF form after commit and push",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://tasks/R4-ART-0007.json"
+    }
+  ],
+  "known_risks": [
+    {
+      "severity": "HIGH",
+      "description": "The Codex helper still cannot display the final processed WebP and PNG because the Windows view-image sandbox failed; that limitation is unchanged. The files themselves are no longer unseen: the USER inspected both on 2026-09-02 and recorded a visual QA PASS and an APPROVED art-direction sign-off. That approval is scoped to visual quality and art direction only and is explicitly not the AC-010 prohibited-content determination, so AC-010 and AC-011 remain undetermined. Codex's generation-time observation still covers the source renders only and does not carry to the cropped, resampled, brightness- and contrast-adjusted, re-encoded outputs, and the objective pixel statistics cannot detect a small glyph, watermark or figure. A-30 and A-50 must still open both files at native resolution and 400 percent zoom and make their own determinations before any gate decision; the USER approval does not shortcut that and no USER re-review is being requested.",
+      "owner_agent_id": "A-30"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "Rights, training-permission and commercial-use status are all PENDING_HUMAN_REVIEW and provenance_complete is false. The manifest and artifact record license as PENDING-HUMAN-DETERMINATION, commercial_use false and training_permission UNKNOWN rather than claiming a determination that has not been made. Both bitmaps are CANDIDATE assets with no final asset designation. Until A-30 settles these determinations, they may not be treated as cleared for any use.",
+      "owner_agent_id": "A-30"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "apps/roulette_web/server.py ALLOWED_STATIC_SUFFIXES contains neither .webp nor .png, so both assets return 404 today. There is no server allowlist for these formats yet and none is added here. Nothing is integrated into the application, and the CSS wiring plus the suffix amendment belong to a follow-up integration unit that must not start before the A-30 art-direction approval and the A-50 independent review are recorded. The USER art-direction sign-off is already APPROVED as of 2026-09-02 and is not a pending prerequisite.",
+      "owner_agent_id": "A-20"
+    },
+    {
+      "severity": "LOW",
+      "description": "This is a Windows core.autocrlf physical checkout, and the full suite has now been run here: Ran 579 tests, FAILED (failures=1), 4 skipped, the single failure being tests.test_roulette_web_ui.StaticDeliveryTests.test_the_served_index_is_the_file_on_disk_and_links_only_local_assets. This is the known unrelated R4-UI-0006 CRLF sensitivity in the static index byte comparison: the served raw bytes carry CRLF while read_text normalises to LF. It is line-ending specific, pre-existing, sits in a file this task did not touch, and disappears on the LF-normalised canonical form, where the same command reported Ran 579 tests, OK, 6 skipped, exit code 0, which is why the required commands are replayed there. Consequently a reviewer running the suite on a Windows checkout should expect this one failure and must not read it as an R4-ART-0007 regression. This task modifies no test or application file, and GitHub hosted CI on the canonical form remains the required confirmation.",
+      "owner_agent_id": "A-20"
+    },
+    {
+      "severity": "LOW",
+      "description": "The Layer AI usage threshold that would trigger reconsidering layer_ai as an image provider is still unset, and layer_ai stays DISABLED_UNTIL_CONFIGURED and absent from every route. The image route has no fallback, so a codex_imagegen outage stops art regeneration outright and any reissue of these assets would be blocked.",
+      "owner_agent_id": "A-00"
+    },
+    {
+      "severity": "LOW",
+      "description": "The managed provider path discloses neither a model name and version nor a per-call cost, so both are recorded as unavailable and model is null. If the provider swaps models behind the connector, a later regeneration could drift in style without any repository-visible signal; only the recorded prompts and file fingerprints tie these assets to their generation.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "LOW",
+      "description": "The provider source renders are held outside the repository, so the processing chain from source render to staged file can be replayed only from the recorded prompts, source-render hashes and the mechanical-processing list in docs/art/R4-ART-0007-generation-record.json. An independent verifier cannot reproduce the bitmaps from inside the repository alone.",
+      "owner_agent_id": "A-02"
+    }
+  ],
+  "next_action": "A-50 must perform the independent visual and contract review; standard validation is already complete, with both required commands recorded PASS from the isolated LF replay (validate_baseline exit 0; Ran 579 tests, OK, 6 skipped, exit 0), so no re-run of those two commands is required to proceed. Open assets/roulette/table-atmosphere-background.webp and assets/roulette/felt-tile.png on a console where images can actually be displayed, run the AC-010 prohibited-content checklist and the AC-011 tone determination on the processed files, verify the AC-007 contrast composites, confirm the declared hashes in assets/manifests/R4-ART-0007-assets.json against the files on disk and the detail in docs/art/R4-ART-0007-generation-record.json, and confirm the PENDING rights, training-permission and commercial-use status; then either request rework or route the assets to A-30 for the art-direction approval and the AC-009 rights, training-permission and commercial-use determination. No USER sign-off is to be requested: the USER art-direction sign-off is already recorded APPROVED as of 2026-09-02. A GitHub hosted CI run on the canonical LF form is still required and remains unobserved. Both bitmaps remain CANDIDATE with no final asset or production designation; candidate-review commits already exist on feat/r4-roulette-art-main, but no merge to main and no application integration may occur before the A-30 and A-50 approvals are recorded.",
+  "readiness": "READY_FOR_REVIEW",
+  "acknowledgement_required": true
+}

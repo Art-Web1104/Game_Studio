@@ -1,0 +1,186 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_id": "R4-ART-0007-manifest",
+  "task_id": "R4-ART-0007",
+  "project_id": "casino-core",
+  "owner_agent_id": "A-02",
+  "art_lead_agent_id": "A-30",
+  "asset_status": "CANDIDATE",
+  "submission_status": "SUBMITTED",
+  "final_asset_designation": false,
+  "generated_at_utc": "2026-09-02",
+  "hash_canonicalisation": "studio_core.integrity canonical form; both assets classify as binary and are hashed over raw bytes, pinned by .gitattributes (*.png binary, *.webp binary)",
+  "provider": {
+    "provider_id": "codex_imagegen",
+    "display_name": "Codex Built-in ImageGen",
+    "adapter_type": "api_or_managed_connector",
+    "invocation_path": "managed connector",
+    "route": "image",
+    "routing_policy": "providers/routing-policy.yaml image route: preferred codex_imagegen, fallbacks []",
+    "activation_evidence": "providers/evidence/SYS-IMG-0013-codex-imagegen-connection-proof.yaml",
+    "activated_by_task": "SYS-IMG-0013",
+    "model_name": null,
+    "model_version": null,
+    "model_disclosure": "unavailable",
+    "cost_usd": null,
+    "cost_disclosure": "unavailable",
+    "disclosure_note": "The managed built-in path does not expose a model name, a model version, or a per-call cost. These values are recorded as null/unavailable rather than invented, per tasks/R4-ART-0007.json assumption on model disclosure."
+  },
+  "provenance": {
+    "external_references_used": false,
+    "reference_material": [],
+    "reference_rights_basis": "not applicable; no external reference material was supplied to the provider",
+    "derived_from_prior_probe_images": false,
+    "prior_probe_note": "The SYS-IMG-0013 connection-proof probe images (PRB-001, PRB-002) were not used as candidate or source material for these assets.",
+    "contains_pii": false,
+    "contains_secrets": false,
+    "data_classification": "INTERNAL"
+  },
+  "rights": {
+    "rights_status": "PENDING_HUMAN_REVIEW",
+    "training_permission_status": "PENDING_HUMAN_REVIEW",
+    "commercial_use_status": "PENDING_HUMAN_REVIEW",
+    "determination_owner": "A-30",
+    "note": "Rights and training-permission determinations are not settled by this manifest and are not touched by the USER art-direction sign-off, which is a visual and art-direction acceptance only. No asset in this manifest is designated a final asset until A-30 art-direction approval and A-50 independent review are also recorded; the USER art-direction sign-off component of that set is recorded APPROVED, the other two remain PENDING."
+  },
+  "approvals": {
+    "A-30_art_direction": "PENDING",
+    "A-50_independent_review": "PENDING",
+    "USER_art_direction_signoff": "APPROVED",
+    "USER_art_direction_signoff_recorded_at_utc": "2026-09-02",
+    "USER_art_direction_signoff_scope": "Visual acceptance of the two final processed images and approval of the art direction. It does not extend to rights, licence, training permission, commercial use, provenance completeness, the AC-010 independent prohibited-content checklist, final asset designation, or any production or integration readiness.",
+    "final_gate": "NOT_ISSUED"
+  },
+  "review_status": {
+    "human_visual_review": "PASS_USER",
+    "human_visual_review_detail": "The two final processed images were opened for USER inspection on 2026-09-02 and the USER stated that the images were acceptable and approved the art direction. This is the USER visual review and it is recorded as PASS.",
+    "prohibited_content_review": "PENDING",
+    "prohibited_content_review_detail": "The AC-010 prohibited-content checklist is an independent, item-by-item determination by A-30 with an independent re-determination by A-50 at native resolution and 400% zoom. Neither has been performed, so AC-010 remains PENDING and is not satisfied by the USER visual acceptance.",
+    "observed_fact": "The provider's source outputs were displayed at generation time and no prohibited content was observed by Codex at that point.",
+    "tooling_limitation": "The Codex view-image helper failed on this Windows console, so the agent-side re-display of the processed WebP and PNG never succeeded. This remains an unresolved tooling limitation and is recorded as such. It did not block the USER, whose own inspection of the two final processed images succeeded.",
+    "conclusion": "USER visual review is recorded PASS. The independent prohibited-content review (AC-010) and the tone determination (AC-011) remain PENDING, A-30 art-direction approval and A-50 independent review remain PENDING, and no asset is designated a final asset by this record."
+  },
+  "assets": [
+    {
+      "name": "r4-art-table-atmosphere-background",
+      "artifact_type": "IMAGE",
+      "target_uri": "repo://assets/roulette/table-atmosphere-background.webp",
+      "path": "assets/roulette/table-atmosphere-background.webp",
+      "role": "wide decorative table-atmosphere backdrop layered under the existing responsive roulette UI",
+      "format": "WEBP",
+      "colour_model": "RGB",
+      "alpha_channel": false,
+      "opaque": true,
+      "frame_count": 1,
+      "animated": false,
+      "progressive_or_interlaced": false,
+      "width_px": 2560,
+      "height_px": 1440,
+      "aspect_ratio": "16:9",
+      "byte_size": 27024,
+      "content_hash": "sha256:e1211d1e3418b5fc77b454227ac2a9c93ea6df27a19f56123973e5246347ef27",
+      "source_render": {
+        "format": "PNG",
+        "content_hash": "sha256:ffa8d7688fea7e75dd54160d95a30f1c2bfea2a69f45f1971bc964316f4e43a5",
+        "retained_in_repository": false,
+        "note": "Provider render held outside the repository; hash recorded so the processing chain from provider output to committed file is reproducible."
+      },
+      "generated_at_utc": "2026-09-02",
+      "prompt_verbatim": "Use case: stylized-concept | Asset type: production candidate source for a 2560x1440 decorative roulette web-game background | Primary request: create an original premium modern stylized game-table atmosphere backdrop for an existing responsive UI overlay, with no gameplay information | Scene/backdrop: deep emerald felt table field, restrained matte graphite outer architecture, very subtle dark brass-gold edge trim, and tiny muted roulette-red edge accents | Subject: an elegant empty table atmosphere; keep the exact central 49% of image width and the central vertical mobile crop visually quiet, uniform, dark, and free of focal objects; decorative structure stays only in far outer gutters and corners | Style/medium: polished stylized 3D game environment background, sophisticated and tactile, not photorealistic gambling advertising | Composition/framing: true 16:9 wide landscape, near top-down perspective, symmetric balance, generous central negative space, safe for cover cropping to 9:16 and 21:9 | Lighting/mood: very low-key diffuse ambient glow, calm and premium, no bright hotspot, no lens flare; all visible highlights subdued enough for white UI text and translucent panels | Color palette: dominant deep emerald close to #04140d, #072318, #0b3222 and #10462f; matte graphite #14181b; restrained dark brass near #8a7327; tiny muted red near #b3202c; gold area below 8 percent and red below 4 percent | Materials/textures: fine woven felt, subtle brushed dark brass, matte graphite, soft shallow shadows | Constraints: absolutely no text, letters, numbers, glyphs, logos, trademarks, watermark, signatures, people, hands, cash, banknotes, coins, currency symbols, payment or cashout imagery, chips, cards, dice, alcohol, UI controls, buttons, sliders, roulette pockets, roulette numbers, roulette wheel focal point, baked game results, payout information, or readable signage; original design only; no device mockup, no frame mockup; central UI zone must remain empty and low contrast | Avoid: flashy casino advertising, neon, bright gold, clutter, literal betting scene, recognizable casino branding, dramatic winning effects, wealth imagery, photorealistic advertisement",
+      "mechanical_processing": [
+        "centered 16:9 crop of the provider render",
+        "resample to exactly 2560x1440",
+        "brightness adjustment",
+        "contrast adjustment",
+        "WebP encode (opaque, single frame, no interlace)"
+      ],
+      "processing_note": "Mechanical image operations only. No repainting, no compositing of additional imagery, no text or overlay of any kind was introduced.",
+      "measurements": {
+        "max_relative_luminance": 0.236868665,
+        "mean_relative_luminance": 0.004392710,
+        "central_to_gutter_edge_ratio": 0.142016618,
+        "central_band_definition": "central 49% of image width, corresponding to the 1248px desktop shell (max-width: 78rem)",
+        "estimated_gold_area_percent": 0.360867,
+        "estimated_red_area_percent": 0.031603,
+        "measurement_status": "programmatic pixel statistics only; not a substitute for the A-30/A-50 visual determinations, which remain PENDING"
+      }
+    },
+    {
+      "name": "r4-art-seamless-felt-tile",
+      "artifact_type": "IMAGE",
+      "target_uri": "repo://assets/roulette/felt-tile.png",
+      "path": "assets/roulette/felt-tile.png",
+      "role": "fine seamless felt material tile for CSS repeat beneath roulette UI panels",
+      "format": "PNG",
+      "png_subtype": "PNG-24",
+      "colour_model": "RGB",
+      "alpha_channel": false,
+      "opaque": true,
+      "frame_count": 1,
+      "animated": false,
+      "progressive_or_interlaced": false,
+      "width_px": 512,
+      "height_px": 512,
+      "aspect_ratio": "1:1",
+      "byte_size": 79412,
+      "content_hash": "sha256:59208eb18461045d27b86d574d0cbe48fbbd0603a279dda48c02cb73b15b9dc7",
+      "source_render": {
+        "format": "PNG",
+        "content_hash": "sha256:f2c69e40619ff288b85c3b4ccce5aa0b227886ae396da3e70ad53655a6797bbd",
+        "retained_in_repository": false,
+        "note": "Provider render held outside the repository; hash recorded so the processing chain from provider output to committed file is reproducible."
+      },
+      "generated_at_utc": "2026-09-02",
+      "prompt_verbatim": "Use case: stylized-concept | Asset type: production candidate source for a 512x512 seamless CSS tile texture | Primary request: create an original subtle deep-emerald woven felt material texture that repeats perfectly in both directions beneath roulette UI panels | Scene/backdrop: flat orthographic edge-to-edge material sample only | Subject: extremely fine short felt fibers with restrained woven grain, uniform density, and gentle micro-variation | Style/medium: polished stylized game material texture with understated realistic material cues | Composition/framing: exact square, perfectly flat top-down, no perspective, no border, no center focal point, seamless continuation across left/right and top/bottom edges | Lighting/mood: neutral diffuse low-contrast illumination with no directional shadow, hotspot, gradient, or vignette | Color palette: dark emerald close to #04140d, #072318, #0b3222 and #10462f; no bright green and no crushed black areas | Materials/textures: fine felt fibers, subtle woven grain, soft matte finish; feature size below 2 percent of image width | Constraints: genuinely seamless and tileable across all four edges; local tonal variation restrained to approximately plus or minus 12 in 8-bit values; absolutely no text, letters, numbers, glyphs, logos, trademarks, watermark, signatures, people, hands, cash, banknotes, coins, currency symbols, payment imagery, chips, cards, dice, roulette pockets, roulette numbers, game results, payout information, UI controls, brass, frame, border, symbols, stains, seams, folds, spotlight, vignette, or large-scale motif; original design only | Avoid: obvious repeating pattern, grid, checkerboard, noisy high-contrast grain, bright fibers, directional lighting, recognizable objects, photorealistic casino scene",
+      "mechanical_processing": [
+        "high-frequency component extraction from the provider render",
+        "mirrored periodic quadrant construction to force wrap continuity",
+        "restrained blur",
+        "restrained posterization",
+        "RGB PNG encode (opaque, single frame, no interlace)"
+      ],
+      "processing_note": "Mechanical image operations only. No repainting, no compositing of additional imagery, no text or overlay of any kind was introduced.",
+      "measurements": {
+        "seam_ratio": 0.0,
+        "seam_ratio_definition": "wrap-around adjacent-pixel difference at the tile boundaries relative to the mean interior adjacent-pixel difference",
+        "low_frequency_variation_percent": 0.757519,
+        "max_local_luma_std_16px": 1.9678,
+        "luma_range": {
+          "min": 18.32,
+          "max": 32.04
+        },
+        "measurement_status": "programmatic pixel statistics only; not a substitute for the A-30/A-50 visual determinations, which remain PENDING"
+      }
+    }
+  ],
+  "binary_budget": {
+    "background_bytes": 27024,
+    "felt_tile_bytes": 79412,
+    "total_binary_bytes": 106436
+  },
+  "integration_constraints": {
+    "source": "AC-013",
+    "code_integration_in_this_task": false,
+    "recommended_background_placement": "layer the WebP on top of the existing background-color: var(--felt-900) on body, using background-size: cover with a centred position, so the central UI column stays over the quiet central band",
+    "background_cover_behaviour": "cover; the asset is composed so that 9:16, 16:9, and 21:9 cover crops all leave the central band free of focal objects",
+    "recommended_felt_tile_background_size": "a fixed background-size on the order of the 512px tile (e.g. background-size: 512px 512px), with background-repeat: repeat on both axes",
+    "felt_tile_repeat_axes": "both horizontal and vertical",
+    "felt_fallback": "keep --felt-900 #04140d as the underlying background-color so a failed image load degrades to the existing appearance",
+    "csp": "apps/roulette_web/server.py SECURITY_HEADERS already sets img-src 'self' data:, so only same-origin serving of these assets is permitted; no remote origin may be used",
+    "static_suffix_gap": "ALLOWED_STATIC_SUFFIXES in apps/roulette_web/server.py currently contains only .html, .css, .js, .svg, .json, .webmanifest. It contains neither .webp nor .png, so both assets return 404 today. A follow-up integration unit must amend the allowed-suffix map before these assets can be served.",
+    "ownership": "The suffix amendment and the CSS wiring are owned by a separate follow-up integration unit, not by R4-ART-0007."
+  },
+  "settled": [
+    "USER visual inspection of the two final processed images (recorded PASS on 2026-09-02)",
+    "USER art-direction sign-off (recorded APPROVED on 2026-09-02)"
+  ],
+  "outstanding": [
+    "A-30 art-direction approval",
+    "A-50 independent review",
+    "A-30 and A-50 review of the processed files at native resolution and 400% zoom; the USER visual inspection is recorded PASS but does not substitute for the independent reviewer pass",
+    "Independent prohibited-content checklist determination (AC-010)",
+    "Tone determination against the art-direction brief (AC-011)",
+    "Rights and training-permission determination (AC-009)",
+    "Contrast composite verification against existing surfaces (AC-007)"
+  ]
+}
