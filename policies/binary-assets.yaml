@@ -1,0 +1,111 @@
+# TS STUDIO 저장소 바이너리 자산 정책 (SYS-AST-0014)
+#
+# 이 파일은 studio_core/binary_assets.py가 실행하는 정책의 원본이다. 문서가 아니라 게이트의
+# 입력이므로, 여기서 허용하지 않은 경로·확장자 조합의 바이너리는 검증에서 거부된다.
+#
+# 기본 거부(default-deny)인 이유: "바이너리 개수 == 0" 단정은 정당한 첫 아트 자산조차 막지만,
+# 개수 단정을 그냥 없애면 어떤 바이너리든 무제한으로 들어온다. 개수 대신 불변식을 검사한다.
+schema_version: 1.0.0
+policy_id: BINARY-ASSETS-001
+policy_version: BINARY-ASSETS-001/1.0.0
+mode: deny_by_default
+
+# 허용 목록. 자산은 allowed_roots 중 하나의 하위에 있고 allowed_extensions 중 하나로 끝나야
+# 한다. 두 조건 중 하나라도 어긋나면 거부한다. 확장(오디오·폰트·3D)은 A-30과 사용자의 별도
+# 승인 작업으로만 추가한다.
+allowlist:
+  roots:
+    - assets
+  extensions:
+    - .png
+    - .webp
+
+# 허용 확장자는 .gitattributes에서 binary 또는 -text로 고정되어 있어야 한다. 고정되지 않으면
+# Git이 text=auto로 줄바꿈을 정규화해 커밋된 블롭이 원본 바이트와 달라지고, 원시 바이트 해시
+# 추적이 성립하지 않는다.
+gitattributes:
+  file: .gitattributes
+  accepted_treatments:
+    - binary
+    - -text
+  unpinned_extension: denied
+
+# 해시는 원시 바이트 SHA-256이다. 텍스트 LF 정규화 경로를 절대 거치지 않는다. CRLF를 포함한
+# 바이너리와 그 LF 변형은 서로 다른 해시를 가져야 한다.
+hashing:
+  algorithm: sha256
+  prefix: "sha256:"
+  representation: raw_bytes
+  text_normalization: prohibited
+
+# 추적성. 자산은 (1) status가 아래 목록에 있는 Task Contract의 deliverable로 참조되고,
+# (2) 아래 선언 출처 중 최소 하나에서 실제 원시 바이트 해시로 선언되어야 한다. 둘 중 하나라도
+# 없으면 거부한다.
+#
+# 두 조건은 하나의 불변식이며 같은 task_id로 묶여야 한다. 각각을 독립적으로 검사하면 작업 A가
+# deliverable을 선언하고 무관한 작업 B가 해시를 선언한 자산이 통과한다. 그 경우 "이 자산은 내
+# 것이다"와 "이 바이트가 그 내용이다"를 동시에 주장한 작업이 하나도 없어 책임 주체가 없다.
+# 반대로 무관한 작업의 해시 선언은 적격 작업의 판정을 오염시키지도 못한다. 통과시킬 수도,
+# 거부시킬 수도 없다.
+traceability:
+  task_deliverable_required: true
+  hash_declaration_task_scope: same_task_only
+  traceable_task_status:
+    - READY
+    - IN_PROGRESS
+    - REVIEW
+    - QA
+    - DONE
+  hash_declaration_required: true
+  declaration_sources:
+    - artifact_primary
+    - artifact_component
+    - asset_manifest
+  # Artifact Contract의 specification은 평면 키/값이므로, 컴포넌트 해시는 경로를 담은 키 X와
+  # 그 해시를 담은 키 X_hash 쌍으로 선언한다. R2-RNG-0001 artifact의
+  # statistics_module / statistics_module_hash가 저장소에 이미 있는 같은 규약이다.
+  artifact_component_suffix: _hash
+
+# 자산 매니페스트. 작업 단위 파일이며 경로와 원시 바이트 해시를 함께 선언한다.
+manifest:
+  directory: assets/manifests
+  filename_template: "{task_id}-assets.json"
+  schema: contracts/asset-manifest.schema.json
+  schema_invalid: denied
+
+# 대상 파일을 읽기 전에 거부해야 하는 조건.
+pre_read_rejections:
+  symlink: denied
+  absolute_path: denied
+  parent_directory_escape: denied
+  backslash_separator: denied
+  repository_root_escape: denied
+
+# 대상 파일을 읽은 뒤 거부해야 하는 조건.
+post_read_rejections:
+  # Git LFS는 이 저장소에서 쓰지 않는다. 포인터 텍스트의 출현은 자산 치환 신호로 취급한다.
+  git_lfs_pointer: denied
+  # studio_core.secret_scan의 규칙을 바이너리 바이트에 그대로 적용한다. 허용 마커는 적용하지
+  # 않는다. 바이너리가 자기 자신을 면제하도록 두면 검사가 무력화된다.
+  credential_like_bytes: denied
+  hash_mismatch: denied
+  undeclared_hash: denied
+  untracked_by_task: denied
+  # deliverable을 선언한 작업이 아닌 다른 작업만 해시를 선언한 경우.
+  cross_task_hash_declaration: denied
+  byte_size_mismatch: denied
+
+git_lfs:
+  in_use: false
+  pointer_prefix: "version https://git-lfs.github.com/spec/v1"
+  substitution: denied
+
+# 이 정책이 도입되는 시점의 저장소 상태. 바이너리가 하나도 없어도 모든 검증은 통과한다.
+baseline:
+  binary_asset_count_at_adoption: 0
+  zero_binaries_is_valid: true
+
+secret_scan_rule_source: studio_core.secret_scan.RULES
+owner_agent_id: A-02
+introduced_by_task: SYS-AST-0014
+extension_expansion: requires_approved_task

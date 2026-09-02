@@ -1,0 +1,134 @@
+{
+  "schema_version": "1.0.0",
+  "handoff_id": "HO-SYS-AST-0014-001",
+  "task_id": "SYS-AST-0014",
+  "from_agent_id": "A-02",
+  "to_agent_id": "A-50",
+  "created_at": "2026-09-02T01:00:00Z",
+  "summary": "tests/test_integrity.py의 report['files']['binary'] == 0 하드코딩 단정을 제거하고, 기본 거부 바이너리 자산 정책(BINARY-ASSETS-001/1.0.0)과 불변식 게이트로 대체했다. 허용 루트·확장자(assets/**/*.png, assets/**/*.webp), .gitattributes 바이너리 고정 교차 검사, 사전 경로 판정(심볼릭 링크·절대 경로·.. 이스케이프·역슬래시), LFS 포인터 치환 거부, 비밀값 유사 바이트 거부, READY 이후 Task deliverable 역참조, Artifact primary/component 또는 자산 매니페스트의 원시 바이트 SHA-256 일치를 모두 만족하는 바이너리만 통과한다. 이번 후속 패스에서는 역참조를 동일 Task 결속으로 좁혔다. 자산의 해시 선언은 그 자산을 deliverable로 가진 Task와 task_id가 같은 Artifact Contract 또는 자산 매니페스트에서만 유효하며, 다른 Task 소유의 Artifact primary/component 해시나 {other_task_id}-assets.json 매니페스트로는 추적성 불변식을 만족시킬 수 없다. 이 교차 Task 해시 선언 거부는 ASSET_HASH_CROSS_TASK 코드로 보고되며, ASSET_UNTRACKED_BY_TASK는 해당 자산을 deliverable로 소유한 Task 자체가 없는 경우에만 사용한다. 이로써 타 Task 선언을 빌려 미승인 바이너리를 통과시키는 교차 Task 스푸핑 경로를 닫았다. 바이너리 해시는 studio_core.binary_assets.raw_content_hash로 원시 바이트만 사용하며 studio_core/integrity.py의 텍스트 LF 정규화 경로는 수정하지 않았다. 이 작업은 아트·바이너리 자산을 하나도 추가하지 않았고 네거티브 픽스처는 전부 임시 디렉터리에서 런타임 생성된다. 저장소 바이너리 개수는 작업 전후 모두 0이며 그 상태에서 모든 검증이 통과한다. 커밋·푸시·사람 최종 승인은 아직 없다.",
+  "artifact_refs": ["ART-SYS-AST-0014-0001"],
+  "assumptions": [
+    "저장소에 추적되는 바이너리가 없는 현재 상태는 게이트의 실패가 아니라 유효한 통과 입력이다.",
+    "초기 허용 목록은 assets 루트와 .png, .webp 확장자로 한정하며 확장은 A-30과 사용자의 별도 승인 작업으로만 넓힌다.",
+    "바이너리 해시는 sha256: 접두사를 붙인 원시 바이트 SHA-256이며 텍스트 정규화 경로를 거치지 않는다.",
+    "Git LFS는 이 저장소에서 사용하지 않으므로 포인터 텍스트의 출현은 자산 치환 신호로 취급한다.",
+    "자산 매니페스트는 작업 단위 파일(assets/manifests/{task_id}-assets.json)로 두며 단일 저장소 매니페스트 통합 여부는 Phase B 결정으로 남긴다.",
+    "scripts/validate_baseline.py를 수정했기 때문에 그 파일의 content_hash를 inputs에 고정해 둔 tasks/SYS-CI-0012.json의 해당 항목을 새 해시로 다시 고정했다. SYS-CI-0012의 범위·수용 기준·산출물은 바꾸지 않았고 해시 드리프트 검사를 통과시키기 위한 재고정이다.",
+    "감사 체인에 추가한 AE-SYSAST0014-0008의 request_hash는 기록된 요청 본문(task_id, action, resource_refs, timestamp)의 결정론적 SHA-256이며, event_hash는 studio_core.rng.compute_event_hash 규약을 따른다.",
+    "docs/operations/SYS-AST-0014-binary-asset-integrity-gate.md의 상태 줄과 롤백 목록에 이번 패스에서 제출한 Artifact Contract와 Handoff Packet 두 파일을 반영했다.",
+    "추적성은 동일 Task 결속으로만 성립한다고 가정한다. 자산을 deliverable로 선언한 Task와 해시를 선언한 Artifact/매니페스트의 task_id가 다르면 선언은 무시하며, 여러 Task가 같은 바이너리를 공유해야 하는 경우는 별도 승인 작업에서 재선언하도록 남긴다.",
+    "이번 후속 패스는 산출물 계약 문서 두 건(artifacts/SYS-AST-0014-artifact.json, handoffs/SYS-AST-0014-handoff.json)만 갱신했고 코드·테스트는 수정하지 않았다."
+  ],
+  "verification_evidence": [
+    {
+      "check": "python scripts/validate_baseline.py",
+      "result": "PASS",
+      "evidence_uri": "repo://scripts/validate_baseline.py"
+    },
+    {
+      "check": "python -m unittest discover -s tests -v",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_binary_assets.py"
+    },
+    {
+      "check": "python -m unittest tests.test_binary_assets (게이트 단독 재실행, Ran 109, OK, skipped=4)",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_binary_assets.py"
+    },
+    {
+      "check": "python -m unittest tests.test_binary_assets tests.test_integrity tests.test_baseline (집중 검증 재실행, Ran 181, OK, skipped=4)",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_binary_assets.py"
+    },
+    {
+      "check": "python -m unittest discover -s tests -v (이 Windows core.autocrlf=true 작업 복사본 전체 실행: Ran 579, failures=1, skipped=4. 실패 1건은 test_roulette_web_ui의 정적 index 바이트 비교이며 CRLF가 원인이다. SYS-AST-0014가 만들거나 수정한 파일과 무관한 기존 R4-UI-0006 검사다.)",
+      "result": "FAIL",
+      "evidence_uri": "repo://tests/test_roulette_web_ui.py"
+    },
+    {
+      "check": "정본 LF post-fix 격리 재현 (Codex 관측: 현재 작업 트리를 임시 사본으로 복제하고 index.html의 CRLF를 LF로 정규화한 뒤, Handoff의 필수 명령을 한시적으로 정확히 기록한 상태에서 python -m unittest discover -s tests -v 실행 → Ran 579, OK, skipped=6, exit 0. 실행 후 임시 사본은 삭제했다. 이 결과는 정본 LF 형태의 post-fix 전체 통과 증거이며, GitHub 호스티드 Actions 실행은 여전히 미수행이다.)",
+      "result": "PASS",
+      "evidence_uri": "repo://.gitattributes"
+    },
+    {
+      "check": "Artifact content_hash와 studio_core/binary_assets.py 실제 canonical sha256 일치 확인",
+      "result": "PASS",
+      "evidence_uri": "repo://artifacts/SYS-AST-0014-artifact.json"
+    },
+    {
+      "check": "저장소 바이너리 파일 목록 작업 전후 동일성 확인 (classify 기준 0개, 아트·바이너리 자산 미추가)",
+      "result": "PASS",
+      "evidence_uri": "repo://policies/binary-assets.yaml"
+    },
+    {
+      "check": "정책 허용 확장자와 .gitattributes 바이너리 지시자 교차 검사 (unpinned_extensions 공집합)",
+      "result": "PASS",
+      "evidence_uri": "repo://.gitattributes"
+    },
+    {
+      "check": "tests/test_integrity.py의 report['files']['binary'] == 0 단정 부재 확인과 텍스트 LF 정규화 회귀 테스트 27건 통과",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_integrity.py"
+    },
+    {
+      "check": "audit/audit-event.schema.json 스키마 검증, 해시 체인 연결 검증(verify_audit_chain 문제 0건), contains_secret == false 확인",
+      "result": "PASS",
+      "evidence_uri": "repo://audit/events/SYS-AST-0014-events.json"
+    },
+    {
+      "check": "providers/registry.yaml, providers/routing-policy.yaml, apps/roulette_web/**, games/roulette/** diff 부재 확인",
+      "result": "PASS",
+      "evidence_uri": "repo://providers/routing-policy.yaml"
+    },
+    {
+      "check": "operations/collaboration.yaml 분리 규칙 대조 (생성자 A-02, 리뷰어 A-20·A-50, 최종 게이트 A-50·USER)",
+      "result": "PASS",
+      "evidence_uri": "repo://operations/collaboration.yaml"
+    },
+    {
+      "check": "사람 최종 승인(A-50 또는 USER) 게이트 판정",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://handoffs/SYS-AST-0014-handoff.json"
+    },
+    {
+      "check": "커밋·원격 푸시 및 GitHub 호스티드 Actions 실행 결과 관측",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://docs/operations/SYS-AST-0014-binary-asset-integrity-gate.md"
+    }
+  ],
+  "known_risks": [
+    {
+      "severity": "MEDIUM",
+      "description": "게이트는 실제 바이너리 자산이 하나도 없는 상태에서 도입됐다. 모든 통과·거부 판정은 임시 디렉터리 픽스처로만 검증했으므로, 첫 실제 PNG 자산 작업이 매니페스트·Artifact 선언·게이트 상호작용을 실제 커밋 경로에서 처음으로 검증하게 된다.",
+      "owner_agent_id": "A-20"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "이 작업이 scripts/validate_baseline.py를 수정하면서 그 해시를 inputs에 고정해 둔 tasks/SYS-CI-0012.json의 항목을 재고정했다. 이는 SYS-AST-0014 소유 범위 밖 파일에 대한 변경이므로, 독립 검증자는 SYS-CI-0012의 다른 필드가 바뀌지 않았는지 diff로 확인해야 한다.",
+      "owner_agent_id": "A-20"
+    },
+    {
+      "severity": "LOW",
+      "description": "credential-like 바이트 검사는 studio_core.secret_scan의 규칙 기반이므로 형식이 없는 자체 발급 토큰이나 압축·암호화된 바이너리 안의 비밀값은 탐지하지 못한다. 압축 포맷(PNG, WebP)에서는 평문 패턴이 드물어 오탐보다 미탐 위험이 크다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "LOW",
+      "description": "python -m unittest discover -s tests -v를 이 Windows core.autocrlf=true 작업 복사본에서 그대로 실행한 결과는 Ran 579, failures=1, skipped=4이며, 그 실패 1건은 test_roulette_web_ui의 정적 index 바이트 비교가 CRLF 때문에 깨지는 기존 결함이다. SYS-AST-0014가 만들거나 수정한 파일과 무관한 기존 R4-UI-0006 검사이고 이 작업은 해당 파일을 수정하지 않으므로 고치지 않고 남겨 둔다. 동일 작업 트리를 정본 LF로 정규화한 격리 사본에서는 같은 명령이 Ran 579, OK, skipped=6, exit 0으로 통과했으므로 그 실패는 CRLF 체크아웃 형태에 한정된다. GitHub 호스티드 Actions 실행은 아직 수행되지 않았다.",
+      "owner_agent_id": "A-20"
+    },
+    {
+      "severity": "LOW",
+      "description": "정책 허용 목록이 assets/**/*.png와 assets/**/*.webp뿐이라 오디오·폰트·3D 자산이 필요한 첫 작업은 정책 확장 승인 작업 없이는 진행할 수 없다. 이는 의도된 기본 거부 비용이며 확장 절차는 A-30과 사용자의 결정에 달려 있다.",
+      "owner_agent_id": "A-30"
+    },
+    {
+      "severity": "LOW",
+      "description": "커밋·푸시·호스티드 CI 실행이 모두 미수행이므로 현재 상태는 작업 트리에만 존재한다. 게이트 판정 전 되돌림은 신규 파일 삭제와 .gitattributes, scripts/validate_baseline.py, tests/test_integrity.py, tasks/SYS-CI-0012.json 복원만으로 완결된다.",
+      "owner_agent_id": "A-02"
+    }
+  ],
+  "next_action": "A-50은 두 표준 검증 명령을 독립 콘솔에서 재실행하고, 정책의 기본 거부 성질, .gitattributes 교차 검사, 사전 경로 거부와 LFS·자격증명 거부, Task deliverable 역참조와 원시 바이트 해시 일치, 텍스트 정규화 경로 무변경, 저장소 바이너리 미추가를 독립 검증한 뒤 최종 QA 게이트 결정을 발행하고 커밋 여부에 대한 사용자 승인을 요청한다.",
+  "readiness": "READY_FOR_REVIEW",
+  "acknowledgement_required": true
+}
