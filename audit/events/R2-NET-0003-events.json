@@ -1,0 +1,152 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "R2-NET-0003",
+  "chain_namespace": "R2NET",
+  "summary": "R2-NET-0003 재접속·라운드 연속성 유닛의 감사 기록이다. 계약 발행, 계약 단계 아티팩트 등록, 선언되지 않은 파일을 수정해 검증·커밋 이전에 중단·폐기된 1차 구현 시도, 더 작은 범위로의 계약 개정, 기존 엔드포인트만 사용하는 구현 완료, 두 표준 검증 명령 재실행을 순서대로 남긴다. 세 번째 이벤트는 실패 기록이며 지우지 않는다. 마지막 이벤트는 AC-003과 AC-010을 관측된 사실에 맞춰 승인 아래 명확화한 기록이다. 구현자가 임의로 문언을 고친 것이 아니라 편차를 보고하고 승인을 받아 반영했다.",
+  "events": [
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-02T00:00:00Z",
+      "actor_type": "USER",
+      "actor_id": "USER",
+      "task_id": "R2-NET-0003",
+      "action": "TASK_CONTRACT_ISSUED_READY",
+      "resource_refs": [
+        "repo://tasks/R2-NET-0003.json",
+        "repo://contracts/task.schema.json",
+        "repo://docs/operations/R2-followup-units.md"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:f1821ea2433d822546b4177bff31956f3ef5017a11518f2ee71f212ecde7f24c",
+      "contains_secret": false,
+      "event_id": "AE-R2NET-0001",
+      "previous_event_hash": null,
+      "event_hash": "sha256:6909800f9e10545778aacb9f614df2b84de61847dcd3fbe03a29d400081f1811"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "ARTIFACT",
+      "timestamp": "2026-09-02T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "R2-NET-0003",
+      "action": "PRE_IMPLEMENTATION_ARTIFACT_REGISTERED",
+      "resource_refs": [
+        "repo://artifacts/R2-NET-0003-artifact.json",
+        "repo://handoffs/R2-NET-0003-handoff.json"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:bd2c6b3ecec2d2595ad50083d037b9757bce5ae5cc462246e43a43e515487dbc",
+      "contains_secret": false,
+      "event_id": "AE-R2NET-0002",
+      "previous_event_hash": "sha256:6909800f9e10545778aacb9f614df2b84de61847dcd3fbe03a29d400081f1811",
+      "event_hash": "sha256:7ec9a3846e75223d0d1b49030839b0b926193b0a7675bbcd8c0917bce8f8eb70"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-02T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "R2-NET-0003",
+      "action": "IMPLEMENTATION_ATTEMPT_INTERRUPTED_AND_DISCARDED",
+      "resource_refs": [
+        "repo://games/roulette/playable-slice-contract.yaml",
+        "repo://apps/roulette_web/server.py",
+        "repo://tasks/R2-NET-0003.json"
+      ],
+      "decision": "FAIL",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:7e96a0e9b8d38e16f4b27a6eb0df6cf48a1771de2b50bc2ea13fcfa0fb1c857e",
+      "contains_secret": false,
+      "event_id": "AE-R2NET-0003",
+      "previous_event_hash": "sha256:7ec9a3846e75223d0d1b49030839b0b926193b0a7675bbcd8c0917bce8f8eb70",
+      "event_hash": "sha256:aee4d944941026376bb0e4f0ff7ac35c60fdbeba1c5e6c7d4ba74cbaf7e01d74"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-02T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "R2-NET-0003",
+      "action": "TASK_CONTRACT_AMENDED_SMALLER_SCOPE",
+      "resource_refs": [
+        "repo://tasks/R2-NET-0003.json",
+        "repo://games/roulette/reconnect-contract.yaml"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:9f48ab5e9daa042f6b8a243fbc63fd1c03a7117e1314c8ecdc9c63bf6e4db696",
+      "contains_secret": false,
+      "event_id": "AE-R2NET-0004",
+      "previous_event_hash": "sha256:aee4d944941026376bb0e4f0ff7ac35c60fdbeba1c5e6c7d4ba74cbaf7e01d74",
+      "event_hash": "sha256:177b542f199a9996f57812df833589d1b533fd5672c529e72abd5671c43ab375"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "ARTIFACT",
+      "timestamp": "2026-09-02T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "R2-NET-0003",
+      "action": "RECONNECT_IMPLEMENTATION_COMPLETED",
+      "resource_refs": [
+        "repo://apps/roulette_web/static/app.js",
+        "repo://tests/test_reconnect_continuity.py",
+        "repo://scripts/validate_baseline.py",
+        "repo://docs/games/R2-reconnect-continuity.md"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:709237b952d2679de4f6eb3b62f240d0ee0452f3a0e52edf06c4d188a38972ad",
+      "contains_secret": false,
+      "event_id": "AE-R2NET-0005",
+      "previous_event_hash": "sha256:177b542f199a9996f57812df833589d1b533fd5672c529e72abd5671c43ab375",
+      "event_hash": "sha256:67c6eebaef0f4cda1e851df5cb3374ce589d46c94c199246e9bfee92e186b88e"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-02T00:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "R2-NET-0003",
+      "action": "VALIDATION_COMMANDS_REPLAYED",
+      "resource_refs": [
+        "repo://docs/approvals/R2-NET-0003-validation-report.md"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:acc6c6b1df6214efdc67532aa277f54c99738e2fa247e66630cbbbce41fff11f",
+      "contains_secret": false,
+      "event_id": "AE-R2NET-0006",
+      "previous_event_hash": "sha256:67c6eebaef0f4cda1e851df5cb3374ce589d46c94c199246e9bfee92e186b88e",
+      "event_hash": "sha256:82ec2d1bb3447ef33248795d409b04e2f2c053797a779bd60afad8865c8a161d"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-02T00:00:00Z",
+      "actor_type": "USER",
+      "actor_id": "USER",
+      "task_id": "R2-NET-0003",
+      "action": "TASK_CONTRACT_CLARIFIED_BY_APPROVAL",
+      "resource_refs": [
+        "repo://tasks/R2-NET-0003.json",
+        "repo://games/roulette/reconnect-contract.yaml",
+        "repo://docs/approvals/R2-NET-0003-validation-report.md"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:d624f732edb976ceb6ac0559756c6177550f7299348424ae85e43272ae1abea7",
+      "contains_secret": false,
+      "event_id": "AE-R2NET-0007",
+      "previous_event_hash": "sha256:82ec2d1bb3447ef33248795d409b04e2f2c053797a779bd60afad8865c8a161d",
+      "event_hash": "sha256:00e95da306a4ec260507ccb9fc1a3666c4a538420043a476415b0dadcc07bbde"
+    }
+  ]
+}

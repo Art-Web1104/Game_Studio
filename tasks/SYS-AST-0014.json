@@ -51,7 +51,7 @@
     {
       "uri": "repo://scripts/validate_baseline.py",
       "version": "1.0.0",
-      "content_hash": "sha256:08756d3ac6fda7d70401957d19d33b8ba6456a49863e71f15be7179625f90138"
+      "content_hash": "sha256:6afefe21674a509a6ed7ffc5695e388e4ff14e1af4a2590da4741c24fd10f45c"
     },
     {
       "uri": "repo://tests/test_integrity.py",

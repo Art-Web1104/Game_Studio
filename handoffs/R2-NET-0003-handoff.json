@@ -1,0 +1,178 @@
+{
+  "schema_version": "1.0.0",
+  "handoff_id": "HO-R2-NET-0003-006",
+  "task_id": "R2-NET-0003",
+  "from_agent_id": "A-02",
+  "to_agent_id": "A-50",
+  "created_at": "2026-09-02T00:00:00Z",
+  "summary": "R2-NET-0003 재접속·라운드 연속성의 구현을 제출하고 독립 검증을 요청한다. 채택된 최소 설계대로 새 HTTP 경로도, 새 런타임 모듈도, 서버 공개 API·생성자 변경도 만들지 않았다. 권위 재수화는 기존 GET /api/state가 돌려주는 서버 조립 스냅샷만 쓰고, 정산 응답 유실 복구는 기존 POST /api/spin을 같은 request_id로 재시도하는 이미 멱등한 경로를 쓴다. 시험은 실제 루프백 소켓에 요청을 다 쓰고 답을 읽지 않고 끊어 응답을 진짜로 유실시킨 뒤 같은 request_id로 재시도하며, draw_record 건수, ledger_transaction 건수, 플레이어 잔액, 엔트로피 소비 네 값이 움직이지 않음을 계측한다. 구현 중 선언되지 않은 무결성 연쇄가 드러났다. artifacts/R4-UI-0006-artifact.json이 component_hash 키로 app.js를 고정하고 있었고, 구현자는 범위를 넓히지 않고 중단해 보고했다. Codex의 REWORK 승인 이후 승인된 두 줄만 수정했으며, component_hash 키까지 포함해 폐포를 다시 계산한 결과 더 이상의 연쇄가 없고 tasks/R4-ART-0007.json에 도달하지 않음을 확인했다. 동결 경로 9건은 해시 무변경을 확인했고 R4-ART-0007과 자산·이미지 경로는 접근하지 않았다. AC-003과 AC-010은 Codex 승인 아래 관측된 사실에 맞춰 개정되어 미해결 수용 기준 편차가 없다. 1차 시도 중단과 2차 무결성 연쇄 중단이라는 역사적 사실은 그대로 보존한다. 독립 검증, 코드 검토, 인간 최종 승인, 호스티드 CI는 하나도 수행되지 않았다. 커밋과 푸시도 수행하지 않았다.",
+  "artifact_refs": [
+    "ART-R2-NET-0003-0001"
+  ],
+  "assumptions": [
+    "감사 사실로 보존한다: 1차 구현 시도는 선언되지 않은 파일 games/roulette/playable-slice-contract.yaml을 수정하고 /api/resume 경로를 도입해 R4-ART-0007까지 번지는 무결성 연쇄를 만들었으며, 검증과 커밋 이전에 중단·폐기되었다. 변경분은 저장소 밖 임시 디렉터리에 보존했고 두 파일은 454468b 내용으로 복원해 해시로 확인했다. 이 문장은 지우지 않는다.",
+    "감사 사실로 보존한다: 구현 중 artifacts/R4-UI-0006-artifact.json의 component_hash 키가 apps/roulette_web/static/app.js를 고정하고 있다는, 계약이 선언하지 않은 무결성 연쇄가 드러났다. 구현자는 그것을 임의로 수정하지 않고 중단해 보고했으며 Codex의 REWORK 승인 이후에만 승인된 두 줄을 수정했다. 이 문장은 지우지 않는다.",
+    "AC-003과 AC-010은 Codex의 명시 승인 아래 관측된 사실에 맞춰 개정되었다. 구현자가 자기 구현에 맞춰 문언을 고친 것이 아니라, 편차를 보고하고 승인을 받은 뒤 반영했다. 그 결과 이 패킷에는 미해결 수용 기준 편차가 없다. 개정 사실은 audit/events/R2-NET-0003-events.json의 TASK_CONTRACT_CLARIFIED_BY_APPROVAL 이벤트로 남는다.",
+    "채택된 설계는 기존 엔드포인트만 사용한다. server.ROUTES는 네 개 그대로이고 apps/roulette_web의 파이썬 모듈은 __init__.py, server.py, table.py 셋 그대로다.",
+    "동결 경로 9건(server.py, table.py, playable-slice-contract.yaml, docs/status/R2-STATUS.md, index.html, styles.css, 기존 R4 시험 2건, tasks/R4-ART-0007.json)은 tasks/R2-NET-0003.json이 해시로 고정하고 validate_r2_reconnect가 매 실행마다 대조한다. 이번 실행에서 9건 전부 일치했다.",
+    "docs/status/R2-STATUS.md은 tasks/R4-UI-0006.json을 거쳐 tasks/R4-ART-0007.json으로 이어지는 고정 사슬에 묶여 있어 갱신하지 않았다. 상태 갱신은 docs/operations/R2-followup-units.md 한 곳에서만 수행했다.",
+    "tasks/R2-NET-0003.json이 docs/operations/R2-followup-units.md를 입력이자 산출물로 동시에 선언하는 잔여 결함이 있다. 그 문서를 갱신하면서 자기 입력 해시도 갱신해야 했고 그렇게 했다. AC-010이 정한 세 건의 재고정과는 성격이 다른 네 번째 해시 변경이므로 따로 보고한다.",
+    "다른 유닛의 READY 계약 3건(SYS-AST-0014, SYS-CI-0012, SYS-QA-0015)을 수정했다. 변경은 inputs의 scripts/validate_baseline.py content_hash 한 줄뿐이며 다른 필드는 건드리지 않았다.",
+    "시험의 결정론: 엔트로피는 고정 바이트열, 시계는 고정값이다. 응답을 버린 요청이 커밋되기를 기다리는 한 곳만 조건(저장소에 추첨 기록이 나타남)을 마감 시한과 함께 기다린다. 고정 시간 대기에 통과 여부가 걸려 있지 않다.",
+    "이 패킷은 독립 검증, A-20 코드 검토, A-50·USER 최종 QA 게이트, 호스티드 CI 관측, 운영 준비 완료, R5 일정 확정을 주장하지 않는다. 여섯 가지 모두 NOT_RUN이다.",
+    "비밀값과 개인정보는 코드, 프롬프트, 로그, 증거, 커밋 어디에도 기록하지 않았다.",
+    "Claude는 이 세션에서 커밋, 푸시, 병합, 브랜치 변경, Git·GitHub 설정 변경, 자산·이미지·docs/art·R4-ART-0007 접근을 수행하지 않았다."
+  ],
+  "verification_evidence": [
+    {
+      "check": "구현 중 드러난 선언되지 않은 무결성 연쇄(artifacts/R4-UI-0006-artifact.json의 component_hash 키가 app.js를 고정)를 임의로 넓히지 않고 중단·보고했고, Codex REWORK 승인 이후 승인된 두 줄만 수정했다",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/approvals/R2-NET-0003-validation-report.md"
+    },
+    {
+      "check": "component_hash 키를 포함한 역방향 참조 폐포 재계산: 변경 집합 10건이 모두 종단이며 추가로 요구되는 파일이 없고 tasks/R4-ART-0007.json에 도달하지 않음",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/approvals/R2-NET-0003-validation-report.md"
+    },
+    {
+      "check": "승인된 두 줄의 diff 한정 확인: artifacts/R4-UI-0006-artifact.json은 +1/-1, tasks/SYS-QA-0015.json은 해시 두 줄만 변경",
+      "result": "PASS",
+      "evidence_uri": "repo://tasks/R2-NET-0003.json"
+    },
+    {
+      "check": "AC-003·AC-010 개정이 승인된 계약 명확화로 기록되었고 미해결 수용 기준 편차가 0건임",
+      "result": "PASS",
+      "evidence_uri": "repo://audit/events/R2-NET-0003-events.json"
+    },
+    {
+      "check": "python scripts/validate_baseline.py",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/approvals/R2-NET-0003-validation-report.md"
+    },
+    {
+      "check": "python -m unittest discover -s tests -v",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/approvals/R2-NET-0003-validation-report.md"
+    },
+    {
+      "check": "python -m unittest tests.test_reconnect_continuity (3회 반복, 동일 결과)",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_reconnect_continuity.py"
+    },
+    {
+      "check": "python -m compileall -q apps scripts studio_core tests",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/approvals/R2-NET-0003-validation-report.md"
+    },
+    {
+      "check": "python scripts/scan_secrets.py (저장소 전체 평문 비밀값 스캔)",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/approvals/R2-NET-0003-validation-report.md"
+    },
+    {
+      "check": "실제 소켓 단절로 정산 응답을 유실시킨 뒤 동일 request_id 재시도: 같은 프로세스에서 원본 응답 재생, draw_record·ledger_transaction 건수와 잔액·엔트로피 소비 무변화",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_reconnect_continuity.py"
+    },
+    {
+      "check": "재시작 뒤 동일 request_id 재시도: 빈 새 라운드는 NO_BETS, 베팅이 있는 새 라운드는 DRAW_DENIED로 실패 폐쇄하고 두 경우 모두 이중 추첨·엔트로피 재소비·이중 지급 없음",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/approvals/R2-NET-0003-validation-report.md"
+    },
+    {
+      "check": "미커밋 열린 라운드 베팅이 재시작 뒤 되살아나지 않고 예약 금액과 잔액이 커밋된 값과 일치",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_reconnect_continuity.py"
+    },
+    {
+      "check": "재시작 뒤 recent_results가 내구 감사 체인에서 독립 재조립한 순서와 일치",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_reconnect_continuity.py"
+    },
+    {
+      "check": "scripts/validate_baseline.py::validate_r2_reconnect 계약↔구현 대조 및 격리 복사본 네거티브 시험 12건",
+      "result": "PASS",
+      "evidence_uri": "repo://games/roulette/reconnect-contract.yaml"
+    },
+    {
+      "check": "동결 경로 9건의 선언 해시와 실제 파일 정규 LF 해시 대조 (server.py, table.py, playable-slice-contract.yaml, R2-STATUS.md, index.html, styles.css, R4 시험 2건, tasks/R4-ART-0007.json)",
+      "result": "PASS",
+      "evidence_uri": "repo://tasks/R2-NET-0003.json"
+    },
+    {
+      "check": "AC-008 무확장 확인: server.ROUTES 4개 유지, apps/roulette_web 파이썬 모듈 3개 유지, /api/resume 및 reconnect.py 부재",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_reconnect_continuity.py"
+    },
+    {
+      "check": "AC-010 개정 문언이 열거한 네 파일 메타데이터 폐포 확인: SYS-AST-0014 +1/-1, SYS-CI-0012 +1/-1, SYS-QA-0015 해시 두 줄, R4 UI 아티팩트 component_hash +1/-1이며 네 파일 모두 해시 값 외 필드 무변경",
+      "result": "PASS",
+      "evidence_uri": "repo://games/roulette/reconnect-contract.yaml"
+    },
+    {
+      "check": "AC-003 개정 문언이 기술한 재시작 경로 결과가 실제로 관측됨: 빈 새 라운드는 NO_BETS, 베팅이 있는 새 라운드는 DRAW_DENIED이며 두 경우 모두 이중 추첨·엔트로피 재소비·이중 원장 거래·이중 지급·잔액 변동이 없고 커밋된 결과가 recent_results로 관측된다",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_reconnect_continuity.py"
+    },
+    {
+      "check": "Codex 콘솔의 독립 검증과 읽기 전용 코드 검토",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://operations/collaboration.yaml"
+    },
+    {
+      "check": "A-50·USER 최종 QA 게이트 판정",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://docs/approvals/R2-NET-0003-validation-report.md"
+    },
+    {
+      "check": "GitHub Actions 호스티드 CI 실행 결과 관측",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://.github/workflows/ci.yml"
+    }
+  ],
+  "known_risks": [
+    {
+      "severity": "HIGH",
+      "description": "R2-NET-0003은 라운드 상태와 정산 결과에 닿으므로 policies/risk.yaml 기준 High 위험이다. A-50, A-02, A-00, USER의 게이트 판정 전에는 완료로 표시할 수 없고 구현자가 자체 승인할 수 없다. 이 패킷은 제출이지 완료 판정이 아니다.",
+      "owner_agent_id": "A-50"
+    },
+    {
+      "severity": "LOW",
+      "description": "AC-003과 AC-010은 승인 아래 개정되어 미해결 편차가 없다. 남는 것은 절차적 교훈이다. 역방향 해시 참조 추적이 specification의 component_hash 키를 보지 않아 2차 연쇄를 구현 중에야 발견했다. 향후 계약 발행은 이 참조 종류를 포함해 추적해야 하며, 그 규칙의 도구화 여부는 계약의 open_decisions에 열려 있다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "다른 유닛의 READY 계약 3건을 해시 재고정 목적으로 수정했다. 각 diff가 scripts/validate_baseline.py content_hash 한 줄인지 독립 검증에서 확인해야 한다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "tasks/R2-NET-0003.json이 docs/operations/R2-followup-units.md를 입력이자 산출물로 선언하는 잔여 결함 때문에 자기 입력 해시를 갱신해야 했다. AC-010이 한정한 세 건 외의 네 번째 해시 변경이며 계약 개정으로 정리하는 편이 낫다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "재시작 이후 베팅별 내역은 복구되지 않는다. 열린 라운드의 베팅이 내구화되어 있지 않기 때문이며, 복구하려면 R2-DBC-0002가 승인한 스키마의 확장이 필요하다. 계약의 open_decisions에 열린 상태로 남아 있다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "docs/status/R2-STATUS.md이 R4-ART-0007 고정 사슬에 묶여 갱신할 수 없었다. R2 상태 문서와 실제 진행 상태의 정합은 R4-ART-0007 게이트가 닫힌 뒤 별도 유닛에서 처리해야 한다.",
+      "owner_agent_id": "A-50"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "GitHub Actions 호스티드 CI 결과는 관측되지 않았다. 로컬 통과가 Linux 러너 통과를 보장하지 않으므로 이 증거는 로컬 범위에 한정된다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "LOW",
+      "description": "재접속 시험은 단일 사용자 루프백 범위다. 다중 사용자 신원·세션 분리, 부하와 처리량(R2-LOAD-0004), 침투 시험(R2-SEC-0005)은 이 유닛이 닫지 않고 열린 채로 이월된다.",
+      "owner_agent_id": "A-02"
+    }
+  ],
+  "next_action": "A-50은 이 패킷을 구현 제출물로 접수해 codex 콘솔에서 python scripts/validate_baseline.py와 python -m unittest discover -s tests -v를 독립 재실행하고, (1) 새 경로·모듈·서버 API 변경이 없다는 주장, (2) 동결 경로 9건의 해시 무변경과 R4-ART-0007 무접촉, (3) AC-010이 열거한 네 파일 메타데이터 수정이 전부 해시 값 한 줄인지, (4) 유실 응답 재시도가 이중 지급을 만들지 않는다는 계측, (5) AC-003·AC-010 개정이 관측된 사실과 일치하는지를 읽기 전용으로 검토한 뒤 PASS 또는 REWORK 판정을 내려라. 판정 전까지 이 작업을 DONE으로 표시하지 말고, 커밋·푸시와 호스티드 CI 실행은 USER의 명시 승인 이후에만 진행하라.",
+  "readiness": "READY_FOR_REVIEW",
+  "acknowledgement_required": true
+}

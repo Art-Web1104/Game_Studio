@@ -364,6 +364,17 @@ def validate_required_files() -> None:
         "tests/test_binary_assets.py",
         "docs/operations/SYS-AST-0014-binary-asset-integrity-gate.md",
         "audit/events/SYS-AST-0014-events.json",
+        # R2-NET-0003 reconnect continuity. There is no new runtime module here on purpose:
+        # the unit adds a contract, tests, a validator stage and documentation, and reuses
+        # the endpoints that already existed. ``validate_r2_reconnect`` asserts that absence.
+        "games/roulette/reconnect-contract.yaml",
+        "tests/test_reconnect_continuity.py",
+        "audit/events/R2-NET-0003-events.json",
+        "tasks/R2-NET-0003.json",
+        "artifacts/R2-NET-0003-artifact.json",
+        "handoffs/R2-NET-0003-handoff.json",
+        "docs/games/R2-reconnect-continuity.md",
+        "docs/approvals/R2-NET-0003-validation-report.md",
     ]
     missing = [path for path in required if not (ROOT / path).is_file()]
     if missing:
@@ -819,6 +830,343 @@ def validate_binary_asset_policy(root: Path | None = None) -> dict[str, Any]:
         "policy_version": policy.policy_version,
         "allowed_roots": list(policy.allowed_roots),
         "allowed_extensions": list(policy.allowed_extensions),
+    }
+
+
+#: Files ``validate_r2_reconnect`` reads. Exposed so the negative tests can materialise an
+#: isolated copy and prove each declared fact is actually checked, without ever writing to a
+#: tracked file.
+R2_NET_INPUT_FILES: tuple[str, ...] = (
+    "games/roulette/reconnect-contract.yaml",
+    "games/roulette/round-state.yaml",
+    "games/roulette/playable-slice-contract.yaml",
+    # The whole package directory, because the check is that no *fourth* module appeared.
+    "apps/roulette_web/__init__.py",
+    "apps/roulette_web/server.py",
+    "apps/roulette_web/table.py",
+    "apps/roulette_web/static/app.js",
+    "apps/roulette_web/static/index.html",
+    "apps/roulette_web/static/styles.css",
+    "tests/test_roulette_web_server.py",
+    "tests/test_roulette_web_ui.py",
+    "docs/status/R2-STATUS.md",
+    "tasks/R2-NET-0003.json",
+    "tasks/R4-ART-0007.json",
+    # The re-pin scope check walks every contract under ``tasks/``, so the three that pin the
+    # validator have to be present or an isolated copy would report an empty scope.
+    "tasks/SYS-AST-0014.json",
+    "tasks/SYS-CI-0012.json",
+    "tasks/SYS-QA-0015.json",
+    "artifacts/R2-NET-0003-artifact.json",
+    "audit/audit-event.schema.json",
+    "audit/events/R2-NET-0003-events.json",
+    "docs/games/R2-reconnect-continuity.md",
+    "docs/approvals/R2-NET-0003-validation-report.md",
+    "docs/operations/R2-followup-units.md",
+)
+
+#: Audit actions the R2-NET-0003 record must carry. The interrupted first attempt is one of
+#: them on purpose: it modified a file the contract had not declared, and a later reader must
+#: be able to see that it happened and was withdrawn rather than infer it from a diff.
+R2_NET_REQUIRED_AUDIT_ACTIONS = frozenset(
+    {
+        "TASK_CONTRACT_ISSUED_READY",
+        "PRE_IMPLEMENTATION_ARTIFACT_REGISTERED",
+        "IMPLEMENTATION_ATTEMPT_INTERRUPTED_AND_DISCARDED",
+        "TASK_CONTRACT_AMENDED_SMALLER_SCOPE",
+        "RECONNECT_IMPLEMENTATION_COMPLETED",
+        "VALIDATION_COMMANDS_REPLAYED",
+    }
+)
+
+#: Markers that must be present in the client for the reconnect behaviour to exist at all,
+#: and tokens whose presence would mean the client had started deciding things or had grown
+#: the route this unit was explicitly told not to add.
+R2_NET_CLIENT_REQUIRED = (
+    "function rehydrate(",
+    "function recoverLostSpin(",
+    "function showSettledSpin(",
+    "/api/state",
+    "/api/spin",
+    "accepts_bets",
+)
+R2_NET_CLIENT_PROHIBITED = ("/api/resume", "reconnect.py")
+
+
+def validate_r2_reconnect(root: Path | None = None) -> dict[str, Any]:
+    """Validate the R2-NET-0003 reconnect contract against the code that already exists.
+
+    ``root`` defaults to the repository. Pointing it at a copy lets the negative tests prove
+    a declaration that disagrees with the implementation is actually rejected without writing
+    to tracked files.
+
+    The interesting property of this unit is what it did *not* do, so most of what follows
+    measures absence: no new route, no new runtime module, no drift in the files that other
+    contracts pin. Those are checked against the live constants and the real directory rather
+    than against prose, because "we did not add an endpoint" is only worth writing down if
+    something fails when it stops being true.
+    """
+
+    base = ROOT if root is None else Path(root)
+
+    def _json(relative_path: str) -> dict[str, Any]:
+        with (base / relative_path).open("r", encoding="utf-8") as handle:
+            value = json.load(handle)
+        if not isinstance(value, dict):
+            raise BaselineValidationError(f"{relative_path}: root must be an object")
+        return value
+
+    def _yaml(relative_path: str) -> dict[str, Any]:
+        with (base / relative_path).open("r", encoding="utf-8") as handle:
+            value = yaml.safe_load(handle)
+        if not isinstance(value, dict):
+            raise BaselineValidationError(f"{relative_path}: root must be a mapping")
+        return value
+
+    def _text(relative_path: str) -> str:
+        return (base / relative_path).read_text(encoding="utf-8")
+
+    from apps.roulette_web.server import ROUTES, SECURITY_HEADERS
+    from apps.roulette_web.table import BETS_ACCEPTED_IN, CLIENT_AUTHORITY_FIELDS
+
+    contract_path = "games/roulette/reconnect-contract.yaml"
+    contract = _yaml(contract_path)
+
+    # -- the shape of the change: nothing was added ----------------------------------------
+    design = contract.get("design", {})
+    for key in ("new_http_routes", "new_runtime_modules"):
+        if design.get(key) != 0:
+            raise BaselineValidationError(f"{contract_path}: design.{key} must be declared 0")
+    for key in ("server_api_changed", "server_constructor_changed"):
+        if design.get(key) is not False:
+            raise BaselineValidationError(f"{contract_path}: design.{key} must be declared false")
+    if design.get("rehydration_endpoint") != "/api/state" or design.get("rehydration_method") != "GET":
+        raise BaselineValidationError(f"{contract_path}: rehydration must be the existing GET /api/state")
+    if (
+        design.get("response_loss_recovery_endpoint") != "/api/spin"
+        or design.get("response_loss_recovery_key") != "request_id"
+    ):
+        raise BaselineValidationError(
+            f"{contract_path}: response-loss recovery must be the existing POST /api/spin retry"
+        )
+    for endpoint in (design.get("rehydration_endpoint"), design.get("response_loss_recovery_endpoint")):
+        if endpoint not in ROUTES:
+            raise BaselineValidationError(f"{contract_path}: {endpoint!r} is not a served route")
+
+    declared_modules = list(design.get("runtime_modules", []))
+    actual_modules = sorted(path.name for path in (base / "apps/roulette_web").glob("*.py"))
+    if declared_modules != actual_modules:
+        raise BaselineValidationError(
+            f"{contract_path}: declared runtime modules {declared_modules!r} are not the "
+            f"modules present {actual_modules!r}"
+        )
+
+    preserved = contract.get("preserved_boundaries", {})
+    if preserved.get("route_count") != len(ROUTES):
+        raise BaselineValidationError(
+            f"{contract_path}: preserved_boundaries.route_count is {preserved.get('route_count')!r}, "
+            f"the server serves {len(ROUTES)}"
+        )
+    if preserved.get("security_header_count") != len(SECURITY_HEADERS):
+        raise BaselineValidationError(
+            f"{contract_path}: preserved_boundaries.security_header_count does not match the server"
+        )
+    for key in (
+        "rules_changed",
+        "payout_schedule_changed",
+        "rng_algorithm_changed",
+        "ledger_semantics_changed",
+        "asset_or_image_paths_changed",
+    ):
+        if preserved.get(key) is not False:
+            raise BaselineValidationError(f"{contract_path}: preserved_boundaries.{key} must be false")
+
+    # -- the authority and continuity rules must be the implemented ones --------------------
+    authority = contract.get("authority", {})
+    if authority.get("client_authority") != "denied":
+        raise BaselineValidationError(f"{contract_path}: the client authority boundary is not closed")
+    for key in (
+        "client_supplied_state_merged_on_reconnect",
+        "client_computes_result",
+        "client_computes_payout",
+        "client_computes_balance",
+    ):
+        if authority.get(key) is not False:
+            raise BaselineValidationError(f"{contract_path}: authority.{key} must be declared false")
+    if authority.get("rejected_client_field_refusal_code") != "CLIENT_AUTHORITY_DENIED":
+        raise BaselineValidationError(f"{contract_path}: the client-authority refusal code has drifted")
+
+    betting = contract.get("betting_continuity", {})
+    if betting.get("accept_bets_only_in") != BETS_ACCEPTED_IN.value:
+        raise BaselineValidationError(
+            f"{contract_path}: betting_continuity.accept_bets_only_in is "
+            f"{betting.get('accept_bets_only_in')!r}, the table accepts bets in "
+            f"{BETS_ACCEPTED_IN.value!r}"
+        )
+    guards = _yaml("games/roulette/round-state.yaml")["guards"]
+    if betting.get("accept_bets_only_in") != guards["accept_bets_only_in"]:
+        raise BaselineValidationError(
+            f"{contract_path}: accept_bets_only_in disagrees with games/roulette/round-state.yaml"
+        )
+    for key in ("uncommitted_bets_durable", "bets_restored_on_reconnect"):
+        if betting.get(key) is not False:
+            raise BaselineValidationError(f"{contract_path}: betting_continuity.{key} must be false")
+    if betting.get("client_drops_drafts_when_not_accepting_bets") is not True:
+        raise BaselineValidationError(
+            f"{contract_path}: the client must drop drafts once the round stops accepting bets"
+        )
+
+    recovery = contract.get("settlement_recovery", {})
+    if recovery.get("retry_uses_same_request_id") is not True:
+        raise BaselineValidationError(f"{contract_path}: recovery must retry the same request_id")
+    for key in (
+        "second_draw",
+        "second_entropy_consumption",
+        "second_ledger_settlement",
+        "balance_moves_on_retry",
+    ):
+        if recovery.get(key) != "prohibited":
+            raise BaselineValidationError(
+                f"{contract_path}: settlement_recovery.{key} must be 'prohibited', found "
+                f"{recovery.get(key)!r}"
+            )
+    restart_codes = list(recovery.get("after_restart_refusal_codes", []))
+    # After a restart the journal is empty and a fresh round is open, so which refusal comes
+    # back depends on that round's state. Both of these are reachable and both fail closed;
+    # a declaration naming only one would be a half-truth the client could not act on.
+    if not {"NO_BETS", "DRAW_DENIED"} <= set(restart_codes):
+        raise BaselineValidationError(
+            f"{contract_path}: after_restart_refusal_codes must cover both the empty new round "
+            f"(NO_BETS) and the request-fingerprint conflict (DRAW_DENIED), found {restart_codes!r}"
+        )
+    # The store-replay code exists in the table but is not reachable on this path, because a
+    # restarted table mints round identifiers under a new instance token. Declaring it as an
+    # after-restart refusal would be untrue, so it is recorded separately and pinned as
+    # unreachable; if that ever changes, this check is what says so.
+    if recovery.get("store_replay_refusal_code") != "REQUEST_ID_ALREADY_USED":
+        raise BaselineValidationError(f"{contract_path}: the store-replay refusal code has drifted")
+    if recovery.get("store_replay_reachable_after_restart") is not False:
+        raise BaselineValidationError(
+            f"{contract_path}: store_replay_reachable_after_restart must be declared false"
+        )
+    if "REQUEST_ID_ALREADY_USED" in restart_codes:
+        raise BaselineValidationError(
+            f"{contract_path}: REQUEST_ID_ALREADY_USED is not reachable after a restart and must "
+            "not be listed as an after-restart refusal"
+        )
+    if recovery.get("client_treats_refusal_as_recovery_signal") is not True:
+        raise BaselineValidationError(
+            f"{contract_path}: the client must read an after-restart refusal as a recovery signal"
+        )
+    slice_contract = _yaml("games/roulette/playable-slice-contract.yaml")
+    declared_codes = set(slice_contract["error_codes"]["authority"]) | set(
+        slice_contract["error_codes"]["transport"]
+    )
+    for code in (
+        *restart_codes,
+        recovery.get("store_replay_refusal_code"),
+        betting.get("post_open_bet_submission_refusal_code"),
+        authority.get("rejected_client_field_refusal_code"),
+    ):
+        # This unit introduces no new refusal code; every one it names must already be part
+        # of the slice's published vocabulary.
+        if code not in declared_codes:
+            raise BaselineValidationError(
+                f"{contract_path}: {code!r} is not declared by the playable slice contract"
+            )
+
+    # -- the client must actually reconnect, and must still decide nothing -------------------
+    script = _text("apps/roulette_web/static/app.js")
+    missing = [marker for marker in R2_NET_CLIENT_REQUIRED if marker not in script]
+    if missing:
+        raise BaselineValidationError(f"app.js does not carry the reconnect behaviour: {missing!r}")
+    present = [needle for needle in R2_NET_CLIENT_PROHIBITED if needle in script]
+    if present:
+        raise BaselineValidationError(f"app.js names a surface this unit must not add: {present!r}")
+
+    # -- the integrity cascade must stop where the contract says it does ---------------------
+    task = _json("tasks/R2-NET-0003.json")
+    if task["status"] not in {"READY", "IN_PROGRESS", "REVIEW", "QA"} or task["risk_class"] != "HIGH":
+        raise BaselineValidationError("R2-NET-0003 must remain a HIGH risk task under an open gate")
+    if not {"A-50", "A-02", "A-00"} <= set(task["approvers"]):
+        raise BaselineValidationError("a HIGH risk reconnect task requires the mandatory reviewers")
+    pinned = {item["uri"].removeprefix("repo://"): item["content_hash"] for item in task["inputs"]}
+
+    frozen = contract.get("frozen_paths", {}).get("paths", [])
+    expected_frozen = {
+        "apps/roulette_web/server.py",
+        "apps/roulette_web/table.py",
+        "games/roulette/playable-slice-contract.yaml",
+        "docs/status/R2-STATUS.md",
+        "tasks/R4-ART-0007.json",
+    }
+    if not expected_frozen <= set(frozen):
+        raise BaselineValidationError(
+            f"{contract_path}: frozen_paths omits {sorted(expected_frozen - set(frozen))!r}; these "
+            "cascade into R4-ART-0007 when modified"
+        )
+    for relative in frozen:
+        expected = pinned.get(relative)
+        if expected is None:
+            raise BaselineValidationError(
+                f"tasks/R2-NET-0003.json must pin the frozen path {relative} as an input"
+            )
+        decision = verify_file(base / relative, expected, label=relative)
+        if not decision.matches:
+            raise BaselineValidationError(f"a frozen path was modified by this unit: {decision.message}")
+
+    repin = contract.get("repin_scope", {})
+    if repin.get("target") != "scripts/validate_baseline.py" or repin.get("reaches_r4_art_0007") is not False:
+        raise BaselineValidationError(f"{contract_path}: the re-pin scope declaration is not the bounded one")
+    declared_repins = set(repin.get("contracts", []))
+    actual_repins = set()
+    for path in sorted((base / "tasks").glob("*.json")):
+        candidate = _json(f"tasks/{path.name}")
+        for item in candidate.get("inputs", []):
+            if item["uri"] == "repo://scripts/validate_baseline.py":
+                actual_repins.add(f"tasks/{path.name}")
+    if declared_repins != actual_repins:
+        raise BaselineValidationError(
+            f"{contract_path}: repin_scope declares {sorted(declared_repins)!r} but the validator is "
+            f"pinned by {sorted(actual_repins)!r}"
+        )
+
+    # -- the interrupted first attempt must stay on the record -------------------------------
+    from studio_core.rng import verify_audit_chain  # noqa: PLC0415
+
+    audit_schema = _json("audit/audit-event.schema.json")
+    events_document = _json("audit/events/R2-NET-0003-events.json")
+    unit_events = events_document["events"]
+    for event in unit_events:
+        validate_instance(event, audit_schema)
+        if event["task_id"] != "R2-NET-0003":
+            raise BaselineValidationError("a reconnect audit event is attached to the wrong task")
+    chain_problems = verify_audit_chain(unit_events)
+    if chain_problems:
+        raise BaselineValidationError(f"the R2-NET-0003 audit chain is broken: {chain_problems!r}")
+    actions = {item.get("action") for item in unit_events}
+    missing_actions = R2_NET_REQUIRED_AUDIT_ACTIONS - actions
+    if missing_actions:
+        raise BaselineValidationError(
+            f"audit/events/R2-NET-0003-events.json is missing actions {sorted(missing_actions)!r}"
+        )
+    artifact = _json("artifacts/R2-NET-0003-artifact.json")
+    specification = artifact.get("specification", {})
+    if specification.get("first_implementation_attempt") != "INTERRUPTED_AND_DISCARDED":
+        raise BaselineValidationError(
+            "the R2-NET-0003 artifact must keep recording the interrupted first attempt"
+        )
+    if specification.get("r4_art_0007_touched") is not False:
+        raise BaselineValidationError("the R2-NET-0003 artifact must declare R4-ART-0007 untouched")
+
+    return {
+        "new_http_routes": design["new_http_routes"],
+        "new_runtime_modules": design["new_runtime_modules"],
+        "routes": sorted(ROUTES),
+        "runtime_modules": actual_modules,
+        "frozen_paths_verified": len(frozen),
+        "repin_contracts": sorted(actual_repins),
+        "client_authority_fields": len(CLIENT_AUTHORITY_FIELDS),
     }
 
 
@@ -2713,6 +3061,8 @@ def run_validation() -> list[str]:
     passed.append("R2-DBC-0002 내구 상태 경계·격리 수준·원자성·동시성·장애 복구")
     validate_r4_playable_slice()
     passed.append("R4-UI-0006 로컬 플레이어블 슬라이스 계약·서버 권위·클라이언트 무권위·공개 문구")
+    validate_r2_reconnect()
+    passed.append("R2-NET-0003 재접속·라운드 연속성 계약·무경로 확장·동결 경로 무결성")
     return passed
 
 

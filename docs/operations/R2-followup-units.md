@@ -77,9 +77,31 @@
 세 항목은 성격이 다르므로 하나의 유닛으로 묶지 않는다. 검증 방법과 필요한 권한이 다르고,
 한 유닛으로 묶으면 어느 하나의 실패가 나머지의 증거까지 무효로 만든다.
 
-### 후보 유닛 R2-NET-0003 (제안 식별자) — 재접속과 라운드 연속성
+### 유닛 R2-NET-0003 — `CLOSED_PENDING_REVIEW` (계약 발행됨)
+
+이 항목은 더 이상 후보가 아니다. `tasks/R2-NET-0003.json`이 발행되었고 그 계약 아래에서 구현과
+자동 검증이 끝났다. 남은 것은 독립 검증과 인간 게이트뿐이다.
 
 | 항목 | 내용 |
+| --- | --- |
+| 소유자 | `A-02` Platform Integrator (단일 소유자) |
+| 위험 등급 | `HIGH` (라운드 상태와 정산 결과에 닿는다) |
+| 필수 승인자 | `A-50`, `A-02`, `A-00`, `USER` — 전건 `PENDING` |
+| 산출물 | `games/roulette/reconnect-contract.yaml`, `apps/roulette_web/static/app.js`, `tests/test_reconnect_continuity.py`, `scripts/validate_baseline.py`, `docs/games/R2-reconnect-continuity.md` |
+| 증거 | `docs/approvals/R2-NET-0003-validation-report.md`, `handoffs/R2-NET-0003-handoff.json`, `audit/events/R2-NET-0003-events.json` |
+| 선행 관계 | 내구 상태가 필요하므로 `R2-DBC-0002` 뒤, 슬라이스 표면이 필요하므로 `R4-UI-0006` 뒤 |
+
+채택된 설계는 **새 엔드포인트도 새 런타임 모듈도 만들지 않는다.** 권위 재수화는 기존
+`GET /api/state`, 정산 응답 유실 복구는 기존 `POST /api/spin`의 동일 `request_id` 재시도를 쓴다.
+1차 구현 시도는 `POST /api/resume` 경로를 도입했고 선언되지 않은
+`games/roulette/playable-slice-contract.yaml`을 수정해 `R4-ART-0007` 메타데이터까지 번지는
+무결성 재고정 연쇄를 만들었다. 그 시도는 검증과 커밋 이전에 중단·폐기되었고 기록은
+`audit/events/R2-NET-0003-events.json`에 남아 있다.
+
+아래 원문은 계약 발행 전에 적은 후보 기술이며, 무엇을 근거로 범위를 잡았는지 남기기 위해 그대로
+둔다. 소유자 제안은 `A-30`/`A-02` 공동 검토였으나 단일 소유자 규칙에 따라 `A-02`로 확정했다.
+
+| 항목 | 내용 (원문) |
 | --- | --- |
 | 제안 소유자 | `A-30` Client / `A-02` Platform 공동 검토 |
 | 위험 등급 제안 | `HIGH` (라운드 상태와 정산 결과에 닿는다) |
@@ -134,7 +156,7 @@
 | --- | --- | --- |
 | 생산용 CSPRNG 구현과 독립 통계 검증 | `CLOSED_PENDING_REVIEW` | `R2-RNG-0001` (계약 발행됨) |
 | 데이터베이스 격리 수준과 동시성·장애 복구 | `CLOSED_PENDING_REVIEW` | `R2-DBC-0002` (계약 발행됨, 인간 게이트 미발행) |
-| 실제 네트워크 재접속 | `OPEN` | `R2-NET-0003` (후보, 계약 없음) |
+| 실제 네트워크 재접속 | `CLOSED_PENDING_REVIEW` | `R2-NET-0003` (계약 발행됨, 인간 게이트 미발행) |
 | 부하와 성능 특성 | `OPEN` | `R2-LOAD-0004` (후보, 계약 없음) |
 | 보안 침투 시험 | `OPEN` | `R2-SEC-0005` (후보, 계약 없음) |
 
