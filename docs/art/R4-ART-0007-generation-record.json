@@ -41,20 +41,24 @@
     "training_permission_status": "PENDING_HUMAN_REVIEW",
     "commercial_use_status": "PENDING_HUMAN_REVIEW",
     "determination_owner": "A-30",
-    "note": "Rights and training-permission determinations are not settled by this manifest. No asset in this manifest is designated a final asset until A-30 art-direction approval, A-50 independent review, and the USER art-direction sign-off are all recorded."
+    "note": "Rights and training-permission determinations are not settled by this manifest and are not touched by the USER art-direction sign-off, which is a visual and art-direction acceptance only. No asset in this manifest is designated a final asset until A-30 art-direction approval and A-50 independent review are also recorded; the USER art-direction sign-off component of that set is recorded APPROVED, the other two remain PENDING."
   },
   "approvals": {
     "A-30_art_direction": "PENDING",
     "A-50_independent_review": "PENDING",
-    "USER_art_direction_signoff": "PENDING",
+    "USER_art_direction_signoff": "APPROVED",
+    "USER_art_direction_signoff_recorded_at_utc": "2026-09-02",
+    "USER_art_direction_signoff_scope": "Visual acceptance of the two final processed images and approval of the art direction. It does not extend to rights, licence, training permission, commercial use, provenance completeness, the AC-010 independent prohibited-content checklist, final asset designation, or any production or integration readiness.",
     "final_gate": "NOT_ISSUED"
   },
   "review_status": {
-    "human_visual_review": "PENDING",
+    "human_visual_review": "PASS_USER",
+    "human_visual_review_detail": "The two final processed images were opened for USER inspection on 2026-09-02 and the USER stated that the images were acceptable and approved the art direction. This is the USER visual review and it is recorded as PASS.",
     "prohibited_content_review": "PENDING",
+    "prohibited_content_review_detail": "The AC-010 prohibited-content checklist is an independent, item-by-item determination by A-30 with an independent re-determination by A-50 at native resolution and 400% zoom. Neither has been performed, so AC-010 remains PENDING and is not satisfied by the USER visual acceptance.",
     "observed_fact": "The provider's source outputs were displayed at generation time and no prohibited content was observed by Codex at that point.",
-    "limitation": "Visual QA of the final processed files could not be rerun: the Windows view-image sandbox failed, so the processed WebP and PNG were never re-displayed for inspection.",
-    "conclusion": "Human visual review and prohibited-content review therefore remain PENDING. Neither is recorded as PASS, and AC-010 and AC-011 are not satisfied by this manifest."
+    "tooling_limitation": "The Codex view-image helper failed on this Windows console, so the agent-side re-display of the processed WebP and PNG never succeeded. This remains an unresolved tooling limitation and is recorded as such. It did not block the USER, whose own inspection of the two final processed images succeeded.",
+    "conclusion": "USER visual review is recorded PASS. The independent prohibited-content review (AC-010) and the tone determination (AC-011) remain PENDING, A-30 art-direction approval and A-50 independent review remain PENDING, and no asset is designated a final asset by this record."
   },
   "assets": [
     {
@@ -166,11 +170,14 @@
     "static_suffix_gap": "ALLOWED_STATIC_SUFFIXES in apps/roulette_web/server.py currently contains only .html, .css, .js, .svg, .json, .webmanifest. It contains neither .webp nor .png, so both assets return 404 today. A follow-up integration unit must amend the allowed-suffix map before these assets can be served.",
     "ownership": "The suffix amendment and the CSS wiring are owned by a separate follow-up integration unit, not by R4-ART-0007."
   },
+  "settled": [
+    "USER visual inspection of the two final processed images (recorded PASS on 2026-09-02)",
+    "USER art-direction sign-off (recorded APPROVED on 2026-09-02)"
+  ],
   "outstanding": [
     "A-30 art-direction approval",
     "A-50 independent review",
-    "USER art-direction sign-off",
-    "Human visual review of the processed files at native resolution and 400% zoom",
+    "A-30 and A-50 review of the processed files at native resolution and 400% zoom; the USER visual inspection is recorded PASS but does not substitute for the independent reviewer pass",
     "Independent prohibited-content checklist determination (AC-010)",
     "Tone determination against the art-direction brief (AC-011)",
     "Rights and training-permission determination (AC-009)",
