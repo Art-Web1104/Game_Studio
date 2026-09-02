@@ -1,0 +1,322 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "R2-LOAD-0004",
+  "project_id": "casino-core",
+  "title": "R2 유닛 4: 유계 로컬 동시 부하 관측과 정확성 보존 특성 기록",
+  "goal": "R1 검증 보고서가 R2로 이월하고 docs/operations/R2-followup-units.md 3절이 R2-LOAD-0004 후보로 적어 둔 '부하와 성능 특성' 위험을 여는 계약이다. 이 유닛은 이미 존재하는 단일 사용자 루프백 룰렛 참조 슬라이스를 대상으로, 파이썬 표준 라이브러리만 쓰는 유계 로컬 동시 부하 관측 하네스를 만든다. 하네스는 유한한 동시성 수준과 유한한 요청 수, 선언된 제한 시간 안에서만 실행되며 두 종류의 사실을 분리해 기록한다. 첫째는 판정 대상인 정확성 속성이다. 동시 실행 아래에서도 라운드마다 정확히 하나의 권위 결과와 하나의 정산만 커밋되는지, 같은 request_id의 동시·반복 제출이 두 번째 추첨과 두 번째 지급을 만들지 않는지, 감사 이벤트가 유실이나 중복 없이 전역 유일 참조를 갖고 체인 검증을 통과하는지를 단언한다. 둘째는 판정 대상이 아닌 관측치다. 요청 지연의 최소·중앙값·p95·최대와 처리량을 기록하고, 동기화된 동시 출발 이후 각 요청이 서비스되기까지의 큐 지연을 serialization_wait_proxy_ms라는 별도 항목으로 기록한다. 이 항목은 프록시일 뿐이다. 운영체제 스케줄러 효과와 직렬화된 서비스 효과가 합쳐진 값이며 내부 잠금 획득 대기 시간을 직접 측정한 값이 아니고, 하네스는 그 대기를 직접 계측하지 않는다. 어떤 수치에도 단언하지 않는다. 측정은 관측이지 목표가 아니다. 용량 목표치(SLO), 통과·실패 임계값, 출시 용량 약속, 상용 일정, 인프라 조달, 외부·운영 환경 부하, 침투 시험, 다중 사용자 신원·세션 분리는 이 유닛의 범위 밖이다. R4에 속한 어떤 산출물도, 자산·이미지·아트 경로도 이 유닛이 만들거나 수정하거나 검토하지 않는다.",
+  "owner_agent_id": "A-02",
+  "status": "READY",
+  "risk_class": "MEDIUM",
+  "inputs": [
+    {
+      "uri": "repo://AGENTS.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:bc5c280f63d33265d919a924651dc3080cab1c2efd4f3c411c0344be0a53a448"
+    },
+    {
+      "uri": "repo://docs/constitution/studio-constitution-v1.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:62f8a8cbf6fc70054300de9e90fed8974b9a310d140831d3d6af98292f5b2e9e"
+    },
+    {
+      "uri": "repo://operations/collaboration.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:03031cf600fe847737d535c364f183b6f0031464fc3a8fdd076b79826506733a"
+    },
+    {
+      "uri": "repo://contracts/task.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:32158d90825790b90929b5c1464140651c201b603745bc4bafa27e446d723527"
+    },
+    {
+      "uri": "repo://contracts/artifact.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:44d972cb0db8a8b455d9a014207d712fae3ce6e7126590371af76aad79a68195"
+    },
+    {
+      "uri": "repo://contracts/handoff.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:088025147e8cdf3a9addafc46b6c7520b4d9216db4604d0a34ef29ece274faf2"
+    },
+    {
+      "uri": "repo://docs/operations/R2-followup-units.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:a1d8dadb8e5532e7b0706e1c2b60f4657c4f4e7daf797c2060387f5ee96df6ba"
+    },
+    {
+      "uri": "repo://tasks/R2-DBC-0002.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:fc2bec02f86d0a84eacb7f5d753b45f5b2aa6e388b7d6105c445d3b0490abe6d"
+    },
+    {
+      "uri": "repo://tasks/R2-NET-0003.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:209f9ad3bea33e4cc7332a01065258e2aa0345484fcaf9bbcc02df22157fd9b3"
+    },
+    {
+      "uri": "repo://policies/risk.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:7f280afbc63fa37d4893ecb0f40e6930189bbd2ddabfd73c638fe808cf0f457e"
+    },
+    {
+      "uri": "repo://policies/security.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:c85fd12606c9d52cfb555b5d9a11b4f83b16a2247cd9dddffb3432a1fb34adac"
+    },
+    {
+      "uri": "repo://audit/audit-event.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:7e0f6b22977048dc40c39756293201042870a188c5f64926d7606e4b4da6c1eb"
+    },
+    {
+      "uri": "repo://apps/roulette_web/server.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:2574ff8d355cc5df0708e57ca0846b4f7c03f531046b957d2926fd6dcd67dda8"
+    },
+    {
+      "uri": "repo://apps/roulette_web/table.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:22397b7dd4406647f4038b43b7b977405c56f1d04fae913e23c2dee578af41ae"
+    },
+    {
+      "uri": "repo://studio_core/durable_state.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:5b24d3e265a5e3ac2f6b21adcdefb21356393089e905fe1df93cf583e56cb8ed"
+    },
+    {
+      "uri": "repo://studio_core/rng.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:0ceea3c08a4c526a1d203f54fcbb31b35fff088450477f95270526d9f38e1d1e"
+    },
+    {
+      "uri": "repo://studio_core/ledger.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:07acd9aeac4dbfe6d2d9394e3cb0ccf335685e529fa07ce6af56d33e699ce71b"
+    },
+    {
+      "uri": "repo://games/roulette/rng-contract.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:9d8ea76aef04c25d182fc2f25f3c3e0e988aa3e997b82cc918ad3ee86004114b"
+    },
+    {
+      "uri": "repo://games/roulette/durable-state-contract.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:3920a1a87c46871353b936f56252d39dbd5542f628b7e2471c9e35a1d175fdd4"
+    },
+    {
+      "uri": "repo://games/roulette/reconnect-contract.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:777fbae659ce418f4c7428233edce454437d2e00f1ba647b841bda8384881475"
+    },
+    {
+      "uri": "repo://games/roulette/playable-slice-contract.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:be2d91b4c30f5432a949dea91afa06c3ae73def94c443659b8085a3e13a44eff"
+    },
+    {
+      "uri": "repo://games/roulette/round-state.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:194b874aac8872fa23f0142577b04ba17dfd8d10ce4d64fd0a30ed69980d1921"
+    },
+    {
+      "uri": "repo://games/roulette/ledger-transaction.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:fd37bb2e051c1dc5455953ea4c8525490e445d00b093027ff8802fe02f5f1eb3"
+    },
+    {
+      "uri": "repo://games/roulette/rng-draw-record.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:4cde6ce3e3ff47715badb7f90166aec1720c4f3e3ff6a69a71ef7ea67d8dda5b"
+    },
+    {
+      "uri": "repo://tests/test_rng.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:c95db53b3dc51b8d0d003840e07e980d9dbeeddda983bda67918998f5a81b37a"
+    },
+    {
+      "uri": "repo://tests/test_durable_state.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:8098db3095ec8791ace956d31006b87b7e482705e3fa3501c23ec7c4a7ca1bc0"
+    },
+    {
+      "uri": "repo://tests/test_roulette_web_server.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:4f8941b211fc987a65ed0b13b7971ca9619738d53ed821f9dc5fe2962e8bf77d"
+    },
+    {
+      "uri": "repo://tests/test_roulette_web_ui.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:369b665a70aadafded4041fd110dc2af9d298e507c58adbff42d182d66fcb3a9"
+    },
+    {
+      "uri": "repo://tests/test_reconnect_continuity.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:b2366ce46e7193384f5da0f1e6184c68cfc7840f4299a38e61803d219ed926bc"
+    }
+  ],
+  "deliverables": [
+    {
+      "name": "r2-load-observation-contract",
+      "artifact_type": "SCHEMA",
+      "target_uri": "repo://games/roulette/load-observation-contract.yaml"
+    },
+    {
+      "name": "r2-load-observation-harness",
+      "artifact_type": "CODE",
+      "target_uri": "repo://scripts/observe_r2_load.py"
+    },
+    {
+      "name": "r2-load-observation-test-suite",
+      "artifact_type": "CODE",
+      "target_uri": "repo://tests/test_load_observation.py"
+    },
+    {
+      "name": "r2-load-observation-design-document",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://docs/games/R2-load-observation.md"
+    },
+    {
+      "name": "r2-load-validation-report",
+      "artifact_type": "TEST_REPORT",
+      "target_uri": "repo://docs/approvals/R2-LOAD-0004-validation-report.md"
+    },
+    {
+      "name": "r2-load-audit-events",
+      "artifact_type": "DATASET",
+      "target_uri": "repo://audit/events/R2-LOAD-0004-events.json"
+    },
+    {
+      "name": "r2-load-artifact-contract",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://artifacts/R2-LOAD-0004-artifact.json"
+    },
+    {
+      "name": "r2-load-handoff-packet",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://handoffs/R2-LOAD-0004-handoff.json"
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "criterion_id": "AC-001",
+      "statement": "관측 하네스와 그 시험은 파이썬 표준 라이브러리만 사용해야 하고 새 외부 의존성, 패키지 설치, 빌드 단계, 서비스 기동을 도입해서는 안 된다. 대상은 이미 존재하는 단일 사용자 루프백 룰렛 참조 슬라이스이며 새 런타임 모듈이나 새 HTTP 경로를 만들지 않아야 한다.",
+      "verification": "import 목록 정적 검사, requirements 계열 파일 부재 확인, apps/roulette_web 모듈 목록과 server.ROUTES 집합 단언"
+    },
+    {
+      "criterion_id": "AC-002",
+      "statement": "부하는 유계여야 한다. 동시성 수준, 총 요청 수, 라운드 수, 전체 벽시계 제한 시간, 대상 바인딩이 games/roulette/load-observation-contract.yaml에 상한으로 선언되어야 하고 하네스가 그 상한을 넘는 실행을 거부해야 하며, 바인딩은 루프백 주소로 한정되어야 한다. 승인된 하드 안전 상한은 동시성 16 이하, 총 요청 128건 이하, 라운드 32개 이하, 전체 벽시계 제한 시간 60초 이하다. 이 네 값은 로컬 실행이 무한정 늘어나지 않도록 묶는 실행 안전 경계이며 성능 목표치나 SLO·통과 임계값이 아니다. 어떤 관측 수치도 이 값들과 비교해 판정되지 않는다. 구현 기본값은 이보다 낮게 잡을 수 있으나 어떤 실행도 이 승인 상한을 초과할 수 없다.",
+      "verification": "계약 선언값과 하네스 상수가 승인된 하드 안전 상한(동시성 16, 총 요청 128, 라운드 32, 벽시계 60초) 이하인지 대조 검증, 상한 초과 인자와 비루프백 대상 지정 시 거부되는 네거티브 시험"
+    },
+    {
+      "criterion_id": "AC-003",
+      "statement": "동시 실행 아래에서 정산 정확성이 보존되어야 한다. 각 라운드는 정확히 하나의 권위 추첨 기록과 하나의 정산만 커밋해야 하고, 관측 종료 시점의 플레이어 잔액 델타 합이 원장 거래 합과 정수 최소 단위로 정확히 일치해야 하며, 통화 값에 부동소수가 사용되어서는 안 된다.",
+      "verification": "동시 실행 후 draw_record·ledger_transaction 건수 단언과 잔액 델타 대 원장 합의 정수 동등성 단언, 통화 필드 정수 타입 검사"
+    },
+    {
+      "criterion_id": "AC-004",
+      "statement": "동시 실행 아래에서 멱등성이 보존되어야 한다. 같은 request_id를 여러 작업자가 동시에 제출해도 두 번째 추첨, 추가 엔트로피 소비, 두 번째 원장 거래, 두 번째 지급, 추가 잔액 변동이 어느 것도 발생하지 않아야 하고 모든 호출자가 같은 커밋 결과를 관측해야 한다. 경쟁 조건은 단위 시험이 아니라 실제 동시 실행으로 증명한다.",
+      "verification": "배리어 동기화된 실제 동시 제출 시험, 엔트로피 소비 바이트 계측, 커밋 건수와 잔액 델타 단언"
+    },
+    {
+      "criterion_id": "AC-005",
+      "statement": "동시 실행 아래에서 감사 완전성이 보존되어야 한다. 부하 실행이 만든 모든 감사 이벤트가 전역 유일 참조를 갖고, 유실이나 중복 없이 커밋된 라운드 수와 일치하며, 실행 종료 후 재적재한 체인 검증이 문제 없음을 보고해야 한다.",
+      "verification": "이벤트 참조 유일성·건수 단언과 재적재 후 studio_core.rng.verify_audit_chain 실행"
+    },
+    {
+      "criterion_id": "AC-006",
+      "statement": "지연과 처리량이 관측치로 기록되어야 한다. 요청 지연의 최소·중앙값·p95·최대와 처리량이 산출되어야 하고, 중앙값과 p95의 산출 방법, 표본 수, 사용한 시계 소스, 워밍업 표본의 포함 여부가 문서와 계약 파일에 명시되어야 한다. 산출 함수는 알려진 표본 집합에 대해 결정론적으로 검증되어야 한다.",
+      "verification": "고정 표본 입력에 대한 통계 산출 함수의 결정론적 단위 시험과 계약·문서의 산출 정의 대조"
+    },
+    {
+      "criterion_id": "AC-007",
+      "statement": "측정은 관측이며 판정 기준이 아니어야 한다. 어떤 시험도 지연·처리량 수치에 대한 통과·실패 임계값을 단언해서는 안 되고, 계약 파일과 문서 어디에도 SLO, 목표치, 용량 약속, 허용 상한으로 읽힐 수치가 선언되어서는 안 된다. 시험의 단언은 정확성 속성과 유계 실행 속성에만 걸려야 한다.",
+      "verification": "시험 스위트의 단언 대상 검토와 계약·문서의 임계값·SLO 표현 부재 확인"
+    },
+    {
+      "criterion_id": "AC-008",
+      "statement": "추첨 직렬화의 영향이 전체 요청 지연과 분리되어 별도 항목으로 기록되어야 한다. 하네스는 내부 잠금 획득 대기 시간을 직접 계측하지 않으며 그런 측정을 주장해서도 안 된다. 대신 동기화된 동시 출발 이후 각 요청이 서비스되기까지의 큐 지연을 serialization_wait_proxy_ms라는 이름의 별도 항목으로 기록한다. 이 값이 프록시일 뿐이며 운영체제 스케줄러 효과와 직렬화된 서비스 효과가 합쳐진 값이어서 잠금 대기 시간 자체가 아니라는 사실과, 그 관측 지점(동기화 배리어 해제 시각과 서비스 시작 시각)이 계약 파일과 문서에 명시되어야 한다. 이 프록시는 관측 하네스 안에서만 산출되어야 하고, 관측 대상 런타임 코드에 계측을 심는 프로덕션 계측은 금지된다. 이 값 역시 관측치로만 기록되며 어떤 단언이나 임계값의 대상이 되지 않는다.",
+      "verification": "관측 출력에 serialization_wait_proxy_ms 항목이 전체 지연과 분리되어 존재하는지 확인, 계약·문서의 프록시 한계와 관측 지점 명시 대조, 동결 런타임 경로에 계측 코드가 추가되지 않았음 확인, 이 값에 대한 단언·임계값 부재 확인"
+    },
+    {
+      "criterion_id": "AC-009",
+      "statement": "동결 경로가 무변경이어야 한다. 이 계약이 inputs로 고정한 apps/roulette_web/server.py, apps/roulette_web/table.py, studio_core/durable_state.py, studio_core/rng.py, studio_core/ledger.py, 룰렛 계약 파일과 기존 시험 파일 전부가 이 유닛에 의해 수정되지 않아야 하고 선언 해시와 실제 정규 LF 해시가 일치해야 한다.",
+      "verification": "선언된 inputs 전체의 정규 LF 해시 대조와 변경 파일 목록 검토"
+    },
+    {
+      "criterion_id": "AC-010",
+      "statement": "범위 밖 항목이 수행되지 않고 열린 채로 남아야 한다. 용량 목표치(SLO)와 임계값 확정, 출시 용량 약속, 상용 일정과 출시일, 인프라 조달, 외부·운영 환경 대상 부하, 침투 시험, 다중 사용자 신원·세션 분리 기능은 이 작업에서 다루지 않는다.",
+      "verification": "산출물 목록과 계약 파일 out_of_scope 항목 검토, R2-SEC-0005 이월 기록 확인"
+    },
+    {
+      "criterion_id": "AC-011",
+      "statement": "R4에 속한 어떤 산출물도, 자산·이미지·아트 경로도 이 유닛이 만들거나 수정하거나 검토하지 않아야 한다. Claude는 이 유닛에서 아트를 생성하지 않고 아트를 검토하지도 않는다. 무결성 재고정 연쇄가 tasks/R4-ART-0007.json이나 그 자산 산출물에 도달해서는 안 된다.",
+      "verification": "변경 파일 목록의 R4·자산·이미지·아트 경로 부재 확인과 역방향 해시 참조 폐포 재계산"
+    },
+    {
+      "criterion_id": "AC-012",
+      "statement": "이 유닛은 기존 파일을 수정하지 않아야 한다. scripts/validate_baseline.py를 포함해 저장소에 이미 존재하는 어떤 파일도 변경 대상이 아니며, 산출물은 전부 신규 파일이어야 한다.",
+      "verification": "변경 파일 목록이 선언된 신규 산출물 집합과 정확히 일치하는지 확인"
+    },
+    {
+      "criterion_id": "AC-013",
+      "statement": "시험은 결정론적이어야 한다. 반복 실행에서 정확성 단언이 동일하게 통과해야 하고, 통과 여부가 벽시계 시간, 임의의 고정 대기, 기계 성능, 외부 네트워크에 의존해서는 안 된다. 대기가 필요한 지점은 고정 시간이 아니라 조건과 마감 시한으로 기다려야 한다.",
+      "verification": "시험 스위트의 반복 실행 결과 동일성 확인과 고정 대기·외부 네트워크 의존 부재 검토"
+    },
+    {
+      "criterion_id": "AC-014",
+      "statement": "python scripts/validate_baseline.py와 python -m unittest discover -s tests -v 두 명령이 모두 성공해야 하고, 비밀값과 개인정보가 코드·프롬프트·로그·증거·커밋 어디에도 기록되지 않아야 하며, 관측 출력에 개인정보나 자격증명이 포함되지 않아야 한다.",
+      "verification": "두 표준 명령의 실제 실행 로그와 python scripts/scan_secrets.py 실행 결과, 관측 출력 필드 목록 검토"
+    }
+  ],
+  "dependencies": [
+    "R2-DBC-0002",
+    "R2-NET-0003"
+  ],
+  "budget": {
+    "max_cost_usd": 20.0,
+    "max_runtime_seconds": 14400,
+    "stop_on_limit": true
+  },
+  "approvers": [
+    "USER",
+    "A-50",
+    "A-02"
+  ],
+  "rollback": {
+    "strategy": "롤백 대상 목록. 계약 단계 신규 파일 3개: tasks/R2-LOAD-0004.json, artifacts/R2-LOAD-0004-artifact.json, handoffs/R2-LOAD-0004-handoff.json. 구현 단계 신규 파일 예정 6개: games/roulette/load-observation-contract.yaml, scripts/observe_r2_load.py, tests/test_load_observation.py, docs/games/R2-load-observation.md, docs/approvals/R2-LOAD-0004-validation-report.md, audit/events/R2-LOAD-0004-events.json. 이 유닛은 기존 파일을 수정하지 않으므로 역패치 대상 수정 파일이 없다. 경로 A(해당 변경의 커밋이 이미 존재하는 경우): 그 커밋 해시를 정확히 지정해 git revert <commit>으로 되돌리는 새 커밋을 만든다. 이력 재작성, 강제 푸시, 브랜치 삭제, git reset --hard, git checkout --는 사용하지 않는다. 경로 B(커밋 이전, 작업 트리에만 존재하는 경우): (1) 위 경로 전체를 저장소 밖 임시 디렉터리(%TEMP%/ts-studio-recovery/R2-LOAD-0004/<UTC-timestamp>/)에 원본 그대로 복사해 격리 사본을 먼저 만든다. 격리 사본은 저장소 안에 두지 않는다. (2) 신규 파일은 삭제 전에 격리 사본이 존재함을 확인한 뒤 해당 경로만 지정해 제거한다. (3) 기존 파일이 의도치 않게 변경된 경우에는 삭제하지 않고 git show 13d8264:<경로>로 기준 커밋 내용을 읽어 파일 단위 쓰기로 복원한 뒤 studio_core.integrity.hash_file로 이 계약의 inputs 선언 해시와 일치함을 확인한다. 관측 하네스가 만드는 SQLite 파일과 소켓은 임시 디렉터리와 루프백에만 존재하므로 롤백 대상 저장소 파일이 없다. 파괴적 Git·파일시스템 명령은 어느 단계에서도 사용하지 않는다. 두 경로 모두 마지막에 python scripts/validate_baseline.py와 python -m unittest discover -s tests -v를 실행해 직전 기준선 통과를 확인한다. Claude는 커밋과 푸시를 수행하지 않는다.",
+    "source_preserved": true,
+    "verification": "복원 후 git status가 R2-LOAD-0004 신규 산출물을 제외하고 13d8264 기준으로 깨끗해야 하며, 이 계약이 inputs로 고정한 모든 경로의 정규 LF 해시가 선언값과 일치하고, python scripts/validate_baseline.py와 python -m unittest discover -s tests -v를 재실행해 13d8264 시점 기준선이 그대로 통과함을 확인한다."
+  },
+  "security": {
+    "data_classification": "INTERNAL",
+    "contains_pii": false,
+    "workspace_access": "TASK_WRITE",
+    "network_policy": "NONE",
+    "secrets_policy": "NONE"
+  },
+  "assumptions": [
+    "이 계약의 상태는 READY다. 이 개정 시점까지 거버넌스 파일 3종 외에 구현·시험·도구 코드는 한 줄도 작성되지 않았고, 계획된 산출물 6종도 아직 만들어지지 않았다. READY는 착수 가능 상태를 뜻할 뿐 구현 완료나 최종 게이트 통과를 뜻하지 않는다.",
+    "관측 대상은 현재 저장소에 존재하는 단일 사용자 루프백 룰렛 참조 슬라이스다. 다중 사용자 신원·세션 분리는 도입되지 않았고 이 유닛이 도입하지도 않으므로, 여기서 말하는 '동시성'은 하나의 참조 사용자 범위 안에서 겹치는 동시 요청이지 여러 사용자의 동시 접속이 아니다.",
+    "network_policy: NONE은 외부·운영 환경으로 나가는 어떤 네트워크 접근도 허가되지 않는다는 뜻이다. 관측은 기존 시험이 이미 사용하는 방식과 동일하게 로컬 프로세스 내부와 루프백 주소에만 한정된다.",
+    "지연과 처리량 수치는 실행 환경에 종속된다. 기계, 운영체제, 파이썬 버전, 동시 실행 중인 다른 부하에 따라 값이 달라지므로 이 유닛이 남기는 수치는 특정 실행의 관측 기록이지 이식 가능한 성능 특성이 아니다. 따라서 시험은 어떤 수치에도 단언하지 않는다.",
+    "정확성 속성(단일 권위 결과, 멱등성, 감사 완전성)만이 판정 대상이며 이 속성들은 타이밍에 의존하지 않는다.",
+    "추첨 직렬화 대기는 직접 계측되지 않는다. 하네스가 기록하는 serialization_wait_proxy_ms는 동기화된 동시 출발 이후의 큐 지연이며 운영체제 스케줄러 효과와 직렬화된 서비스 효과를 함께 포함하는 프록시다. 이 값을 내부 잠금 획득 대기 시간의 측정값으로 읽어서는 안 되고, 그 값을 얻기 위해 관측 대상 런타임에 계측을 심는 프로덕션 계측은 채택하지 않는다.",
+    "AC-002가 선언하는 동시성 16, 총 요청 128, 라운드 32, 벽시계 60초는 실행이 유계로 끝나도록 강제하는 안전 상한이지 성능 기대치가 아니다. 이 값들이 나중에 용량 목표치나 통과 기준으로 인용되어서는 안 된다.",
+    "R2-SEC-0005 보안 침투 시험은 별개의 미승인 후보로 남는다. 이 유닛은 그 범위를 열지 않고 공격 표면 검증을 수행하지 않는다.",
+    "이 유닛은 저장소에 이미 존재하는 파일을 수정하지 않는다. scripts/validate_baseline.py에 검증 단계를 추가하는 방식은 채택하지 않으며, 계약과 구현의 대조는 신규 파일 tests/test_load_observation.py 안에서 수행한다.",
+    "R4 산출물, 자산, 이미지, 아트는 이 유닛의 범위 밖이다. Claude는 아트를 생성하지 않고 검토하지도 않는다.",
+    "비밀값과 개인정보는 코드, 프롬프트, 로그, 증거, 커밋 어디에도 기록하지 않는다.",
+    "Claude는 이 작업에서 커밋, 푸시, 병합, 브랜치 변경, Git·GitHub 설정 변경을 수행하지 않고 작업 트리 변경만 남긴다. 최종 QA 게이트 판정은 A-50과 USER에게 남는다."
+  ],
+  "open_decisions": [
+    "이 계약은 READY로 승격되었다. 남은 결정은 구현 제출 이후의 독립 검증 결과와 A-50·USER의 최종 게이트 판정이며 이 문서가 대신 정하지 않는다.",
+    "동시성 수준·총 요청 수·라운드 수·전체 벽시계 제한 시간의 하드 안전 상한은 AC-002에 확정 선언되었으므로 더 이상 미결이 아니다. 구현 기본값은 이 상한보다 낮게 설정할 수 있으나 어떤 실행도 승인된 상한을 초과할 수 없다.",
+    "용량 목표치(SLO)와 통과·실패 임계값은 제작 규모 결정에 종속되고 그 결정은 R5 이전에 하지 않으므로 미결로 남는다.",
+    "다중 사용자 동시 접속 부하의 관측은 다중 사용자 신원·세션 분리 결정에 종속되어 이 유닛에서 다루지 않는다.",
+    "재접속 재시도 횟수와 백오프의 운영 값은 이 유닛의 관측 결과를 입력으로 삼지만, 값 확정은 별도 유닛에서 한다.",
+    "운영 규모 저장소 엔진과 배치 형태가 미결이므로 여기서 기록한 serialization_wait_proxy_ms가 운영 구성에 그대로 이전되지 않는다. 이 값은 프록시이므로 직렬화 비용의 정량 근거로도 쓰이지 않는다.",
+    "R5 승인 이전이므로 상용 제작 일정, 기간, 출시일은 확정하지 않는다."
+  ],
+  "created_at": "2026-09-02T00:00:00Z",
+  "updated_at": "2026-09-02T01:00:00Z"
+}
