@@ -86,12 +86,12 @@
     {
       "uri": "repo://artifacts/R4-UI-0006-artifact.json",
       "version": "1.1.0",
-      "content_hash": "sha256:95dfa3f3566f130f880521941a05f01879c5e7e7ec1aa77b37278cf29289b953"
+      "content_hash": "sha256:7ad49b33f1110a823c423841f8099af67d5390741176cdf79df1a8d7ae43dd41"
     },
     {
       "uri": "repo://scripts/validate_baseline.py",
       "version": "1.0.0",
-      "content_hash": "sha256:08756d3ac6fda7d70401957d19d33b8ba6456a49863e71f15be7179625f90138"
+      "content_hash": "sha256:6afefe21674a509a6ed7ffc5695e388e4ff14e1af4a2590da4741c24fd10f45c"
     }
   ],
   "deliverables": [

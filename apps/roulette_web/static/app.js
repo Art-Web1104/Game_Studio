@@ -144,6 +144,7 @@
     pendingIds: {}, // action -> request id held until the server answers
     retryAction: null,
     freshDraftIds: {},
+    lastRoundId: null, // the round the drafts on screen were composed against
   };
 
   var numberFormat = new Intl.NumberFormat("ko-KR");
@@ -804,12 +805,43 @@
 
   // ── actions ─────────────────────────────────────────────────────────────────────────
 
-  function loadState() {
+  /*
+   * R2-NET-0003. Reconnecting is a read, not a merge.
+   *
+   * There is no reconnect endpoint and no session token: `/api/state` already returns the
+   * whole authoritative snapshot, assembled by the server from its durable store, so the
+   * honest way to come back after a disconnect is to throw away everything held locally and
+   * re-render from that one response. Nothing on this side is folded into it -- no cached
+   * balance, no remembered phase, no optimistic result -- because a client that merged its
+   * own view into a recovery would be deciding part of the answer.
+   *
+   * Unsubmitted drafts are the one piece of local state worth keeping, and only while the
+   * server says the round still takes bets. Once `accepts_bets` is false, or once the
+   * server is on a different round than the one the drafts were composed against, they are
+   * dropped: re-submitting them would be an attempt to bet into a round that has already
+   * locked, which the server refuses anyway. Dropping them here means the player is told
+   * plainly instead of watching a refusal they did not ask for.
+   */
+  function rehydrate() {
     return request("GET", "/api/state").then(function (payload) {
-      if (!el.rotor.firstChild) {
-        buildWheel(payload.state);
+      var state = payload.state;
+      var movedOn = ui.lastRoundId !== null && ui.lastRoundId !== state.round.round_id;
+      if (!state.round.accepts_bets || movedOn) {
+        ui.drafts = [];
+        ui.freshDraftIds = {};
       }
-      applyState(payload.state);
+      ui.selection = [];
+      ui.lastRoundId = state.round.round_id;
+      if (!el.rotor.firstChild) {
+        buildWheel(state);
+      }
+      applyState(state);
+      return state;
+    });
+  }
+
+  function loadState() {
+    return rehydrate().then(function () {
       setStatus(
         "베팅을 담고 스핀을 누르세요. 결과와 잔액은 서버가 결정합니다. 가상 칩이며 현금 가치가 없습니다."
       );
@@ -878,6 +910,103 @@
     });
   }
 
+  /* Render a settled spin. Every figure shown is read out of the server's own payload. */
+  function showSettledSpin(payload) {
+    releaseRequestId("spin");
+    ui.lastRoundId = payload.state.round.round_id;
+    ui.lastRoundBets = (payload.state.round.bets || []).map(function (bet) {
+      return { type: bet.type, selections: bet.selections, stake_units: bet.stake_units };
+    });
+    return spinWheelTo(payload.result.pocket).then(function () {
+      applyState(payload.state);
+      el.pocket.classList.add("is-revealed");
+      var result = payload.result;
+      var summary =
+        "결과 " +
+        result.pocket +
+        " " +
+        (COLOR_LABELS[result.color] || result.color) +
+        ". 서버 지급 " +
+        chips(result.total_return_units) +
+        ", 증감 " +
+        signedChips(result.net_change_units) +
+        ", 잔액 " +
+        chips(payload.state.balance_units) +
+        ".";
+      setStatus(
+        summary + " 새 라운드를 열어 계속하세요.",
+        result.net_change_units > 0 ? "win" : null
+      );
+      announce(summary);
+    });
+  }
+
+  /*
+   * R2-NET-0003. A settlement response that never arrived.
+   *
+   * A transport failure says nothing about whether the server drew and settled, so the only
+   * safe move is to ask again *under the same identifier*. The server's idempotency does the
+   * rest, and it is the server's, not this file's: within the same process the request
+   * journal replays the original response verbatim. Neither path draws twice, spends entropy
+   * twice or posts a second settlement.
+   *
+   * Across a restart the retry is refused, and *which* refusal comes back depends on the
+   * state of the fresh round the restarted server opened. An empty new round is stopped by
+   * `NO_BETS` before the durable store is even consulted; a new round that already has bets
+   * reaches the store, which sees the identifier attached to a different round and refuses
+   * the mismatch as `DRAW_DENIED`; a new round that has moved on answers `PHASE_DENIED`.
+   * Inside this recovery path all of them mean one thing -- "this server is not holding the
+   * round you were spinning" -- and the right response to all of them is identical. They keep
+   * their ordinary meanings everywhere else; only a retry that follows a lost answer is read
+   * this way.
+   *
+   * The refusal is not an error to show the player. The outcome is read out of a fresh
+   * snapshot, where `recent_results` has been rebuilt by the server from its durable audit
+   * chain. The per-bet breakdown is gone -- open-round bets were never persisted -- so the
+   * pocket, the colour and the authoritative balance are reported and nothing is
+   * reconstructed to fill the gap.
+   */
+  var SPIN_RECOVERY_SIGNALS = [
+    "NO_BETS",
+    "DRAW_DENIED",
+    "PHASE_DENIED",
+    "REQUEST_ID_ALREADY_USED",
+  ];
+
+  function recoverLostSpin(requestId) {
+    return request("POST", "/api/spin", { request_id: requestId }).then(
+      showSettledSpin,
+      function (error) {
+        if (SPIN_RECOVERY_SIGNALS.indexOf(error.code) === -1) {
+          throw error;
+        }
+        return rehydrate().then(function (state) {
+          releaseRequestId("spin");
+          ui.drafts = [];
+          ui.freshDraftIds = {};
+          applyState(state);
+          var history = state.recent_results || [];
+          var committed = history.length ? history[history.length - 1] : null;
+          var summary = committed
+            ? "연결이 끊긴 사이 라운드 " +
+              committed.round_id +
+              "은 이미 정산됐습니다. 서버 기록 결과 " +
+              committed.pocket +
+              " " +
+              (COLOR_LABELS[committed.color] || committed.color) +
+              ", 잔액 " +
+              chips(state.balance_units) +
+              ". 재접속으로 결과가 다시 추첨되거나 다시 지급되지는 않습니다."
+            : "연결이 끊긴 사이의 요청은 서버에 이미 처리돼 있습니다. 잔액 " +
+              chips(state.balance_units) +
+              "은 서버 기록입니다.";
+          setStatus(summary + " 새 라운드를 열어 계속하세요.");
+          announce(summary);
+        });
+      }
+    );
+  }
+
   function doSpin() {
     return run("spin", el.spin, function () {
       setStatus("베팅을 서버에 제출하는 중입니다.", "busy");
@@ -885,34 +1014,17 @@
         var requestId = heldRequestId("spin", "SPIN");
         setStatus("서버가 추첨하는 중입니다.", "busy");
         announce("서버가 추첨하는 중입니다.");
-        return request("POST", "/api/spin", { request_id: requestId }).then(function (payload) {
-          releaseRequestId("spin");
-          ui.lastRoundBets = (payload.state.round.bets || []).map(function (bet) {
-            return { type: bet.type, selections: bet.selections, stake_units: bet.stake_units };
-          });
-          return spinWheelTo(payload.result.pocket).then(function () {
-            applyState(payload.state);
-            el.pocket.classList.add("is-revealed");
-            var result = payload.result;
-            var summary =
-              "결과 " +
-              result.pocket +
-              " " +
-              (COLOR_LABELS[result.color] || result.color) +
-              ". 서버 지급 " +
-              chips(result.total_return_units) +
-              ", 증감 " +
-              signedChips(result.net_change_units) +
-              ", 잔액 " +
-              chips(payload.state.balance_units) +
-              ".";
-            setStatus(
-              summary + " 새 라운드를 열어 계속하세요.",
-              result.net_change_units > 0 ? "win" : null
-            );
-            announce(summary);
-          });
-        });
+        return request("POST", "/api/spin", { request_id: requestId }).then(
+          showSettledSpin,
+          function (error) {
+            // The identifier is deliberately not released here: recovery has to replay it.
+            if (error.code === "NETWORK" || error.code === "REQUEST_ID_ALREADY_USED") {
+              setStatus("응답을 받지 못했습니다. 서버 기록으로 결과를 확인하는 중입니다.", "busy");
+              return recoverLostSpin(requestId);
+            }
+            throw error;
+          }
+        );
       });
     });
   }
@@ -924,6 +1036,9 @@
         releaseRequestId("new-round");
         ui.selection = [];
         ui.drafts = [];
+        // Keep the round the local drafts belong to in step, so a later reconnect can tell
+        // "the server moved on" apart from "this is still my round".
+        ui.lastRoundId = payload.state.round.round_id;
         applyState(payload.state);
         setStatus("새 라운드가 열렸습니다. 베팅을 담아 주세요.");
         announce("새 라운드 " + payload.state.round.round_id + "가 열렸습니다.");
