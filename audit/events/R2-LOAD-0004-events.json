@@ -1,0 +1,279 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "R2-LOAD-0004",
+  "chain_namespace": "R2LOAD",
+  "summary": "R2-LOAD-0004 유계 로컬 동시 부하 관측 유닛의 감사 기록이다. 계약 발행과 계약 단계 아티팩트 등록, 하네스·시험·계약 파일 구현, 누수 수정 이전의 집중 시험 통과, 그 직후 발견된 Windows SQLite 핸들 누수, 스레드 소유 연결 해제 재작업, 재작업 이후의 자체 점검과 Codex 독립 실행, 전체 시험 발견 실행의 정직한 기록, 저장소 밖에 남은 임시 작업 공간, R2-SEC-0005의 범위 밖 유지, 증거 문서 작성, 최종 게이트 미수행을 순서대로 남긴다. 네 번째 이벤트는 통과 기록이지만 그것이 자원 회수를 뜻하지 않았다는 사실이 다섯 번째 이벤트다. 다섯 번째, 아홉 번째, 열 번째 이벤트는 실패 기록이며 지우지 않는다. 아홉 번째 이벤트는 전체 시험 발견 실행을 PASS로 부르지 않는다. 706건 중 4건 건너뜀에 예상된 완료 게이트 자기 충돌 오류가 정확히 1건 있으며 기준선에서도 같은 실패가 재현되기 때문이다. 마지막 이벤트는 A-50과 USER의 최종 게이트, 호스티드 CI, 운영 준비, 커밋·푸시·병합이 모두 수행되지 않았음을 기록한다. 이 유닛은 어떤 SLO, 임계값, 용량 약속, 상용 일정도 선언하지 않고 R4 산출물·자산·이미지·아트를 만들거나 수정하거나 검토하지 않았다.",
+  "events": [
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-02T01:00:00Z",
+      "actor_type": "USER",
+      "actor_id": "USER",
+      "task_id": "R2-LOAD-0004",
+      "action": "TASK_CONTRACT_ISSUED_READY",
+      "resource_refs": [
+        "repo://tasks/R2-LOAD-0004.json",
+        "repo://contracts/task.schema.json",
+        "repo://docs/operations/R2-followup-units.md"
+      ],
+      "decision": "ALLOW",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:8be2245b72132bdf24152c7b1ad2e7d13cbd83b0eec8d77038ae1a171852e31b",
+      "contains_secret": false,
+      "event_id": "AE-R2LOAD-0001",
+      "previous_event_hash": null,
+      "event_hash": "sha256:535c52bffe6a4bf51d80c8fcb1d8add518f7b07e3407e1cf5b05ad7821c12b03"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "ARTIFACT",
+      "timestamp": "2026-09-02T01:30:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "R2-LOAD-0004",
+      "action": "PRE_IMPLEMENTATION_ARTIFACT_REGISTERED",
+      "resource_refs": [
+        "repo://artifacts/R2-LOAD-0004-artifact.json",
+        "repo://handoffs/R2-LOAD-0004-handoff.json"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:be90f30d3a91f1f9710fb87d97c26413aba4e364cdc4940a6ea494391221f975",
+      "contains_secret": false,
+      "event_id": "AE-R2LOAD-0002",
+      "previous_event_hash": "sha256:535c52bffe6a4bf51d80c8fcb1d8add518f7b07e3407e1cf5b05ad7821c12b03",
+      "event_hash": "sha256:181bebd7bcd32fb87c5af62fbfd07524cfd2b2b84fd2029bf90a80f4ee40176e"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "ARTIFACT",
+      "timestamp": "2026-09-02T02:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "R2-LOAD-0004",
+      "action": "LOAD_OBSERVATION_IMPLEMENTATION_DRAFTED",
+      "resource_refs": [
+        "repo://games/roulette/load-observation-contract.yaml",
+        "repo://scripts/observe_r2_load.py",
+        "repo://tests/test_load_observation.py"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:ad4d5dc122bcd3197e6a138a2e0d6ea0aba7707b4fc27d80650ab1fdba2ece9d",
+      "contains_secret": false,
+      "event_id": "AE-R2LOAD-0003",
+      "previous_event_hash": "sha256:181bebd7bcd32fb87c5af62fbfd07524cfd2b2b84fd2029bf90a80f4ee40176e",
+      "event_hash": "sha256:ee914bf637688d5bd719ca1e0ca31f1a0acfdb414027cb3c2fdf93a8ac76badc"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-02T02:30:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "R2-LOAD-0004",
+      "action": "FOCUSED_TEST_SUITE_EXECUTED_BEFORE_LEAK_FIX",
+      "resource_refs": [
+        "repo://tests/test_load_observation.py",
+        "repo://scripts/observe_r2_load.py"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:72820599c8d2286ca630ce8b9e7c9bf5691f17dd0ed54e6fc56084abbe4dc07a",
+      "contains_secret": false,
+      "event_id": "AE-R2LOAD-0004",
+      "previous_event_hash": "sha256:ee914bf637688d5bd719ca1e0ca31f1a0acfdb414027cb3c2fdf93a8ac76badc",
+      "event_hash": "sha256:c50a34d940f722975621fb81ada2a76a73d9c0ef0e9a3c4a54306a8414da6e2a"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-02T02:45:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "R2-LOAD-0004",
+      "action": "WINDOWS_SQLITE_HANDLE_LEAK_DETECTED_AFTER_PASSING_TESTS",
+      "resource_refs": [
+        "repo://scripts/observe_r2_load.py",
+        "repo://studio_core/durable_state.py",
+        "repo://apps/roulette_web/server.py"
+      ],
+      "decision": "FAIL",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:88de47a91cf8fc22e4f86a20b33d3beaee5bd59fad8149c79124b96db5e5cd1f",
+      "contains_secret": false,
+      "event_id": "AE-R2LOAD-0005",
+      "previous_event_hash": "sha256:c50a34d940f722975621fb81ada2a76a73d9c0ef0e9a3c4a54306a8414da6e2a",
+      "event_hash": "sha256:27a75ace4525086bdd567dab4194a4eb50ce9c8c1e343ceef758d043bbf8b666"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "ARTIFACT",
+      "timestamp": "2026-09-02T03:15:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "R2-LOAD-0004",
+      "action": "THREAD_OWNED_CONNECTION_RELEASE_REWORK_APPLIED",
+      "resource_refs": [
+        "repo://scripts/observe_r2_load.py",
+        "repo://tests/test_load_observation.py",
+        "repo://docs/games/R2-load-observation.md"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:d8417d1508f1ed84dbc04547587df4fd868e6d9e540550c4c108d07afe3d7cbe",
+      "contains_secret": false,
+      "event_id": "AE-R2LOAD-0006",
+      "previous_event_hash": "sha256:27a75ace4525086bdd567dab4194a4eb50ce9c8c1e343ceef758d043bbf8b666",
+      "event_hash": "sha256:390e5bf336fbbeaf7e7837730a87515a62bf7d9fbe9d5f0bd6787b2b7052155d"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-02T03:45:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "R2-LOAD-0004",
+      "action": "POST_REWORK_SELF_CHECK_COMPLETED",
+      "resource_refs": [
+        "repo://scripts/observe_r2_load.py",
+        "repo://tests/test_load_observation.py",
+        "repo://docs/approvals/R2-LOAD-0004-validation-report.md"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:1aa015928bdc65feb6eb0eef9cb22f87a7571a70bcd16cc982e5998b2f6b1ab0",
+      "contains_secret": false,
+      "event_id": "AE-R2LOAD-0007",
+      "previous_event_hash": "sha256:390e5bf336fbbeaf7e7837730a87515a62bf7d9fbe9d5f0bd6787b2b7052155d",
+      "event_hash": "sha256:493a64b2f3f696ae22376712800d814672d8d32f42b46be8a34edf13b0dec76f"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-02T04:15:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-20",
+      "task_id": "R2-LOAD-0004",
+      "action": "INDEPENDENT_POST_REWORK_CHECKS_REPLAYED",
+      "resource_refs": [
+        "repo://tests/test_load_observation.py",
+        "repo://scripts/scan_secrets.py",
+        "repo://operations/collaboration.yaml"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:6de028a0892f444da9ad102aaaca669ab9e6804722256451156741af06c72a26",
+      "contains_secret": false,
+      "event_id": "AE-R2LOAD-0008",
+      "previous_event_hash": "sha256:493a64b2f3f696ae22376712800d814672d8d32f42b46be8a34edf13b0dec76f",
+      "event_hash": "sha256:2dde6548191f46f9f74c1dd3bffc42c80aa5244a6d3969ec7fe66a1531282dd6"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-02T04:30:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "R2-LOAD-0004",
+      "action": "FULL_TEST_DISCOVERY_RECORDED_NOT_CLAIMED_PASS",
+      "resource_refs": [
+        "repo://operations/collaboration.yaml",
+        "repo://handoffs/R2-LOAD-0004-handoff.json",
+        "repo://scripts/validate_baseline.py",
+        "repo://docs/approvals/R2-LOAD-0004-validation-report.md"
+      ],
+      "decision": "FAIL",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:8981058c464f1c3adef85b69a1351c4995d8d346e2858ded217c18a1d84f1e7a",
+      "contains_secret": false,
+      "event_id": "AE-R2LOAD-0009",
+      "previous_event_hash": "sha256:2dde6548191f46f9f74c1dd3bffc42c80aa5244a6d3969ec7fe66a1531282dd6",
+      "event_hash": "sha256:644a309fd033b63ccf69e90d8f804eb2f310b7e9038ab8723891cbda411973b6"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "SECURITY",
+      "timestamp": "2026-09-02T04:45:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "R2-LOAD-0004",
+      "action": "STALE_TEMPORARY_WORKSPACES_PENDING_EXPLICIT_CLEANUP",
+      "resource_refs": [
+        "repo://scripts/observe_r2_load.py",
+        "repo://docs/approvals/R2-LOAD-0004-validation-report.md",
+        "repo://policies/security.yaml"
+      ],
+      "decision": "FAIL",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:6bad4562dcc91265136198e766a20ea2189da83985bf035b55b65ad059e05272",
+      "contains_secret": false,
+      "event_id": "AE-R2LOAD-0010",
+      "previous_event_hash": "sha256:644a309fd033b63ccf69e90d8f804eb2f310b7e9038ab8723891cbda411973b6",
+      "event_hash": "sha256:2df771f8e3a84c558155cbcbe3c8dfbc21d6bfbdd0d6d80e0011c5359165a5dc"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "TASK_STATE",
+      "timestamp": "2026-09-02T05:00:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "R2-LOAD-0004",
+      "action": "R2_SEC_0005_LEFT_OUT_OF_SCOPE_AND_UNAPPROVED",
+      "resource_refs": [
+        "repo://games/roulette/load-observation-contract.yaml",
+        "repo://docs/operations/R2-followup-units.md"
+      ],
+      "decision": "DENY",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:71eca21f87adc587e991bd0c51088c4e1d81cea3194210b0ec37a7c457f04dc1",
+      "contains_secret": false,
+      "event_id": "AE-R2LOAD-0011",
+      "previous_event_hash": "sha256:2df771f8e3a84c558155cbcbe3c8dfbc21d6bfbdd0d6d80e0011c5359165a5dc",
+      "event_hash": "sha256:85626cd52644952af3a06bbb98ed6c45c55b72e5af1a86a20664bd73aab29be4"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "ARTIFACT",
+      "timestamp": "2026-09-02T05:15:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "R2-LOAD-0004",
+      "action": "EVIDENCE_DOCUMENTS_WRITTEN",
+      "resource_refs": [
+        "repo://docs/games/R2-load-observation.md",
+        "repo://docs/approvals/R2-LOAD-0004-validation-report.md",
+        "repo://audit/events/R2-LOAD-0004-events.json"
+      ],
+      "decision": "COMPLETE",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:a6124a98b93428ac93d266aac57ff681ef0244f5634147804b924eef398e6a51",
+      "contains_secret": false,
+      "event_id": "AE-R2LOAD-0012",
+      "previous_event_hash": "sha256:85626cd52644952af3a06bbb98ed6c45c55b72e5af1a86a20664bd73aab29be4",
+      "event_hash": "sha256:7fb8c896f5a47bbc329aafce0e3baa6ab520c0fb9725d5a6241b0d1b68ad1d8c"
+    },
+    {
+      "schema_version": "1.0.0",
+      "event_type": "RELEASE_GATE",
+      "timestamp": "2026-09-02T05:30:00Z",
+      "actor_type": "AGENT",
+      "actor_id": "A-02",
+      "task_id": "R2-LOAD-0004",
+      "action": "FINAL_GATE_AND_HOSTED_CI_NOT_RUN",
+      "resource_refs": [
+        "repo://operations/collaboration.yaml",
+        "repo://handoffs/R2-LOAD-0004-handoff.json",
+        "repo://.github/workflows/ci.yml"
+      ],
+      "decision": "BLOCK",
+      "policy_version": "COLLAB-CODEX-CLAUDE-001/1.0.0",
+      "request_hash": "sha256:50dbee9c57220f010124043a5af60f5421777f0b67cf2e2c0c81ac3823b9b8a3",
+      "contains_secret": false,
+      "event_id": "AE-R2LOAD-0013",
+      "previous_event_hash": "sha256:7fb8c896f5a47bbc329aafce0e3baa6ab520c0fb9725d5a6241b0d1b68ad1d8c",
+      "event_hash": "sha256:084b9dce675cd0d5088246fe3637205cfeaeafabbd9ef2dd222b5256dbe32af3"
+    }
+  ]
+}

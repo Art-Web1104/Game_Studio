@@ -1,0 +1,177 @@
+{
+  "schema_version": "1.0.0",
+  "handoff_id": "HO-R2-LOAD-0004-001",
+  "task_id": "R2-LOAD-0004",
+  "from_agent_id": "A-02",
+  "to_agent_id": "A-20",
+  "created_at": "2026-09-02T00:00:00Z",
+  "summary": "R2-LOAD-0004 유계 로컬 동시 부하 관측 유닛의 구현 제출이다. 이전 판본과 달리 이 패킷은 계약 초안이 아니라 구현 제출이며, 저장소에는 발행 계약 games/roulette/load-observation-contract.yaml, 하네스 scripts/observe_r2_load.py, 시험 tests/test_load_observation.py, 설계 문서 docs/games/R2-load-observation.md, 검증 보고서 docs/approvals/R2-LOAD-0004-validation-report.md, 감사 기록 audit/events/R2-LOAD-0004-events.json 여섯 건이 실제로 존재한다. 아티팩트는 대표 바인딩을 계약 YAML로 옮기고 나머지 다섯 건의 정규 LF 해시를 specification의 component_hash 항목에 함께 고정했다. 하네스는 파이썬 표준 라이브러리만 쓰고 새 HTTP 경로도 새 런타임 모듈도 만들지 않으며, 관측 대상 런타임에 계측을 심지 않고 루프백 주소로만 바인딩한다. 승인된 하드 안전 상한은 동시성 16, 총 요청 128, 라운드 32, 벽시계 60초이고 구현 기본값은 각각 4, 3, 30초로 그보다 낮다. 이 네 값은 실행이 유계로 끝나도록 강제하는 안전 경계이지 성능 목표치나 SLO·통과 임계값이 아니며 어떤 관측 수치도 이 값과 비교해 판정되지 않는다. 판정 대상은 정확성 속성 열 가지뿐이고 지연·처리량·serialization_wait_proxy_ms는 관측치로만 기록된다. 이 유닛에서 가장 정직하게 남겨야 할 사실은 두 가지다. 첫째, 집중 시험이 전부 통과한 이후에 Windows SQLite 핸들 누수가 발견되었다. 시험이 초록색이었다는 사실은 자원이 회수되었다는 뜻이 아니었다. 원인은 sqlite3 연결이 그것을 연 스레드에 묶인다는 점, ThreadingHTTPServer가 요청마다 별도 작업자 스레드를 쓴다는 점, 주 스레드의 store.close()가 다른 스레드의 연결을 닫지 못하고 그 예외가 무해한 이중 닫기로 삼켜진다는 점, 슬라이스가 daemon_threads를 쓰므로 socketserver가 작업자를 조인하지 않는다는 점 네 가지가 겹친 것이다. 재작업은 작업자 스레드 자신이 handle()의 finally에서 이미 존재하던 공개 API인 DurableRoundStore.release_thread_connection()을 호출하고, 하네스가 서버가 보관하지 않는 작업자 목록을 등재해 유계 조인하며, 요청마다 새 연결과 Connection: close를 쓰고, ignore_cleanup_errors를 제거해 삭제 실패를 WORKSPACE_NOT_RELEASED로 드러내는 방식으로 했다. 동결 런타임 파일은 하나도 수정되지 않았다. 둘째, 수정 이전의 결함이 만든 저장소 밖 임시 작업 공간 20건이 아직 남아 있고 이 작업에서 삭제하지 않았다. 저장소 안이 아니며 로컬 SQLite 관측 잔여물만 들어 있고 비밀값은 없지만 명시적 정리가 필요한 미해결 항목이다. 절대 경로는 어디에도 기록하지 않는다. readiness는 두 표준 검증 명령이 이 최종 후보 상태에서 실제로 통과한 경우에만 READY_FOR_REVIEW로 유지된다. A-20 독립 코드 검토, A-50·USER 최종 QA 게이트, 호스티드 CI 관측, 운영 준비 판정, 커밋·푸시·병합은 하나도 수행되지 않았고 NOT_RUN·PENDING으로 남는다. SLO, 지연·처리량 임계값, 용량 약속, 상용 일정, 출시일, 인프라 조달, 외부·운영 부하, 침투 시험, 다중 사용자 신원·세션 기능은 전부 범위 밖으로 남으며 R4 산출물·자산·이미지·아트는 만들지도 수정하지도 검토하지도 않았다.",
+  "artifact_refs": [
+    "ART-R2-LOAD-0004-0001"
+  ],
+  "assumptions": [
+    "이 유닛의 관측 대상은 저장소에 이미 존재하는 단일 사용자 루프백 참조 슬라이스다. 다중 사용자 신원·세션 분리는 아직 없고 이 유닛이 도입하지도 않으므로, 여기서 말하는 동시성은 하나의 참조 사용자 범위 안에서 겹치는 동시 요청이며 여러 사용자의 동시 접속이 아니다.",
+    "지연과 처리량 수치는 실행 환경에 종속된다. 기계, 운영체제, 파이썬 버전, 동시에 돌고 있는 다른 부하에 따라 값이 달라지므로 이 유닛이 남기는 수치는 특정 실행의 관측 기록이지 이식 가능한 성능 특성이 아니다. 시험은 어떤 수치의 크기에도 단언하지 않고 타이밍에 의존하지 않는 정확성 속성에만 단언한다. 이 패킷이 기록하는 실행 시간 역시 관측 기록이며 임계값이나 목표치가 아니다.",
+    "serialization_wait_proxy_ms는 이름 그대로 프록시다. 동기화 배리어가 풀린 공통 시각과 각 요청의 getresponse() 반환 시각 사이의 큐 지연이며 운영체제 스케줄러 효과, 클라이언트 스레드 디스패치 순서, 루프백 연결 설정, 직렬화된 서비스 효과가 섞여 있고 서비스 시간 자체를 포함하므로 큐 대기의 상한이지 하한이 아니다. 내부 잠금 획득 대기 시간을 직접 측정한 값이 아니고 하네스는 그 대기를 직접 계측하지 않으며, 그 값을 얻기 위해 관측 대상 런타임에 계측을 심는 프로덕션 계측은 채택하지 않았다.",
+    "AC-002의 하드 안전 상한(동시성 16, 총 요청 128, 라운드 32, 벽시계 60초)은 실행 안전 경계이지 성능·용량 판정 기준이 아니다. 구현 기본값은 동시성 4, 라운드 3, 워밍업 2, 벽시계 30초로 상한보다 낮으며, 상한을 넘는 설정과 비루프백 대상은 디렉터리·저장소·소켓·스레드가 하나도 만들어지기 전에 거절된다.",
+    "집중 시험이 통과한 이후에 Windows SQLite 핸들 누수가 발견되었다. 통과한 시험은 자원 회수를 증명하지 않았다. 이 순서는 감사 기록 audit/events/R2-LOAD-0004-events.json의 네 번째·다섯 번째 이벤트에 그대로 남아 있으며 지우지 않았다.",
+    "누수 재작업은 studio_core/durable_state.py에 이미 존재하던 공개 메서드 release_thread_connection()과 socketserver가 공개하는 RequestHandlerClass 속성만 사용했다. 동결 경로 17개는 무변경이고 관측 대상 런타임에 계측 코드가 추가되지 않았다.",
+    "수정 이전 결함이 만든 임시 작업 공간 20건이 운영체제 임시 디렉터리에 남아 있고 이 작업에서 삭제하지 않았다. 저장소 안이 아니고 로컬 SQLite 관측 잔여물만 들어 있으며 비밀값과 개인정보는 없다. 그래도 명시적 정리가 필요한 미해결 항목이며 그 절대 경로는 이 패킷 어디에도 기록하지 않는다.",
+    "이 제출 단계에서 쓴 파일은 artifacts/R2-LOAD-0004-artifact.json과 handoffs/R2-LOAD-0004-handoff.json 두 건뿐이다. 이 유닛이 만들지 않은 기존 저장소 파일은 하나도 수정되지 않았고 scripts/validate_baseline.py에 검증 단계를 추가하는 방식도 채택하지 않았다. 계약과 구현의 대조는 신규 파일 tests/test_load_observation.py 안에서 한다.",
+    "이 완료 게이트 절차는 자기 참조적이다. scripts/validate_baseline.py의 validate_collaboration 단계는 이 패킷이 이미 READY_FOR_REVIEW와 두 표준 명령의 PASS를 담고 있을 것을 요구하므로, 후보 상태를 먼저 기록한 뒤 그 상태에서 두 명령을 실행하는 순서로만 정직한 검증이 가능하다. 두 명령 중 하나라도 실패했다면 PASS를 유지하지 않고 즉시 FAIL과 REWORK_REQUIRED로 되돌리는 것이 이 패킷의 규칙이다.",
+    "network_policy: NONE은 외부·운영 환경으로 나가는 네트워크 접근이 허가되지 않는다는 뜻이다. 관측은 기존 시험과 동일하게 로컬 프로세스 내부와 루프백 주소에만 한정되었고 비루프백 대상은 이름 해석조차 시도하지 않고 거절된다.",
+    "R2-SEC-0005 보안 침투 시험은 별개의 미승인 후보로 열린 채 남는다. 이 유닛의 부하 관측이 공격 표면 검증을 대신하지 않는다.",
+    "R4 산출물, 자산, 이미지, 아트 경로는 열지도 수정하지도 검토하지도 않았다. Claude는 이 유닛에서 아트를 생성하지 않고 아트를 검토하지도 않았다.",
+    "비밀값, 개인정보, 호스트명, 사용자 계정명, 운영자의 절대 경로, 엔트로피 재료는 코드·프롬프트·로그·증거 어디에도 기록하지 않았다. 하네스 출력은 엔트로피 소비 횟수와 바이트 수만 남기고 재료는 남기지 않는다.",
+    "로컬 통과가 다른 플랫폼의 통과를 보장하지 않는다. 이 유닛의 자원 회수 문제는 Windows 파일 잠금 의미론에서 드러났으므로 Linux 러너의 결과는 별도 증거가 필요하다.",
+    "Claude는 이 세션에서 커밋, 푸시, 병합, 브랜치 변경, Git·GitHub 설정 변경을 수행하지 않았고 작업 트리 변경만 남겼다. 최종 QA 게이트 판정은 A-50과 USER에게 남는다.",
+    "이 패킷은 독립 검증, A-20 코드 검토, 인간 최종 승인, 호스티드 CI 관측, 운영 준비 완료, R5 일정 확정을 하나도 주장하지 않는다."
+  ],
+  "verification_evidence": [
+    {
+      "check": "python scripts/validate_baseline.py",
+      "result": "PASS",
+      "evidence_uri": "repo://scripts/validate_baseline.py"
+    },
+    {
+      "check": "python -m unittest discover -s tests -v",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_load_observation.py"
+    },
+    {
+      "check": "python scripts/validate_baseline.py 결과 상세: 이 최종 후보 상태에서 두 번 실행해 두 번 모두 종료 코드 0, [PASS] 20줄, [FAIL] 0줄, 마지막 줄은 R5 이전 상용 일정 금지를 재확인하는 [NOTICE]였다. validate_collaboration 단계가 이 패킷의 readiness READY_FOR_REVIEW와 두 표준 명령 PASS 기록을 읽고 통과했다. 이전 판본에서 보고된 완료 게이트 자기 충돌 실패는 이 상태에서 재현되지 않는다.",
+      "result": "PASS",
+      "evidence_uri": "repo://scripts/validate_baseline.py"
+    },
+    {
+      "check": "python -m unittest discover -s tests -v 결과 상세: 이 최종 후보 상태에서 두 번 실행해 두 번 모두 종료 코드 0, 706건 실행, 4건 건너뜀, 실패 0건, 오류 0건이었다. 관측 소요는 각각 37.360초와 37.555초다. 두 번째 실행은 증거 문구를 기록한 뒤의 최종 파일 상태를 대상으로 한 확인 실행이다. 소요 시간은 이 실행 환경의 관측 기록이며 임계값이나 목표치가 아니고 두 값의 차이도 판정 대상이 아니다.",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_load_observation.py"
+    },
+    {
+      "check": "python -m unittest tests.test_load_observation -v (집중 시험) 종료 코드 0, 98건 실행, 건너뜀 0건, 실패 0건, 관측 소요 2.622초. 소요 시간은 관측 기록이며 임계값이 아니다.",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_load_observation.py"
+    },
+    {
+      "check": "python -m compileall -q scripts studio_core apps tests 종료 코드 0, 구문 오류 0건",
+      "result": "PASS",
+      "evidence_uri": "repo://scripts/observe_r2_load.py"
+    },
+    {
+      "check": "python scripts/scan_secrets.py 종료 코드 0, 207개 파일에서 평문 자격증명 0건",
+      "result": "PASS",
+      "evidence_uri": "repo://scripts/scan_secrets.py"
+    },
+    {
+      "check": "artifacts/R2-LOAD-0004-artifact.json이 contracts/artifact.schema.json에 유효하고, uri가 repo://games/roulette/load-observation-contract.yaml이며 content_hash가 그 파일의 실제 정규 LF 해시와 일치하고, source가 provider claude_agent와 실제 모델 식별자 claude-opus-5[1m]을 밝히며, input_hash가 tasks/R2-LOAD-0004.json의 실제 정규 LF 해시와 일치하고, reviewers가 A-20·A-50이며 생성자 A-02가 검토자 목록에 없음",
+      "result": "PASS",
+      "evidence_uri": "repo://artifacts/R2-LOAD-0004-artifact.json"
+    },
+    {
+      "check": "아티팩트 specification의 구성 요소 해시 6건(games/roulette/load-observation-contract.yaml, scripts/observe_r2_load.py, tests/test_load_observation.py, docs/games/R2-load-observation.md, docs/approvals/R2-LOAD-0004-validation-report.md, audit/events/R2-LOAD-0004-events.json)을 studio_core.integrity.hash_file로 재계산해 전부 선언값과 일치함",
+      "result": "PASS",
+      "evidence_uri": "repo://artifacts/R2-LOAD-0004-artifact.json"
+    },
+    {
+      "check": "handoffs/R2-LOAD-0004-handoff.json이 contracts/handoff.schema.json에 유효하고 from A-02, to A-20, readiness READY_FOR_REVIEW, acknowledgement_required true이며, studio_core.collaboration.evaluate_independent_verification이 검증자 A-20에 대해 VERIFIABLE을 반환하고 required_checks 두 건 모두 PASS 기록이 존재함",
+      "result": "PASS",
+      "evidence_uri": "repo://handoffs/R2-LOAD-0004-handoff.json"
+    },
+    {
+      "check": "계약이 inputs로 고정한 29개 경로 전부의 정규 LF 해시가 선언값과 일치하고 동결 경로 17개가 무변경임 (tests.test_load_observation.FrozenInputTestCase)",
+      "result": "PASS",
+      "evidence_uri": "repo://tasks/R2-LOAD-0004.json"
+    },
+    {
+      "check": "git status 기준으로 추적 중인 기존 파일의 수정이 0건이고 이 유닛의 신규 파일 9건만 미추적으로 존재함. 이 제출 단계에서 쓴 파일은 artifacts/R2-LOAD-0004-artifact.json과 handoffs/R2-LOAD-0004-handoff.json 두 건뿐이며 scripts/validate_baseline.py는 무변경임",
+      "result": "PASS",
+      "evidence_uri": "repo://artifacts/R2-LOAD-0004-artifact.json"
+    },
+    {
+      "check": "위 명령 실행 전후로 ts-studio-r2-load- 접두 임시 작업 공간의 개수가 20개로 동일함. 이번 실행들은 새 작업 공간을 남기지 않았고, 남아 있는 20건은 전부 누수 수정 이전 결함이 만든 것으로 삭제되지 않은 채 명시적 정리 대기 상태임. 절대 경로는 기록하지 않음",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/approvals/R2-LOAD-0004-validation-report.md"
+    },
+    {
+      "check": "계약·하네스·시험·문서·이 패킷 어디에도 SLO, 지연·처리량 임계값, 용량 약속, 상용 일정·출시일, 인프라 조달, 외부·운영 부하, 침투 시험, 다중 사용자 신원·세션 기능이 선언되지 않았고, R4 산출물·자산·이미지·아트 경로를 만들거나 수정하거나 검토하지 않음",
+      "result": "PASS",
+      "evidence_uri": "repo://games/roulette/load-observation-contract.yaml"
+    },
+    {
+      "check": "A-20 독립 코드 검토",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://operations/collaboration.yaml"
+    },
+    {
+      "check": "A-50·USER 최종 QA 게이트 판정",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://operations/collaboration.yaml"
+    },
+    {
+      "check": "GitHub Actions 호스티드 CI 실행 결과 관측",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://.github/workflows/ci.yml"
+    },
+    {
+      "check": "운영 준비 완료 판정 (PENDING, 이 유닛의 범위 밖)",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://operations/collaboration.yaml"
+    },
+    {
+      "check": "커밋·푸시·병합 (USER 명시 승인 이전에는 수행하지 않음)",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://operations/collaboration.yaml"
+    }
+  ],
+  "known_risks": [
+    {
+      "severity": "HIGH",
+      "description": "수정 이전 결함이 만든 임시 작업 공간 20건이 운영체제 임시 디렉터리에 남아 있고 이 작업에서 삭제하지 않았다. 저장소 안이 아니고 비밀값도 개인정보도 없지만 각 디렉터리는 로컬 SQLite 관측 데이터베이스와 그 WAL 파일을 담고 있으며, 방치하면 디스크를 계속 점유한다. 명시적 정리가 필요하고 그 정리는 이 유닛의 승인 범위 밖이므로 승인 주체가 지시해야 한다. 정리 지시 없이 임의로 파일시스템을 지우지 않았다.",
+      "owner_agent_id": "A-50"
+    },
+    {
+      "severity": "HIGH",
+      "description": "집중 시험 전부 통과가 자원 회수를 뜻하지 않았다. Windows SQLite 핸들 누수는 시험이 초록색이 된 이후에 발견되었고, 이는 이 시험 스위트가 스레드 소유 자원의 회수를 직접 판정하지 못했다는 뜻이다. 재작업으로 유계 조인과 WORKSPACE_NOT_RELEASED 거절이 추가되었으나, 다른 플랫폼의 파일 잠금 의미론에서는 같은 종류의 결함이 다시 조용히 통과할 수 있다. 검토자는 시험 통과를 자원 회수의 증거로 읽지 말아야 한다.",
+      "owner_agent_id": "A-20"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "지연·처리량 관측치와 serialization_wait_proxy_ms가 나중에 용량 목표치나 통과 기준으로 재해석되면 이 유닛이 명시적으로 거부한 SLO가 사실상 성립하게 된다. 이 패킷이 기록한 실행 시간과 건수도 마찬가지로 특정 실행의 기록일 뿐이다. 관측치를 인용하는 모든 후속 문서는 그것이 특정 실행의 기록임을 함께 표기해야 한다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "serialization_wait_proxy_ms는 내부 잠금 획득 대기의 측정값이 아니라 스케줄러 효과와 직렬화된 서비스 효과가 합쳐진 프록시이며 서비스 시간을 포함하는 상한이다. 직렬화 비용의 정량 근거로 쓰이면 잘못된 결론이 나온다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "동시성 관측 대상이 단일 사용자 참조 슬라이스로 한정된다. 여러 사용자의 실제 동시 접속에서 나타날 경합은 이 유닛이 관측하지 못했으며, 다중 사용자 신원·세션 분리 결정 이후 별도 유닛이 필요하다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "로컬 Windows 통과가 호스티드 Linux 러너 통과를 보장하지 않는다. 이 유닛의 자원 회수 결함이 드러난 지점이 플랫폼 의존적이었으므로 호스티드 CI 관측은 별도의 증거로 남아 있어야 하며 이 패킷은 그것을 주장하지 않는다.",
+      "owner_agent_id": "A-20"
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "계약이 29개 경로를 해시로 고정하므로, 승인 전에 그 파일 중 하나라도 다른 유닛이 변경하면 이 계약의 inputs 해시와 이 아티팩트의 component_hash 항목을 함께 재고정해야 한다. 재고정 범위가 tasks/R4-ART-0007.json이나 그 자산 산출물에 도달해서는 안 된다.",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "LOW",
+      "description": "R2-SEC-0005 보안 침투 시험은 승인되지 않은 별개 후보로 열린 채 남는다. 이 유닛의 부하 관측이 공격 표면 검증을 대신하지 않는다.",
+      "owner_agent_id": "A-50"
+    },
+    {
+      "severity": "LOW",
+      "description": "이 아티팩트의 대표 바인딩은 계약 YAML 한 건이고 나머지 다섯 건은 specification의 component_hash 항목으로만 고정된다. 저장소의 무결성 검사는 대표 uri만 자동 대조하므로, 구성 요소 해시의 대조는 검토자가 studio_core.integrity.hash_file로 직접 확인해야 한다.",
+      "owner_agent_id": "A-20"
+    }
+  ],
+  "next_action": "A-20은 이 패킷을 구현 제출물로 접수해, 읽기 전용으로 (1) 아티팩트의 대표 해시와 specification의 component_hash 여섯 건을 studio_core.integrity.hash_file로 직접 재계산해 대조하고, (2) 두 표준 검증 명령을 독립적으로 재실행해 이 패킷이 기록한 결과와 일치하는지 확인하며, (3) 하네스와 시험이 지연·처리량·프록시 값에 어떤 임계값도 걸지 않는지, 안전 상한이 자원 생성 이전에 강제되는지, 관측 대상 런타임에 계측이 추가되지 않았는지, 동결 경로 29건이 무변경인지를 검토하고, (4) 저장소 밖 임시 작업 공간 20건의 정리 방식과 완료 게이트 이후 절차를 A-50과 USER에게 판정 요청으로 올려라. 커밋·푸시·병합은 USER의 명시 승인 이후에만 진행하라.",
+  "readiness": "READY_FOR_REVIEW",
+  "acknowledgement_required": true
+}
