@@ -235,9 +235,15 @@ class StaticDeliveryTests(HttpTestCase):
             self.assertIn(pathlib.Path(name).suffix, ALLOWED_STATIC_SUFFIXES, name)
 
     def test_the_served_index_is_the_file_on_disk_and_links_only_local_assets(self) -> None:
+        # Raw bytes on both sides. The handler answers with ``candidate.read_bytes()``, so the
+        # only like-for-like comparison is against ``read_bytes()`` here too: ``read_text``
+        # opens in universal-newlines mode and silently folds CRLF to LF, which turns a
+        # Windows ``core.autocrlf`` checkout of an LF-committed file into a false mismatch.
+        # Comparing the bytes is the stronger claim as well -- it is the one that would still
+        # notice a line terminator the server had rewritten.
         _, body = self.request("GET", "/")
+        self.assertEqual(body, INDEX.read_bytes())
         text = body.decode("utf-8")
-        self.assertEqual(text, read(INDEX))
         self.assertIn('href="/styles.css"', text)
         self.assertIn('src="/app.js"', text)
 

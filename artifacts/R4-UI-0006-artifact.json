@@ -37,7 +37,7 @@
     "component_hash:apps/roulette_web/static/styles.css": "sha256:9b9b9fa049e99b66bb613cfb8e3671c78f5c1846c17db5e797525b47ad6a32ed",
     "component_hash:apps/roulette_web/static/app.js": "sha256:f35b8cb5b33a5a4d2f34db9923dda9a916243c7f91b4875aa588dc6e40e70608",
     "component_hash:tests/test_roulette_web_server.py": "sha256:4f8941b211fc987a65ed0b13b7971ca9619738d53ed821f9dc5fe2962e8bf77d",
-    "component_hash:tests/test_roulette_web_ui.py": "sha256:bb17b2c736033f75fd9cda0480079ea7eef95549106794b1651265b5933f8df9",
+    "component_hash:tests/test_roulette_web_ui.py": "sha256:369b665a70aadafded4041fd110dc2af9d298e507c58adbff42d182d66fcb3a9",
     "component_hash:games/roulette/playable-slice-contract.yaml": "sha256:be2d91b4c30f5432a949dea91afa06c3ae73def94c443659b8085a3e13a44eff",
     "implementation_completed": true,
     "focused_tests_passed": true,

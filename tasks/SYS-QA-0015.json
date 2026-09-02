@@ -1,0 +1,238 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "SYS-QA-0015",
+  "project_id": "casino-core",
+  "title": "정적 index 전달 테스트의 Windows CRLF 민감성 제거",
+  "goal": "tests/test_roulette_web_ui.py의 StaticDeliveryTests.test_the_served_index_is_the_file_on_disk_and_links_only_local_assets가 Windows core.autocrlf 체크아웃에서 실패하는 기존 결함을 제거한다. 서버는 apps/roulette_web/server.py에서 candidate.read_bytes()로 파일의 원시 바이트를 그대로 전달하는 반면, 테스트는 pathlib.Path.read_text()로 디스크 파일을 읽어 CRLF를 LF로 정규화한 문자열과 비교한다. 따라서 .gitattributes의 '* text=auto'로 LF 커밋된 index.html이 Windows 작업 트리에 CRLF로 실체화되면 서버 응답 본문과 read_text() 결과가 달라져 정상 동작이 실패로 보고된다. 이 작업은 비교 대상을 원시 바이트 대 원시 바이트로 맞추어 like-for-like 비교로 교정하며, '전달된 index는 디스크의 파일과 정확히 동일하다'는 단정 자체를 약화시키지 않는다. 서버 런타임 동작과 정적 자산은 변경하지 않는다. 이 REWORK 개정본은 그 교정의 불가피한 귀결로 artifacts/R4-UI-0006-artifact.json이 선언한 tests/test_roulette_web_ui.py component hash 한 개를 교정 후 정규 해시로 다시 고정하는 것까지 범위에 포함한다. 그 파일의 다른 필드는 일절 바꾸지 않는다.",
+  "owner_agent_id": "A-20",
+  "status": "READY",
+  "risk_class": "LOW",
+  "inputs": [
+    {
+      "uri": "repo://docs/constitution/studio-constitution-v1.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:62f8a8cbf6fc70054300de9e90fed8974b9a310d140831d3d6af98292f5b2e9e"
+    },
+    {
+      "uri": "repo://docs/decisions/ADR-0003-claude-only-programming.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:6c1e345ea9555db2ec9f626dbd598845176df129d236fc9d7f64782a5cea0bdb"
+    },
+    {
+      "uri": "repo://operations/collaboration.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:03031cf600fe847737d535c364f183b6f0031464fc3a8fdd076b79826506733a"
+    },
+    {
+      "uri": "repo://docs/operations/SYS-CLD-0011-codex-claude-collaboration.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:7549bb730ff21734572cc075cc570479765e75746a9608146a41954b47ac4172"
+    },
+    {
+      "uri": "repo://contracts/task.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:32158d90825790b90929b5c1464140651c201b603745bc4bafa27e446d723527"
+    },
+    {
+      "uri": "repo://contracts/artifact.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:44d972cb0db8a8b455d9a014207d712fae3ce6e7126590371af76aad79a68195"
+    },
+    {
+      "uri": "repo://contracts/handoff.schema.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:088025147e8cdf3a9addafc46b6c7520b4d9216db4604d0a34ef29ece274faf2"
+    },
+    {
+      "uri": "repo://tests/test_roulette_web_ui.py",
+      "version": "1.1.0",
+      "content_hash": "sha256:369b665a70aadafded4041fd110dc2af9d298e507c58adbff42d182d66fcb3a9"
+    },
+    {
+      "uri": "repo://tests/test_roulette_web_server.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:4f8941b211fc987a65ed0b13b7971ca9619738d53ed821f9dc5fe2962e8bf77d"
+    },
+    {
+      "uri": "repo://apps/roulette_web/server.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:2574ff8d355cc5df0708e57ca0846b4f7c03f531046b957d2926fd6dcd67dda8"
+    },
+    {
+      "uri": "repo://apps/roulette_web/static/index.html",
+      "version": "1.0.0",
+      "content_hash": "sha256:149d6d6fb17f2d17f5db073a95f9eee284385cdb306d14505d9fb6d1a5636276"
+    },
+    {
+      "uri": "repo://studio_core/integrity.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:a4288779b224cf49bf0d8756945e44a8a9f2220515e4c32432cbad6a8cee8558"
+    },
+    {
+      "uri": "repo://.gitattributes",
+      "version": "1.0.0",
+      "content_hash": "sha256:bb809b1676d2f217ea31ead2b7f3fd7bc9052b17144aba32c20dace88ef8cba8"
+    },
+    {
+      "uri": "repo://policies/security.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:c85fd12606c9d52cfb555b5d9a11b4f83b16a2247cd9dddffb3432a1fb34adac"
+    },
+    {
+      "uri": "repo://tasks/R4-UI-0006.json",
+      "version": "1.0.0",
+      "content_hash": "sha256:57940e29e337fd60ca0878df74dd7a462d10511d36e0d83ad87b2b99299a9019"
+    },
+    {
+      "uri": "repo://artifacts/R4-UI-0006-artifact.json",
+      "version": "1.1.0",
+      "content_hash": "sha256:95dfa3f3566f130f880521941a05f01879c5e7e7ec1aa77b37278cf29289b953"
+    },
+    {
+      "uri": "repo://scripts/validate_baseline.py",
+      "version": "1.0.0",
+      "content_hash": "sha256:08756d3ac6fda7d70401957d19d33b8ba6456a49863e71f15be7179625f90138"
+    }
+  ],
+  "deliverables": [
+    {
+      "name": "static-delivery-crlf-safe-test",
+      "artifact_type": "CODE",
+      "target_uri": "repo://tests/test_roulette_web_ui.py"
+    },
+    {
+      "name": "r4-ui-0006-component-hash-repin",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://artifacts/R4-UI-0006-artifact.json"
+    },
+    {
+      "name": "sys-qa-0015-artifact-contract",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://artifacts/SYS-QA-0015-artifact.json"
+    },
+    {
+      "name": "sys-qa-0015-handoff-packet",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://handoffs/SYS-QA-0015-handoff.json"
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "criterion_id": "AC-001",
+      "statement": "Windows에서 core.autocrlf=true로 체크아웃되어 apps/roulette_web/static/index.html이 작업 트리에 CRLF로 실체화된 상태에서 tests.test_roulette_web_ui.StaticDeliveryTests.test_the_served_index_is_the_file_on_disk_and_links_only_local_assets가 통과해야 한다.",
+      "verification": "Windows 작업 트리(현 체크아웃)에서 python -m unittest tests.test_roulette_web_ui.StaticDeliveryTests -v 실행 로그와, index.html 원시 바이트에 b'\\r\\n'이 존재함을 확인한 사전 상태 기록"
+    },
+    {
+      "criterion_id": "AC-002",
+      "statement": "index.html이 정규 LF 형태(커밋 형태)로 놓인 체크아웃에서도 같은 테스트가 통과해야 하며, LF와 CRLF 두 형태 모두에서 동일한 판정을 내려야 한다.",
+      "verification": "임시 디렉터리에 index.html의 LF 변형과 CRLF 변형을 각각 배치해 동일 테스트 로직을 구동하는 검증, 또는 두 형태를 각각 STATIC_ROOT에 놓고 실행한 결과 비교 로그"
+    },
+    {
+      "criterion_id": "AC-003",
+      "statement": "교정된 단정은 HTTP 응답 본문 바이트와 디스크 파일의 원시 바이트를 직접 비교(raw-byte equality)해야 한다. 즉 body == INDEX.read_bytes() 형태의 바이트 동등성이어야 하며, pathlib.Path.read_text()의 개행 정규화 결과를 비교 한쪽에 사용해서는 안 된다.",
+      "verification": "tests/test_roulette_web_ui.py diff 검토로 해당 단정이 read_bytes() 기반 바이트 비교임을 확인하고, 그 단정 경로에 read_text()가 사용되지 않음을 확인"
+    },
+    {
+      "criterion_id": "AC-004",
+      "statement": "단정은 약화되어서는 안 된다. 부분 문자열 포함 검사, 길이 비교, 양쪽 개행 정규화 후 비교, 공백 제거 후 비교, assertIn 대체, 조건부 skip, CRLF 환경에서의 expectedFailure 처리 중 어느 것도 사용해서는 안 된다.",
+      "verification": "diff 검토와, 해당 테스트 본문에 skip·expectedFailure·정규화 호출(replace 개행 치환, splitlines 재결합 등)이 없음을 확인하는 코드 검사"
+    },
+    {
+      "criterion_id": "AC-005",
+      "statement": "교정 후에도 테스트는 실제 불일치를 검출해야 한다. 디스크의 index.html 또는 전달된 본문에 1바이트라도 차이가 생기면 테스트가 실패해야 한다.",
+      "verification": "임시 복제본에 1바이트 변조를 가한 네거티브 확인 실행 로그(추적 파일은 수정하지 않고 복원 가능한 방식으로 수행)"
+    },
+    {
+      "criterion_id": "AC-006",
+      "statement": "로컬 자산만 링크한다는 기존 단정은 그대로 유지되어야 한다. href=\"/styles.css\"와 src=\"/app.js\" 검사는 제거되거나 완화되지 않아야 한다.",
+      "verification": "diff 검토와 해당 두 단정의 존속 확인"
+    },
+    {
+      "criterion_id": "AC-007",
+      "statement": "런타임 서버 동작은 변경되지 않아야 한다. apps/roulette_web/server.py, apps/roulette_web/table.py, apps/roulette_web/static/ 이하 자산은 이 작업에서 수정되지 않으며, 정적 핸들러는 계속 candidate.read_bytes()로 원시 바이트를 전달한다.",
+      "verification": "git diff 파일 목록에 apps/ 경로가 없음을 확인하고, inputs에 기록된 apps/roulette_web/server.py와 index.html의 content_hash 재계산 일치 확인"
+    },
+    {
+      "criterion_id": "AC-008",
+      "statement": "이 작업은 어떤 아트·이미지·바이너리 자산도 생성·수정·삭제하지 않는다. 아트 작업은 Codex ImageGen 전용 범위이며 이 작업에 포함되지 않는다.",
+      "verification": "작업 전후 저장소 바이너리 파일 목록 동일성 확인과 assets 경로 diff 부재 확인"
+    },
+    {
+      "criterion_id": "AC-009",
+      "statement": "변경 범위는 tests/test_roulette_web_ui.py 한 개 테스트 파일, 이 작업의 Task Contract·Artifact Contract·Handoff Packet, 그리고 artifacts/R4-UI-0006-artifact.json의 연결 무결성 메타데이터 재고정 한 건으로 제한되어야 한다. 그 밖의 추적 파일 추가·수정·삭제는 없어야 하며 새 런타임 의존성도 도입하지 않는다.",
+      "verification": "git status 및 git diff --name-only 파일 목록이 tasks/SYS-QA-0015.json, tests/test_roulette_web_ui.py, artifacts/R4-UI-0006-artifact.json, artifacts/SYS-QA-0015-artifact.json, handoffs/SYS-QA-0015-handoff.json 다섯 경로에 한정됨을 확인"
+    },
+    {
+      "criterion_id": "AC-010",
+      "statement": "같은 파일의 다른 테스트(DisclosureTests, 정적 디렉터리 허용목록, 경로 traversal, HEAD, 404 등)의 동작과 판정은 변경되지 않아야 하며, read() 텍스트 헬퍼를 사용하는 마크업·문자열 검사는 그대로 유지되어야 한다.",
+      "verification": "python -m unittest tests.test_roulette_web_ui -v 전체 통과 로그와 diff 검토"
+    },
+    {
+      "criterion_id": "AC-011",
+      "statement": "python scripts/validate_baseline.py와 python -m unittest discover -s tests -v 두 표준 검증 명령이 모두 성공해야 한다.",
+      "verification": "두 표준 검증 명령의 실행 로그"
+    },
+    {
+      "criterion_id": "AC-012",
+      "statement": "이 작업의 모든 산출물에는 비밀값, API 키, 토큰, 자격 증명, 개인정보가 포함되지 않아야 한다.",
+      "verification": "python scripts/scan_secrets.py 저장소 스캔 무탐지와 기준선 검증기의 계약 디렉터리 평문 자격증명 스캔 통과"
+    },
+    {
+      "criterion_id": "AC-013",
+      "statement": "스키마에 유효한 Artifact Contract와 Handoff Packet이 제출되어야 하며, 생성자와 검토자·수신자는 분리되어야 하고 Handoff의 증거에는 두 표준 검증 명령이 모두 포함되어야 한다.",
+      "verification": "contracts/artifact.schema.json·contracts/handoff.schema.json 검증과 operations/collaboration.yaml separation_of_duties 대조"
+    },
+    {
+      "criterion_id": "AC-014",
+      "statement": "Claude Code는 구현 단계에서 코드와 테스트를 생성하되 커밋과 푸시를 수행하지 않는다. 독립 검증은 Codex 콘솔이 수행하고 최종 게이트는 A-50과 USER가 판정한다.",
+      "verification": "작업 트리에 미커밋 변경만 존재함을 git status로 확인하고, operations/collaboration.yaml guards의 commit_without_user_approval·push_without_user_approval 및 INDEPENDENT_VERIFY·FINAL_GATE 단계 대조"
+    },
+    {
+      "criterion_id": "AC-015",
+      "statement": "artifacts/R4-UI-0006-artifact.json에 대한 변경은 specification의 'component_hash:tests/test_roulette_web_ui.py' 값 한 개를 교정 후 정규 해시로 다시 고정하는 것으로만 제한되어야 한다. 그 밖의 어떤 필드도 바꾸지 않는다. 특히 status, reviewers, source, rights, approved_at, 그리고 승인·검증·실행 이력을 주장하는 어떤 specification 항목도 수정하지 않는다.",
+      "verification": "git diff artifacts/R4-UI-0006-artifact.json이 정확히 한 줄의 해시 값 변경만 보이는지 확인하고, 변경 전후 JSON을 파싱해 해당 키 하나를 제외한 모든 키·값이 동일함을 대조"
+    },
+    {
+      "criterion_id": "AC-016",
+      "statement": "재고정 사유는 우회가 아니라 연결 무결성의 정당한 귀결로 기록되어야 한다. scripts/validate_baseline.py의 validate_r4_playable_slice가 선언된 component hash와 디스크 파일의 정규 해시 일치를 강제하므로, 이 작업이 tests/test_roulette_web_ui.py를 교정하는 한 그 선언은 반드시 함께 갱신되어야 한다. 검증기를 약화시키거나 검사를 우회하는 어떤 변경도 허용되지 않는다.",
+      "verification": "scripts/validate_baseline.py와 studio_core/ 이하 파일의 diff 부재 확인, 그리고 python scripts/validate_baseline.py가 우회 없이 통과함을 확인"
+    }
+  ],
+  "dependencies": ["R4-UI-0006", "SYS-CLD-0011"],
+  "budget": {
+    "max_cost_usd": 12.0,
+    "max_runtime_seconds": 7200,
+    "stop_on_limit": true
+  },
+  "approvers": ["USER", "A-50", "A-02"],
+  "rollback": {
+    "strategy": "되돌림은 전부 아니면 전무이며 부분 되돌리기는 허용하지 않는다. 추적 파일 두 개를 직전 커밋 상태로 되돌리고(`git checkout -- tests/test_roulette_web_ui.py artifacts/R4-UI-0006-artifact.json`), 이 작업이 생성한 신규 파일 artifacts/SYS-QA-0015-artifact.json과 handoffs/SYS-QA-0015-handoff.json을 삭제한다. 계약 파일 tasks/SYS-QA-0015.json은 발주 산출물이므로 작업 전체를 취소할 때에만 함께 삭제한다. 두 파일의 복원 기준 해시는 이 작업 착수 이전의 정규 해시이며 그 값은 tests/test_roulette_web_ui.py가 sha256:bb17b2c736033f75fd9cda0480079ea7eef95549106794b1651265b5933f8df9, artifacts/R4-UI-0006-artifact.json이 sha256:1bbcce3ef79d27e775bf14424852b4ead797810b0a3ba8b96d8ae3a6192bc8d4이다. 두 값은 서로 맞물려 있다. 테스트 파일을 되돌리면 R4 Artifact의 component hash 선언도 반드시 함께 되돌려야 validate_r4_playable_slice가 통과하며, 한쪽만 되돌리면 기준선 검증이 실패한다. 커밋과 푸시를 수행하지 않고 서버 코드·정적 자산·아트 자산을 건드리지 않으므로 작업 트리 복원만으로 완전 복구되며 원격 상태 변경은 없다.",
+    "source_preserved": true,
+    "verification": "복원 후 tests/test_roulette_web_ui.py와 artifacts/R4-UI-0006-artifact.json의 정규 해시 재계산이 위 두 착수 이전 값과 각각 일치함을 확인하고 python scripts/validate_baseline.py와 python -m unittest discover -s tests -v를 재실행"
+  },
+  "security": {
+    "data_classification": "INTERNAL",
+    "contains_pii": false,
+    "workspace_access": "TASK_WRITE",
+    "network_policy": "NONE",
+    "secrets_policy": "NONE"
+  },
+  "assumptions": [
+    "결함은 이 작업 이전부터 존재하던 테스트 측 문제이며 서버 전달 경로는 정상이다. apps/roulette_web/server.py는 정적 자산을 candidate.read_bytes()로 원시 바이트 그대로 전달한다.",
+    ".gitattributes의 '* text=auto'에 따라 index.html은 저장소에 LF로 커밋되고, Windows에서 core.autocrlf=true인 체크아웃에서는 작업 트리에 CRLF로 실체화된다.",
+    "pathlib.Path.read_text()는 universal newlines 모드로 동작해 CRLF를 LF로 변환하므로, 텍스트 비교는 두 표현을 like-for-like로 다루지 못한다.",
+    "저장소의 content_hash 규약은 studio_core.integrity의 정규 형태(텍스트 LF 정규화)이며, 이 계약 inputs의 해시는 그 규약으로 산출되었다. 반면 이 테스트가 비교해야 할 대상은 정규 해시가 아니라 HTTP로 전달된 원시 바이트이다.",
+    "아트·이미지 자산 작업은 Codex ImageGen 전용 범위이며 이 작업에는 포함되지 않는다.",
+    "구현 단계에서 Claude Code가 코드와 테스트를 작성하고 자체 점검하며, 커밋·푸시는 사용자 승인 전까지 수행하지 않는다.",
+    "이 계약은 2026-09-02 REWORK 개정본이다. 최초 발주본은 변경 범위를 네 경로로 한정했으나, 그 범위로는 AC-009와 AC-011을 동시에 만족시킬 수 없음이 구현 단계에서 드러났다. scripts/validate_baseline.py의 validate_r4_playable_slice가 artifacts/R4-UI-0006-artifact.json의 'component_hash:tests/test_roulette_web_ui.py' 선언과 디스크 파일의 정규 해시 일치를 강제하기 때문이며, 대상 테스트 파일을 교정하는 순간 그 선언은 반드시 낡는다. 사용자 승인을 받아 그 한 줄의 재고정을 이 작업의 산출물이자 입력으로 명시적으로 포함하도록 범위를 넓혔다. 이는 검증 우회가 아니라 연결 무결성 메타데이터의 정당한 귀결이며, AC-015와 AC-016이 그 변경을 해시 한 개로 봉인한다.",
+    "artifacts/R4-UI-0006-artifact.json의 inputs 해시는 재고정 이후 값으로 기록한다. 착수 이전 값 sha256:1bbcce3ef79d27e775bf14424852b4ead797810b0a3ba8b96d8ae3a6192bc8d4는 rollback.strategy에 복원 기준으로 보존한다.",
+    "이 개정 시점에는 Artifact Contract와 Handoff Packet이 이미 존재하므로 기준선 검증기의 작업 계약 짝 검사(tasks/ 항목마다 artifacts/·handoffs/ 요구)는 SYS-QA-0015에 대해 충족된다."
+  ],
+  "open_decisions": [
+    "CRLF/LF 양쪽 형태를 임시 디렉터리 픽스처로 강제 구동해 회귀를 고정할지, 현재 체크아웃 형태에 대한 raw-byte 단정만으로 충분한지는 구현 단계에서 Claude가 제안하고 독립 검증자가 판정한다. 구현자 제안은 최소 범위다. 상주 픽스처를 추가하지 않고 임시 사본 실행 로그로 AC-002와 AC-005를 충족시켰으며, 상주 회귀 테스트가 필요하다는 판정이 나오면 후속 작업으로 분리한다.",
+    "같은 CRLF 민감성이 tests/ 아래 다른 텍스트 비교 지점에도 존재하는지에 대한 저장소 전수 점검은 이 작업 범위 밖이며 후속 작업으로 분리한다.",
+    "R5 승인 전이므로 상용 제작 일정과 출시일은 확정하지 않는다."
+  ],
+  "created_at": "2026-09-02T00:00:00Z",
+  "updated_at": "2026-09-02T04:00:00Z"
+}
