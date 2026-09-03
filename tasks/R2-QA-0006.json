@@ -126,12 +126,12 @@
     {
       "uri": "repo://tasks/R2-NET-0003.json",
       "version": "1.0.0",
-      "content_hash": "sha256:209f9ad3bea33e4cc7332a01065258e2aa0345484fcaf9bbcc02df22157fd9b3"
+      "content_hash": "sha256:bba297b42ed24459ee79060cf3fe17dc0347b33aab98de67e1d4b943b248de14"
     },
     {
       "uri": "repo://artifacts/R2-NET-0003-artifact.json",
       "version": "1.0.0",
-      "content_hash": "sha256:b48ceca54e5b3120c3d3a48d643f2fe86749bda67ba073b010c464047f363415"
+      "content_hash": "sha256:0d506dfac8b792adba596d073481a34c0dbb7e943dbb759eec663853dae1a0fb"
     },
     {
       "uri": "repo://handoffs/R2-NET-0003-handoff.json",
@@ -141,12 +141,12 @@
     {
       "uri": "repo://tasks/R2-LOAD-0004.json",
       "version": "1.0.0",
-      "content_hash": "sha256:26b8fc02bc8133610dbd9a219f6cb7f685270e08ff86fa9c460c3f5991f0b0a5"
+      "content_hash": "sha256:6914fd6ef5fdc4cfd9dd35c8c7a4bb4a85c3027f0ff9a46026a9117e84fe54a2"
     },
     {
       "uri": "repo://artifacts/R2-LOAD-0004-artifact.json",
       "version": "1.0.0",
-      "content_hash": "sha256:4bc860845694fd98a558f6605dc304e8312e652110ef8cd2f7370f6c171fdd11"
+      "content_hash": "sha256:83bb2809f579e9ce1c901331b3deb52568d320ec915b535c828dcea06f1ebb45"
     },
     {
       "uri": "repo://handoffs/R2-LOAD-0004-handoff.json",
@@ -156,12 +156,12 @@
     {
       "uri": "repo://tasks/R2-SEC-0005.json",
       "version": "1.0.0",
-      "content_hash": "sha256:006d2a2f4d654bcce5b3bbb2c01e6b7ba671d8b980d8213b5da12a270adc25c4"
+      "content_hash": "sha256:0c7f173908b4697fef05b99188a0b12904ece005e9584ef00dfde53d41086cd5"
     },
     {
       "uri": "repo://artifacts/R2-SEC-0005-artifact.json",
       "version": "2.1.0",
-      "content_hash": "sha256:f325c8bf610485f89b794524fac958dc12dfc0489e920cacb7b4565006ba1850"
+      "content_hash": "sha256:87e8240ada0a7dcdc1d6051851201027abf6e1afb8333c5ac998dce982707351"
     },
     {
       "uri": "repo://handoffs/R2-SEC-0005-handoff.json",

@@ -31,7 +31,7 @@
     "task_status_at_registration": "IN_PROGRESS",
     "risk_class": "HIGH",
     "risk_reason": "슬라이스가 규칙·RNG·원장 결과를 화면에 제시하고 권위 서버 호출 경로를 만들기 때문에 policies/risk.yaml 기준 High로 분류한다.",
-    "component_hash:apps/roulette_web/table.py": "sha256:22397b7dd4406647f4038b43b7b977405c56f1d04fae913e23c2dee578af41ae",
+    "component_hash:apps/roulette_web/table.py": "sha256:4721edb1d14d64829f750f6e403e5b72dc992be58fe4db22454f238939e1dd16",
     "component_hash:apps/roulette_web/server.py": "sha256:2574ff8d355cc5df0708e57ca0846b4f7c03f531046b957d2926fd6dcd67dda8",
     "component_hash:apps/roulette_web/static/index.html": "sha256:149d6d6fb17f2d17f5db073a95f9eee284385cdb306d14505d9fb6d1a5636276",
     "component_hash:apps/roulette_web/static/styles.css": "sha256:9b9b9fa049e99b66bb613cfb8e3671c78f5c1846c17db5e797525b47ad6a32ed",

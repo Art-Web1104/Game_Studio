@@ -1,0 +1,123 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "R4-FIX-0008",
+  "project_id": "casino-core",
+  "title": "Recover the roulette table after settlement submission exceptions",
+  "goal": "Fix the independently reproduced pre-commit exception wedge in RouletteTable.spin on base commit dd480594a433a662033e5e8fde560141a999a008. A RuntimeError from the existing before_commit fault hook currently leaves the in-memory round SETTLING with reserved chips and prevents opening the next round. Claude Fable 5.1 alone implements a narrowly scoped failure-cleanup fix and regression tests; Codex independently verifies. Preserve durable atomicity, integer balances, no second draw/settlement, original exception behavior, existing typed error mappings and public API. Do not alter art or unrelated client/HTTP defects.",
+  "owner_agent_id": "A-02",
+  "status": "READY",
+  "risk_class": "HIGH",
+  "inputs": [
+    {
+      "uri": "repo://AGENTS.md",
+      "version": "1.0.0",
+      "content_hash": "sha256:bc5c280f63d33265d919a924651dc3080cab1c2efd4f3c411c0344be0a53a448"
+    },
+    {
+      "uri": "repo://operations/collaboration.yaml",
+      "version": "1.0.0",
+      "content_hash": "sha256:03031cf600fe847737d535c364f183b6f0031464fc3a8fdd076b79826506733a"
+    }
+  ],
+  "deliverables": [
+    {
+      "name": "settlement-failure-cleanup",
+      "artifact_type": "CODE",
+      "target_uri": "repo://apps/roulette_web/table.py"
+    },
+    {
+      "name": "failure-recovery-regressions",
+      "artifact_type": "CODE",
+      "target_uri": "repo://tests/test_settlement_failure_recovery.py"
+    },
+    {
+      "name": "verification-report",
+      "artifact_type": "TEST_REPORT",
+      "target_uri": "repo://docs/approvals/R4-FIX-0008-validation-report.md"
+    },
+    {
+      "name": "artifact-contract",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://artifacts/R4-FIX-0008-artifact.json"
+    },
+    {
+      "name": "handoff-packet",
+      "artifact_type": "DOCUMENT",
+      "target_uri": "repo://handoffs/R4-FIX-0008-handoff.json"
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "criterion_id": "AC-001",
+      "statement": "Exceptions from submit_round at after_draw, after_ledger and before_commit must leave the local round terminal and reservations released, not stuck in SPINNING or SETTLING.",
+      "verification": "Inject existing fault_hook exceptions through RouletteTable.spin; assert terminal phase, zero reserved units and new_round succeeds."
+    },
+    {
+      "criterion_id": "AC-002",
+      "statement": "A failed transaction must not commit a draw or settlement or move balances, and retrying the failed round must not draw or settle again. A newly opened round must still complete normally.",
+      "verification": "Assert durable records, balances, entropy accounting and phase guards before/after failure; clear one-shot failure and complete the next round."
+    },
+    {
+      "criterion_id": "AC-003",
+      "statement": "Preserve original unexpected exceptions and process-control exceptions without translating them into a false success; existing RngDenied and DurableStateError mappings remain unchanged.",
+      "verification": "Test RuntimeError, sqlite3.OperationalError and appropriate BaseException cases and keep existing typed-error regression coverage."
+    },
+    {
+      "criterion_id": "AC-004",
+      "statement": "Update only table.py, the new task deliverables, and the strictly necessary transitive hash fields in existing task/artifact metadata. No old prose, status, rights, approval, tests or validator assertions may be rewritten.",
+      "verification": "Report exact hash-only closure; compare semantic JSON diffs and baseline integrity. Hash-only repinning of R4-ART metadata is mechanical provenance maintenance, not Claude art creation/review; assets and all art decisions remain untouched."
+    },
+    {
+      "criterion_id": "AC-005",
+      "statement": "The original failing behavior must be demonstrated by regression tests, the fixed revision must pass focused and complete suites, and the handoff must separate Claude internal review from Codex verification and final QA.",
+      "verification": "Run baseline, unittest discovery, focused regressions and secret scan; no claimed browser or final approvals. Do not weaken tests to accommodate metadata changes; report a blocker if non-hash historical edits become necessary."
+    },
+    {
+      "criterion_id": "AC-006",
+      "statement": "If submit_round raises after committing, the committed round must not be reported VOIDED or lose its result/history. Reconcile against the matching durable request and round before choosing cleanup; preserve the original exception and expose a consistent SETTLED snapshot plus idempotent replay.",
+      "verification": "Inject after_commit RuntimeError, sqlite3.OperationalError and KeyboardInterrupt. Without manual reload_history, assert SETTLED, result/proof/round match storage, recent history present, zero reservations, matching balances, same-id replay with no extra entropy/draw/settlement and new-id refusal. Exercise reconciliation failure without replacing the original exception; document any remaining storage outage ambiguity. No RNG/store/API/art changes."
+    }
+  ],
+  "dependencies": [
+    "R4-UI-0006",
+    "R2-DBC-0002",
+    "R2-NET-0003"
+  ],
+  "budget": {
+    "max_cost_usd": 30,
+    "max_runtime_seconds": 3600,
+    "stop_on_limit": true
+  },
+  "approvers": [
+    "A-50",
+    "A-02",
+    "A-00",
+    "USER"
+  ],
+  "rollback": {
+    "strategy": "Preserve base commit and existing user work; keep changes on codex/r4-settlement-failure-recovery, revert this isolated commit if necessary without touching live data.",
+    "source_preserved": true,
+    "verification": "Re-run baseline and regression tests against the preserved base; do not delete or mutate live databases."
+  },
+  "security": {
+    "data_classification": "INTERNAL",
+    "contains_pii": false,
+    "workspace_access": "TASK_WRITE",
+    "network_policy": "NONE",
+    "secrets_policy": "NONE"
+  },
+  "assumptions": [
+    "The user authorized proceeding with this fix; this is implementation authority, not final QA or release approval.",
+    "Claude must use claude-fable-5-1 with no substitute model for implementation and internal code review.",
+    "Single-user internal loopback prototype only; test servers and databases must be isolated temporary resources.",
+    "Prior frozen-path declarations are scope limits of their own historical units. This new authorized repair permits table.py and necessary hash-only metadata repinning without weakening assertions.",
+    "Do not assign art production, visual inspection or rights review to Claude. No image, CSS, HTML or asset changes.",
+    "Only official provider access for this delegation is permitted outside the task; implementer must not perform external networking, package installation, git mutation or modify auth/settings. Codex owns Git/PR workflow."
+  ],
+  "open_decisions": [
+    "Browser QA, asset rights/training permission, R5 and final A-50/USER gate remain unresolved.",
+    "Other client reconnect, rebet and HTTP method-handling defects are intentionally deferred to separate fixes."
+  ],
+  "created_at": "2026-09-03T00:00:00Z",
+  "updated_at": "2026-09-03T00:00:00Z"
+}

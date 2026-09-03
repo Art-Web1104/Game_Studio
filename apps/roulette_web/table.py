@@ -465,6 +465,17 @@ class RouletteTable:
             except DurableStateError as denied:
                 self._fail_round(current)
                 raise TableError("COMMIT_DENIED", _safe_reason(denied.code), status=409) from None
+            except BaseException:
+                # Anything else that escapes the store -- an injected fault, a storage error,
+                # a process signal -- is not a refusal this table decided, so it is not
+                # translated into one and never into a success. What the local round should
+                # become depends on whether the store committed before it raised: a fault
+                # before the commit was rolled back and the round can no longer settle, while
+                # a fault after the commit has left a settled round the player already paid
+                # for. Storage is asked which of the two happened; the exception continues
+                # exactly as it arrived either way. (R4-FIX-0008)
+                self._recover_after_submit_failure(current, request_id, settled)
+                raise
 
             if not settled:
                 # The store served this ``request_id`` from a previous process. The current
@@ -566,12 +577,95 @@ class RouletteTable:
     def _fail_round(self, current: _Round) -> None:
         """Void a round whose commit did not happen, without masking the original refusal."""
 
-        try:
-            if current.phase not in TERMINAL_PHASES:
-                self._transition(RoundPhase.VOIDED)
-        except TableError:
-            current.phase = RoundPhase.VOIDED
+        # The reservation is released first so it is never the step that gets skipped:
+        # a stake held against a round that cannot settle would block the next one.
         self._reserved_units = 0
+        if current.phase in TERMINAL_PHASES:
+            return
+        try:
+            self._transition(RoundPhase.VOIDED)
+        except TableError:
+            # SETTLING declares no exit but SETTLED, and the settlement it was waiting for
+            # did not commit. The phase is forced rather than left in a state whose only
+            # legal successor can never arrive.
+            current.phase = RoundPhase.VOIDED
+
+    def _recover_after_submit_failure(
+        self, current: _Round, request_id: str, settled: Mapping[str, Any]
+    ) -> None:
+        """Settle or void the local round after ``submit_round`` raised, never raising itself.
+
+        The caller is inside an ``except`` block and about to re-raise the original error.
+        Anything that escaped from here would replace that error with a second one raised
+        while reporting the first, so every step is fenced: a failed reconciliation or a
+        failed adoption falls through to the pre-commit cleanup, and a failure inside the
+        cleanup itself still ends with the reservation released and the phase terminal.
+        Voiding locally is the fail-closed choice: it can only refuse a later retry, whereas
+        a false SETTLED would present a result nothing durable stands behind.
+        """
+
+        try:
+            committed = self._reconcile_committed(current, request_id, settled)
+            if committed is not None:
+                self._adopt_committed(current, request_id, committed, settled)
+                return
+        except BaseException:  # noqa: BLE001 - the original failure must not be replaced
+            pass
+        try:
+            self._fail_round(current)
+        except BaseException:  # noqa: BLE001 - same reason, one level down
+            self._reserved_units = 0
+            if current.phase not in TERMINAL_PHASES:
+                current.phase = RoundPhase.VOIDED
+
+    def _reconcile_committed(
+        self, current: _Round, request_id: str, settled: Mapping[str, Any]
+    ) -> CommittedRound | None:
+        """Return the durable outcome of *this* submission, or ``None`` when there is none.
+
+        Only the store's public readers are used. ``draw_record`` answers whether a record
+        exists for the request at all; it must name both this request and this round, so a
+        record another process committed under a reused identifier is never adopted. Only
+        then is the store asked to replay the submission, which is the same read-back path a
+        restart uses: it verifies the proof, returns the settlement it committed and consumes
+        no entropy. A request with no record would make ``submit_round`` draw, which is why
+        the record is checked first and the replay is required to report itself as one.
+        """
+
+        if not settled:
+            # The settlement factory never ran, so nothing of this round's could have been
+            # committed on its behalf.
+            return None
+        record = self._store.draw_record(request_id)
+        if record is None or record.request_id != request_id or record.round_id != current.round_id:
+            return None
+        committed = self._store.submit_round(DrawRequest(request_id=request_id, round_id=current.round_id))
+        if (
+            not committed.replayed
+            or committed.record.request_id != request_id
+            or committed.record.round_id != current.round_id
+            or committed.settlement_transaction_id != settled["transaction"]["transaction_id"]
+        ):
+            return None
+        return committed
+
+    def _adopt_committed(
+        self, current: _Round, request_id: str, committed: CommittedRound, settled: Mapping[str, Any]
+    ) -> None:
+        """Bring the local round up to the settled state storage already holds.
+
+        Steps that cannot fail come first, so a storage read failing while the response is
+        built still leaves the round SETTLED with its result rather than half-adopted. The
+        journal entry is what makes a same-id retry replay the committed result; without it
+        the retry is refused by the phase guard, which is a refusal and not a false success.
+        """
+
+        current.result = self._result_payload(committed, settled)
+        self._transition(RoundPhase.SETTLED)
+        self._reserved_units = 0
+        self._recent.append(self._result_summary(committed.record))
+        response = {"accepted": True, "result": current.result, "state": self._snapshot()}
+        self._record_journal(request_id, "spin", {}, response)
 
     def _require_phase(self, expected: RoundPhase, message: str) -> None:
         if self._round.phase is not expected:

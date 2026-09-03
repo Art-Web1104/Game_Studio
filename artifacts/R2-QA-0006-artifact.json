@@ -14,7 +14,7 @@
     "created_by": "A-20",
     "provider": "claude_agent",
     "model": "claude-opus-5[1m]",
-    "input_hash": "sha256:70bab8fea47fa788a2e9629fb0c12477690f5e6e52d8525c1a6446df57c88d81"
+    "input_hash": "sha256:56103d626b8f603d0e775efc2a18c909f151adbcf894095c73d9510f3842d0e0"
   },
   "rights": {
     "license": "TS-STUDIO-INTERNAL",
@@ -30,7 +30,7 @@
     "phase_note": "계약 3종에 더해 docs/approvals/R2-QA-0006-closure-report.md, docs/status/R2-QA-0006-closure-candidate.md, audit/events/R2-QA-0006-events.json, tests/test_r2_qa_closure.py 네 건이 신규 파일로 작성되었다. 기존 파일 수정은 0건이다.",
     "revision_note": "1.0.0은 계약 단계 문서였고 represents_implementation이 false였다. 2.0.0은 구현 제출이며 대표 결속과 구성 요소 해시가 바뀌었다. 2.1.0은 codex 콘솔이 independent_verifier 역할로 A-50을 대행해 발행한 독립 검증 판정 PASS와 종결 후보 권고 ISSUED를 전사하고, status를 SUBMITTED에서 REVIEWED로 올리며, 감사 이벤트 1건 추가에 따라 구성 요소 해시를 다시 고정한 개정이다. 판정 자체는 이 아티팩트가 만든 것이 아니다. 개정 사실을 지우지 않고 남긴다.",
     "task_status_at_submission": "READY",
-    "task_contract_hash": "sha256:70bab8fea47fa788a2e9629fb0c12477690f5e6e52d8525c1a6446df57c88d81",
+    "task_contract_hash": "sha256:56103d626b8f603d0e775efc2a18c909f151adbcf894095c73d9510f3842d0e0",
     "delegation_gate_decision": "DELEGATED",
     "delegation_gate_evidence": "studio_core.collaboration.evaluate_delegation(task, console=claude_code, actor_agent_id=A-20)가 allowed true, code DELEGATED을 반환했다. operations/collaboration.yaml의 delegation_gate는 READY를 allowed_task_status로 명시하고 implementer 역할의 acts_for는 A-02와 A-20을 포함한다.",
     "risk_class": "HIGH",

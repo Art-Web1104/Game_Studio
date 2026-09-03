@@ -14,7 +14,7 @@
     "created_by": "A-02",
     "provider": "claude_agent",
     "model": "claude-opus-5[1m]",
-    "input_hash": "sha256:26b8fc02bc8133610dbd9a219f6cb7f685270e08ff86fa9c460c3f5991f0b0a5"
+    "input_hash": "sha256:6914fd6ef5fdc4cfd9dd35c8c7a4bb4a85c3027f0ff9a46026a9117e84fe54a2"
   },
   "rights": {
     "license": "TS-STUDIO-INTERNAL",
@@ -33,7 +33,7 @@
     "approvers_declared": "USER, A-50, A-02",
     "user_is_approver": true,
     "content_hash_form": "canonical LF (studio_core.integrity.hash_file)",
-    "task_contract_hash": "sha256:26b8fc02bc8133610dbd9a219f6cb7f685270e08ff86fa9c460c3f5991f0b0a5",
+    "task_contract_hash": "sha256:6914fd6ef5fdc4cfd9dd35c8c7a4bb4a85c3027f0ff9a46026a9117e84fe54a2",
     "input_hash_source": "tasks/R2-LOAD-0004.json (구현이 착수 근거로 삼은 READY Task Contract)",
     "source_transparency_note": "이 산출물은 Claude Code 콘솔에서 claude_agent 공급자로 생성되었다. model 값은 이 세션이 보고한 실제 모델 식별자 claude-opus-5[1m]이며 대괄호 접미사는 1M 컨텍스트 변형을 뜻한다.",
     "provider_id": "claude_agent",

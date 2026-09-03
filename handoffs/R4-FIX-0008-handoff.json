@@ -1,0 +1,98 @@
+{
+  "schema_version": "1.0.0",
+  "handoff_id": "HO-R4-FIX-0008-003",
+  "task_id": "R4-FIX-0008",
+  "from_agent_id": "A-02",
+  "to_agent_id": "A-50",
+  "created_at": "2026-09-03T00:00:00Z",
+  "summary": "Claude Fable 5.1 (A-02, claude-fable-5-1) submits REWORK revision 1.2.0 of R4-FIX-0008 for independent verification. Revision 1.1.0 (HO-002) was rejected by an independent Codex probe and a separate read-only Fable code-reviewer: a RuntimeError after a successful COMMIT left the local round VOIDED with result null, empty recent_results and a PHASE_DENIED same-id retry although the draw and settlement existed; the issuer added AC-006. 1.2.0 keeps the pre-commit cleanup and, for any exception escaping submit_round, reconciles against storage through the public draw_record and submit_round replay readers: when a record exists for both this request_id and this round_id and its settlement transaction is the one this round built, the local round becomes SETTLED with result, proof, recent history, released reservation and a journal entry (same-id retry replays, new-id retry refused); otherwise, or if reconciliation itself fails, the round is failed closed with the original exception preserved (including KeyboardInterrupt). PostCommitFaultTests now covers RuntimeError, sqlite3.OperationalError and KeyboardInterrupt at after_commit plus mismatched-round, read-outage and cleanup-defect cases (5 tests failing under 1.1.0 semantics, 12/12 passing on 1.2.0). The same 21 hash values in the same 10 historical files were repinned again (values only). Supersedes HO-R4-FIX-0008-002. Submission for review; the preliminary rejection is not lifted by this packet.",
+  "artifact_refs": [
+    "ART-R4-FIX-0008"
+  ],
+  "assumptions": [
+    "Only apps/roulette_web/table.py, the five task deliverables and hash-only fields in existing task/artifact metadata were edited; no store, RNG, server, client, CSS, HTML, asset, rights, status, approval, historical prose, old test or validator assertion changed. The one 1.1.0 test removed (after_commit terminal-only) encoded the rejected behaviour and is replaced by strictly stronger tests; the other seven INITIAL tests are unchanged.",
+    "tasks/R4-FIX-0008.json was amended by the issuer (AC-006) during the 1.1.0 run; A-02 did not edit it. The artifact input_hash/task_contract_hash follow the amended file.",
+    "Store-owned behaviour was left unchanged and is documented: DurableRoundStore.submit_round skips the durable void for BaseException after a sampled-then-rolled-back draw; the table phase guard prevents an in-process redraw.",
+    "Storage-read outage during post-commit reconciliation remains ambiguous by design: the table fails closed (local VOIDED, original error) while the durable round may be SETTLED; this is documented, not claimed reconciled.",
+    "R4-ART-0007 task/artifact metadata do not pin table.py, so the pre-authorised R4-ART provenance repin was not needed and no art metadata changed.",
+    "The collaboration gate requires this packet to carry PASS for both required commands before validate_baseline.py can pass; before this packet and the 1.2.0 artifact were written, both commands failed only on the stale 1.1.0 artifact pin of table.py (unittest: 905 tests, errors=5), and both were re-run on the final tree with this packet in place.",
+    "No commit or push was made by the implementer; Codex owns the Git workflow. Temporary isolated workspaces only; no live databases, network, package installs or settings changes."
+  ],
+  "verification_evidence": [
+    {
+      "check": "INITIAL (historical, 1.1.0 run): python -m unittest tests.test_settlement_failure_recovery -v against unmodified table.py at dd48059: 8 tests, failures=14, rounds left SPINNING/SETTLING with reserved_units=25 and new_round denied ROUND_IN_PROGRESS",
+      "result": "FAIL",
+      "evidence_uri": "repo://docs/approvals/R4-FIX-0008-validation-report.md"
+    },
+    {
+      "check": "REWORK: PostCommitFaultTests run in-process against INITIAL (1.1.0) semantics with _recover_after_submit_failure replaced by plain _fail_round: 5 tests, failures=5, errors=1 (VOIDED != SETTLED x3, result None, other-round record never consulted, cleanup defect replaced the original error)",
+      "result": "FAIL",
+      "evidence_uri": "repo://docs/approvals/R4-FIX-0008-validation-report.md"
+    },
+    {
+      "check": "REWORK: python -m unittest tests.test_settlement_failure_recovery -v (1.2.0): 12 tests, OK",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/test_settlement_failure_recovery.py"
+    },
+    {
+      "check": "python -m unittest tests.test_roulette_web_server tests.test_reconnect_continuity tests.test_durable_state tests.test_roulette_web_ui (211 tests after hash repin)",
+      "result": "PASS",
+      "evidence_uri": "repo://docs/approvals/R4-FIX-0008-validation-report.md"
+    },
+    {
+      "check": "python scripts/validate_baseline.py",
+      "result": "PASS",
+      "evidence_uri": "repo://scripts/validate_baseline.py"
+    },
+    {
+      "check": "python -m unittest discover -s tests -v",
+      "result": "PASS",
+      "evidence_uri": "repo://tests/"
+    },
+    {
+      "check": "python scripts/scan_secrets.py (no plaintext credential material)",
+      "result": "PASS",
+      "evidence_uri": "repo://scripts/scan_secrets.py"
+    },
+    {
+      "check": "Claude internal code review of 1.2.0 by the separate read-only Fable reviewer (that reviewer rejected 1.1.0 on after_commit; the rejection stands until re-examined)",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://handoffs/R4-FIX-0008-handoff.json"
+    },
+    {
+      "check": "Codex independent verification, browser QA and A-00/USER final gate",
+      "result": "NOT_RUN",
+      "evidence_uri": "repo://tasks/R4-FIX-0008.json"
+    }
+  ],
+  "known_risks": [
+    {
+      "severity": "MEDIUM",
+      "description": "Storage-read outage during post-commit reconciliation (draw_record or submit_round replay raising): the table fails closed with local VOIDED and the original error while the durable round may be SETTLED. Balances are store-derived and reload_history recovers the round once storage answers; the player sees no result for that round until then. Documented, not claimed reconciled.",
+      "owner_agent_id": "A-50"
+    },
+    {
+      "severity": "LOW",
+      "description": "If the store read inside _snapshot fails after the round was adopted, the round is SETTLED with its result but without a journal entry, so a same-id retry is PHASE_DENIED instead of a replay (a refusal, not a false success).",
+      "owner_agent_id": "A-02"
+    },
+    {
+      "severity": "LOW",
+      "description": "Store-owned, unchanged: submit_round skips the durable void for BaseException (KeyboardInterrupt) after a sampled-then-rolled-back draw; only the table phase guard prevents a redraw within the process. Forced SETTLING -> VOIDED still records no history entry (pre-existing).",
+      "owner_agent_id": "A-50"
+    },
+    {
+      "severity": "LOW",
+      "description": "apply_patch wrote LF lines into the CRLF working copy of table.py; git text=auto normalises the index and git diff shows only the intended hunks. Codex should confirm the committed blob before merging.",
+      "owner_agent_id": "A-50"
+    },
+    {
+      "severity": "LOW",
+      "description": "The preliminary Claude reviewer rejection of 1.1.0 stands until that reviewer or A-50 re-examines 1.2.0; Codex verification, browser QA and the final A-50/USER gate are outstanding. This packet claims none of them.",
+      "owner_agent_id": "A-50"
+    }
+  ],
+  "next_action": "A-50: independently re-run validate_baseline.py, unittest discovery and the after_commit probe (inject RuntimeError, sqlite3.OperationalError and KeyboardInterrupt at after_commit and inspect the immediate state without reload_history), confirm the reconciliation guards and fail-closed paths, then route 1.2.0 back to the Claude code-reviewer that rejected 1.1.0 and on to final QA without final approval from this packet.",
+  "readiness": "READY_FOR_REVIEW",
+  "acknowledgement_required": true
+}
