@@ -34,7 +34,7 @@
     "superseded_binding_reason": "계약 단계에서는 구현이 존재하지 않아 Task Contract 자체를 대표했다. 구현이 존재하는 지금 그 바인딩을 유지하면 아티팩트가 구현 제출을 대표하지 않게 된다. 이 바인딩 이전은 1.1.0에서 2.0.0으로 갈 때 일어났고 2.1.0은 같은 바인딩을 유지한다.",
     "task_status_at_submission": "READY",
     "task_contract_unchanged_by_this_unit": true,
-    "task_contract_hash": "sha256:006d2a2f4d654bcce5b3bbb2c01e6b7ba671d8b980d8213b5da12a270adc25c4",
+    "task_contract_hash": "sha256:0c7f173908b4697fef05b99188a0b12904ece005e9584ef00dfde53d41086cd5",
     "delegation_gate_decision": "DELEGATED",
     "delegation_gate_evidence": "studio_core.collaboration.evaluate_delegation(task, console=claude_code, actor_agent_id=A-02)가 allowed true, code DELEGATED을 반환했다. operations/collaboration.yaml의 delegation_gate는 READY를 allowed_task_status로 명시한다.",
     "risk_class": "HIGH",

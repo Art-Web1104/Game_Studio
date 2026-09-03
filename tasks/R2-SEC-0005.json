@@ -71,7 +71,7 @@
     {
       "uri": "repo://apps/roulette_web/table.py",
       "version": "1.0.0",
-      "content_hash": "sha256:22397b7dd4406647f4038b43b7b977405c56f1d04fae913e23c2dee578af41ae"
+      "content_hash": "sha256:4721edb1d14d64829f750f6e403e5b72dc992be58fe4db22454f238939e1dd16"
     },
     {
       "uri": "repo://studio_core/durable_state.py",
@@ -156,12 +156,12 @@
     {
       "uri": "repo://tasks/R2-NET-0003.json",
       "version": "1.0.0",
-      "content_hash": "sha256:209f9ad3bea33e4cc7332a01065258e2aa0345484fcaf9bbcc02df22157fd9b3"
+      "content_hash": "sha256:bba297b42ed24459ee79060cf3fe17dc0347b33aab98de67e1d4b943b248de14"
     },
     {
       "uri": "repo://tasks/R2-LOAD-0004.json",
       "version": "1.0.0",
-      "content_hash": "sha256:26b8fc02bc8133610dbd9a219f6cb7f685270e08ff86fa9c460c3f5991f0b0a5"
+      "content_hash": "sha256:6914fd6ef5fdc4cfd9dd35c8c7a4bb4a85c3027f0ff9a46026a9117e84fe54a2"
     }
   ],
   "deliverables": [

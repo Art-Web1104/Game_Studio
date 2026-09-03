@@ -86,7 +86,7 @@
     {
       "uri": "repo://artifacts/R4-UI-0006-artifact.json",
       "version": "1.1.0",
-      "content_hash": "sha256:7ad49b33f1110a823c423841f8099af67d5390741176cdf79df1a8d7ae43dd41"
+      "content_hash": "sha256:50008c0f9a9bffbba756df9536a3c74717ca80dfdec7e7a7fda6e8bd8e6ad125"
     },
     {
       "uri": "repo://scripts/validate_baseline.py",

@@ -14,7 +14,7 @@
     "created_by": "A-02",
     "provider": "claude_agent",
     "model": "claude-opus-5",
-    "input_hash": "sha256:209f9ad3bea33e4cc7332a01065258e2aa0345484fcaf9bbcc02df22157fd9b3"
+    "input_hash": "sha256:bba297b42ed24459ee79060cf3fe17dc0347b33aab98de67e1d4b943b248de14"
   },
   "rights": {
     "license": "TS-STUDIO-INTERNAL",
@@ -34,7 +34,7 @@
     "test_suite_hash": "sha256:b2366ce46e7193384f5da0f1e6184c68cfc7840f4299a38e61803d219ed926bc",
     "validator_hash": "sha256:6afefe21674a509a6ed7ffc5695e388e4ff14e1af4a2590da4741c24fd10f45c",
     "design_document_hash": "sha256:792102e58c68f827e156835a78ed73d7fa8765c2b4804346a67b45814a2f9e39",
-    "task_contract_hash": "sha256:209f9ad3bea33e4cc7332a01065258e2aa0345484fcaf9bbcc02df22157fd9b3",
+    "task_contract_hash": "sha256:bba297b42ed24459ee79060cf3fe17dc0347b33aab98de67e1d4b943b248de14",
     "content_hash_form": "canonical LF (studio_core.integrity.hash_file)",
     "implementation_completed": true,
     "tests_run": true,
